@@ -1,6 +1,6 @@
 "use client"
 
-import { useSortable } from "@dnd-kit/core"
+import { useSortable } from "@dnd-kit/sortable"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { GripVertical, Settings, Trash2, Copy } from "lucide-react"
+import { GripVertical, Settings, Trash2, Copy, ChevronUp, ChevronDown } from "lucide-react"
 import { FIELD_WIDTH_CONFIG } from "@/lib/form-types"
 import type { FormField } from "@/lib/form-types"
 
@@ -18,9 +18,23 @@ interface SortableFieldProps {
   onUpdate: (fieldId: string, updates: Partial<FormField>) => void
   onDelete: (fieldId: string) => void
   onDuplicate: (fieldId: string) => void
+  onMoveUp: (fieldId: string) => void
+  onMoveDown: (fieldId: string) => void
+  canMoveUp: boolean
+  canMoveDown: boolean
 }
 
-export function SortableField({ field, onSelect, onUpdate, onDelete, onDuplicate }: SortableFieldProps) {
+export function SortableField({
+  field,
+  onSelect,
+  onUpdate,
+  onDelete,
+  onDuplicate,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
+}: SortableFieldProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: field.id,
     data: {
@@ -95,6 +109,24 @@ export function SortableField({ field, onSelect, onUpdate, onDelete, onDuplicate
                 </div>
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onMoveUp(field.id)}
+                  disabled={!canMoveUp}
+                  title="Move up"
+                >
+                  <ChevronUp className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onMoveDown(field.id)}
+                  disabled={!canMoveDown}
+                  title="Move down"
+                >
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
                 <Button variant="ghost" size="sm" onClick={() => onSelect(field)}>
                   <Settings className="h-3 w-3" />
                 </Button>

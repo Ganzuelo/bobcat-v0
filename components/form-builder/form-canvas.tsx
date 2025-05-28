@@ -1,92 +1,241 @@
 "use client"
 
-import { useDroppable } from "@dnd-kit/core"
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Plus, Settings } from "lucide-react"
-import { SortableSection } from "./sortable-section"
-import type { FormPage, FormSection, FormField } from "@/lib/form-types"
+import { Edit, Trash2, ChevronUp, ChevronDown, Settings } from "lucide-react"
+import type { FormStructure, FormField } from "@/lib/form-types"
+import { getGridColClass, getWidthLabel } from "@/lib/form-builder-utils"
+import { FieldRenderer } from "./field-renderer"
 
 interface FormCanvasProps {
-  page?: FormPage & { sections: (FormSection & { fields: FormField[] })[] }
-  onAddSection: (pageId: string) => void
-  onSelectField: (field: FormField) => void
-  onSelectSection: (section: FormSection) => void
-  onUpdateField: (fieldId: string, updates: Partial<FormField>) => void
+  formStructure: FormStructure
+  onEditField: (field: FormField) => void
   onDeleteField: (fieldId: string) => void
-  onDuplicateField: (fieldId: string) => void
+  onMoveFieldUp: (fieldId: string) => void
+  onMoveFieldDown: (fieldId: string) => void
+  onEditSection?: (sectionId: string) => void
 }
 
 export function FormCanvas({
-  page,
-  onAddSection,
-  onSelectField,
-  onSelectSection,
-  onUpdateField,
+  formStructure,
+  onEditField,
   onDeleteField,
-  onDuplicateField,
+  onMoveFieldUp,
+  onMoveFieldDown,
+  onEditSection,
 }: FormCanvasProps) {
-  const { setNodeRef } = useDroppable({
-    id: "form-canvas",
-  })
-
-  if (!page) {
+  // Add defensive checks to prevent undefined errors
+  if (!formStructure) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
-        <div className="text-center">
-          <p className="text-lg mb-2">No page selected</p>
-          <p className="text-sm">Select a page to start building your form</p>
-        </div>
+      <div className="max-w-5xl mx-auto">
+        <Card>
+          <CardContent className="p-8">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+              <p>Loading form structure...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!formStructure.pages || formStructure.pages.length === 0) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <Card>
+          <CardContent className="p-8">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+              <p>No pages available. Please create a page first.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const currentPage = formStructure.pages[0]
+
+  if (!currentPage) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <Card>
+          <CardContent className="p-8">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+              <p>Page data not available.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!currentPage.sections || currentPage.sections.length === 0) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">{currentPage.title || "Untitled Page"}</h2>
+                {currentPage.description && (
+                  <p className="text-sm text-muted-foreground mt-1">{currentPage.description}</p>
+                )}
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+              <p>No sections available. Please create a section first.</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div ref={setNodeRef} className="p-6 min-h-full bg-gray-50">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Page Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>{page.title}</CardTitle>
-                {page.description && <p className="text-sm text-gray-600 mt-1">{page.description}</p>}
-              </div>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4" />
-              </Button>
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Page Header */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">{currentPage.title || "Untitled Page"}</h2>
+              {currentPage.description && (
+                <p className="text-sm text-muted-foreground mt-1">{currentPage.description}</p>
+              )}
             </div>
-          </CardHeader>
-        </Card>
+          </CardTitle>
+        </CardHeader>
+      </Card>
 
-        {/* Sections */}
-        <SortableContext items={page.sections.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-4">
-            {page.sections.map((section) => (
-              <SortableSection
-                key={section.id}
-                section={section}
-                onSelectField={onSelectField}
-                onSelectSection={onSelectSection}
-                onUpdateField={onUpdateField}
-                onDeleteField={onDeleteField}
-                onDuplicateField={onDuplicateField}
-              />
-            ))}
-          </div>
-        </SortableContext>
+      {/* Sections */}
+      {currentPage.sections.map((section) => {
+        if (!section) return null
 
-        {/* Add Section Button */}
-        <Card className="border-dashed border-2 border-gray-300 hover:border-gray-400 transition-colors">
-          <CardContent className="flex items-center justify-center py-8">
-            <Button variant="ghost" onClick={() => onAddSection(page.id)} className="text-gray-600">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Section
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+        return (
+          <Card key={section.id} className="overflow-hidden">
+            {/* Section Header */}
+            <CardHeader className="bg-gray-50/50 border-b">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-medium">{section.title || "Untitled Section"}</h3>
+                    {onEditSection && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEditSection(section.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  {section.description && <p className="text-sm text-muted-foreground mt-1">{section.description}</p>}
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {section.fields?.length || 0} fields
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent className="p-6">
+              {!section.fields || section.fields.length === 0 ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+                  <p>No fields in this section. Add fields from the Builder Palette.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 auto-rows-min">
+                  {section.fields.map((field, index) => {
+                    if (!field) return null
+
+                    const gridColClass = getGridColClass(field.width || "full")
+                    const isFirst = index === 0
+                    const isLast = index === section.fields.length - 1
+
+                    return (
+                      <div key={field.id || `field-${index}`} className={`${gridColClass} min-w-0`}>
+                        <Card className="group hover:shadow-md transition-shadow border-2 hover:border-blue-300 h-full">
+                          <CardContent className="p-4">
+                            <div className="space-y-3">
+                              {/* Field Header */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1">
+                                    <div className="font-medium text-sm">{field.label || "Untitled Field"}</div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Badge variant="secondary" className="text-xs">
+                                        {field.field_type || "unknown"}
+                                      </Badge>
+                                      <Badge variant="outline" className="text-xs">
+                                        {getWidthLabel(field.width)}
+                                      </Badge>
+                                      {field.required && (
+                                        <Badge variant="destructive" className="text-xs">
+                                          Required
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => field.id && onMoveFieldUp(field.id)}
+                                    disabled={isFirst || !field.id}
+                                    title="Move up"
+                                  >
+                                    <ChevronUp className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => field.id && onMoveFieldDown(field.id)}
+                                    disabled={isLast || !field.id}
+                                    title="Move down"
+                                  >
+                                    <ChevronDown className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onEditField(field)}
+                                    title="Edit field"
+                                    disabled={!field}
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => field.id && onDeleteField(field.id)}
+                                    title="Delete field"
+                                    disabled={!field.id}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Field Preview */}
+                              <div className="space-y-2">
+                                <FieldRenderer field={field} isPreviewMode={false} />
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

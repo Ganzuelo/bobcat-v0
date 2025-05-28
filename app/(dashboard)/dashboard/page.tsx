@@ -1,9 +1,36 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { DatabaseService } from "@/lib/database-service"
+import type { Form } from "@/lib/database-types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileText, Zap, BarChart3, Plus, TrendingUp, Users, Clock } from "lucide-react"
 import Link from "next/link"
 
 export default function DashboardPage() {
+  const [recentForms, setRecentForms] = useState<Form[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchRecentForms() {
+      try {
+        setIsLoading(true)
+        const forms = await DatabaseService.getForms()
+        // Get the 3 most recent forms
+        setRecentForms(forms.slice(0, 3))
+      } catch (err) {
+        console.error("Error fetching recent forms:", err)
+        setError("Failed to load recent forms")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchRecentForms()
+  }, [])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -119,33 +146,48 @@ export default function DashboardPage() {
             <CardDescription>Latest form submissions and updates</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                <FileText className="h-4 w-4" />
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-200 animate-pulse" />
+                    <div className="flex-1 space-y-1">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3 bg-gray-200 rounded w-2/3 animate-pulse" />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium">URAR - 123 Main St</p>
-                <p className="text-xs text-muted-foreground">Completed 2 hours ago</p>
+            ) : error ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-red-600">{error}</p>
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                <FileText className="h-4 w-4" />
+            ) : recentForms.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground">No forms created yet</p>
+                <Button asChild className="mt-2" size="sm">
+                  <Link href="/form-builder">Create Your First Form</Link>
+                </Button>
               </div>
-              <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium">Property Inspection - Oak Ave</p>
-                <p className="text-xs text-muted-foreground">In progress</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                <FileText className="h-4 w-4" />
-              </div>
-              <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium">Custom Form - Client Review</p>
-                <p className="text-xs text-muted-foreground">Draft</p>
-              </div>
-            </div>
+            ) : (
+              recentForms.map((form) => (
+                <div key={form.id} className="flex items-center space-x-4">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium">{form.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {form.status === "published" ? "Published" : form.status === "draft" ? "Draft" : "In Progress"} •
+                      Updated {new Date(form.updated_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href={`/forms/${form.id}/edit`}>Edit</Link>
+                  </Button>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 

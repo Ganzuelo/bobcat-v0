@@ -1,6 +1,7 @@
 "use client"
 
-import { useSortable, useDroppable } from "@dnd-kit/core"
+import { useDroppable } from "@dnd-kit/core"
+import { useSortable } from "@dnd-kit/sortable"
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

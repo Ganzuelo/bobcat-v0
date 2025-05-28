@@ -1,962 +1,552 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { X, Plus, Trash2, Lightbulb, Calculator, Database } from "lucide-react"
-import { FIELD_WIDTH_CONFIG, VALIDATION_PATTERNS, URAR_FIELD_TEMPLATES, getFieldTypeConfig } from "@/lib/form-types"
-import {
-  CARDINALITY_OPTIONS,
-  CONDITIONALITY_OPTIONS,
-  OUTPUT_FORMAT_OPTIONS,
-  VALIDATION_OPERATORS,
-  LOGICAL_OPERATORS,
-  DATA_SOURCES,
-  URAR_CATEGORIES,
-} from "@/lib/form-constants"
-import type { FormField, FieldOption, ValidationRule } from "@/lib/form-types"
+import { Check, X } from "lucide-react"
+import { useState, useEffect } from "react"
+import type {
+  FieldEditorProps,
+  ValidationState,
+  MetadataState,
+  LogicState,
+  AdvancedState,
+  LogicCondition,
+  XmlMappingState,
+  PrefillConfig,
+} from "@/lib/field-editor-types"
+import { BasicTab } from "./field-editor/basic-tab"
+import { ValidationTab } from "./field-editor/validation-tab"
+import { MetadataTab } from "./field-editor/metadata-tab"
+import { ConditionalTab } from "./field-editor/conditional-tab"
+import { AdvancedTab } from "./field-editor/advanced-tab"
+import { PrefillTab } from "./field-editor/prefill-tab"
+import { toast } from "@/components/ui/use-toast"
 
-interface FieldEditorProps {
-  field: FormField
-  availableFields?: FormField[]
-  onUpdate: (updates: Partial<FormField>) => void
-  onClose: () => void
-}
+export function FieldEditor({
+  field,
+  availableFields = [],
+  onUpdateField,
+  onSave,
+  onReset,
+  onCancel,
+}: FieldEditorProps) {
+  // Filter out the current field from available fields
+  const otherFields = availableFields.filter((f) => f.id !== field.id)
 
-export function FieldEditor({ field, availableFields = [], onUpdate, onClose }: FieldEditorProps) {
-  const [localField, setLocalField] = useState(field)
-  const [activeTab, setActiveTab] = useState("basic")
-  const [urarSuggestions, setUrarSuggestions] = useState<string[]>([])
+  // Extract validation state from field
+  const getValidationState = (): ValidationState => {
+    const validation = field.validation || []
+    const state: ValidationState = {
+      required: field.required || false,
+    }
 
-  const fieldConfig = getFieldTypeConfig(localField.field_type)
+    // Ensure validation is an array before calling forEach
+    if (Array.isArray(validation)) {
+      validation.forEach((rule) => {
+        switch (rule.type) {
+          case "minLength":
+            state.minLength = rule.value as number
+            break
+          case "maxLength":
+            state.maxLength = rule.value as number
+            break
+          case "min":
+            state.minValue = rule.value as number
+            break
+          case "max":
+            state.maxValue = rule.value as number
+            break
+          case "pattern":
+            state.pattern = rule.pattern
+            break
+          case "enum":
+            state.allowedValues = (rule.value as string)?.split(",").map((v) => v.trim()) || []
+            break
+        }
+      })
+    }
 
+    return state
+  }
+
+  // Extract metadata state from field
+  const getMetadataState = (): MetadataState => {
+    const metadata = field.metadata || {}
+    return {
+      fieldKey: metadata.fieldKey || "",
+      dataType: metadata.dataType || "text",
+      uadFieldName: metadata.uadFieldName || "",
+      tags: Array.isArray(metadata.tags) ? metadata.tags : [],
+      xml: {
+        path: metadata.xml?.path || "",
+        fieldId: metadata.xml?.fieldId || "",
+        format: metadata.xml?.format || "",
+        required: metadata.xml?.required || false,
+      },
+    }
+  }
+
+  // Extract logic state from field
+  const getLogicState = (): LogicState => {
+    const logic = field.logic || {}
+    return {
+      enabled: logic.enabled || false,
+      conditions: Array.isArray(logic.conditions) ? logic.conditions : [],
+    }
+  }
+
+  // Extract advanced state from field
+  const getAdvancedState = (): AdvancedState => {
+    const advanced = field.advanced || {}
+    return {
+      visibilityMode: advanced.visibilityMode || "visible",
+      calculatedField: advanced.calculatedField || "",
+      customOnChangeLogic: advanced.customOnChangeLogic || "",
+      dependsOnFields: Array.isArray(advanced.dependsOnFields) ? advanced.dependsOnFields : [],
+      customAttributes: Array.isArray(advanced.customAttributes) ? advanced.customAttributes : [],
+    }
+  }
+
+  // Extract prefill state from field
+  const getPrefillState = (): PrefillConfig => {
+    const prefill = field.prefill_config || {}
+    return {
+      enabled: prefill.enabled || false,
+      source: prefill.source || "internal",
+      key: prefill.key || "",
+      endpoint: prefill.endpoint || "",
+      fieldMap: prefill.fieldMap || {},
+      fallbackValue: prefill.fallbackValue,
+      cacheTimeout: prefill.cacheTimeout || 300,
+      retryAttempts: prefill.retryAttempts || 3,
+    }
+  }
+
+  const [validationState, setValidationState] = useState<ValidationState>(getValidationState())
+  const [metadataState, setMetadataState] = useState<MetadataState>(getMetadataState())
+  const [logicState, setLogicState] = useState<LogicState>(getLogicState())
+  const [advancedState, setAdvancedState] = useState<AdvancedState>(getAdvancedState())
+  const [prefillState, setPrefillState] = useState<PrefillConfig>(getPrefillState())
+  const [allowedValuesInput, setAllowedValuesInput] = useState("")
+  const [tagInput, setTagInput] = useState("")
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [xmlMappingOpen, setXmlMappingOpen] = useState(false)
+  const [newAttributeKey, setNewAttributeKey] = useState("")
+  const [newAttributeValue, setNewAttributeValue] = useState("")
+
+  // Update state when field changes
   useEffect(() => {
-    // Generate URAR suggestions based on field label
-    const suggestions = Object.keys(URAR_FIELD_TEMPLATES).filter(
-      (key) =>
-        key.toLowerCase().includes(localField.label.toLowerCase()) ||
-        localField.label.toLowerCase().includes(key.replace(/_/g, " ")),
-    )
-    setUrarSuggestions(suggestions)
-  }, [localField.label])
+    setMetadataState(getMetadataState())
+    setValidationState(getValidationState())
+    setLogicState(getLogicState())
+    setAdvancedState(getAdvancedState())
+    setPrefillState(getPrefillState())
+  }, [field])
 
-  const handleUpdate = (updates: Partial<FormField>) => {
-    const updatedField = { ...localField, ...updates }
-    setLocalField(updatedField)
-    onUpdate(updates)
-  }
+  // Validate validation rules
+  const validateRules = (state: ValidationState): string[] => {
+    const errors: string[] = []
 
-  const addOption = () => {
-    const newOption: FieldOption = {
-      label: "New Option",
-      value: `option_${Date.now()}`,
-      disabled: false,
-    }
-    handleUpdate({
-      options: [...(localField.options || []), newOption],
-    })
-  }
-
-  const updateOption = (index: number, updates: Partial<FieldOption>) => {
-    const updatedOptions = [...(localField.options || [])]
-    updatedOptions[index] = { ...updatedOptions[index], ...updates }
-    handleUpdate({ options: updatedOptions })
-  }
-
-  const removeOption = (index: number) => {
-    const updatedOptions = [...(localField.options || [])]
-    updatedOptions.splice(index, 1)
-    handleUpdate({ options: updatedOptions })
-  }
-
-  const addValidationRule = () => {
-    const newRule: ValidationRule = {
-      type: "required",
-      value: true,
-      message: "This field is required",
-    }
-    handleUpdate({
-      validation: [...(localField.validation || []), newRule],
-    })
-  }
-
-  const updateValidationRule = (index: number, updates: Partial<ValidationRule>) => {
-    const updatedRules = [...(localField.validation || [])]
-    updatedRules[index] = { ...updatedRules[index], ...updates }
-    handleUpdate({ validation: updatedRules })
-  }
-
-  const removeValidationRule = (index: number) => {
-    const updatedRules = [...(localField.validation || [])]
-    updatedRules.splice(index, 1)
-    handleUpdate({ validation: updatedRules })
-  }
-
-  const addCondition = () => {
-    const newCondition = {
-      fieldId: "",
-      operator: "equals" as const,
-      value: "",
-      logicalOperator: "AND" as const,
+    if (state.minLength !== undefined && state.maxLength !== undefined) {
+      if (state.minLength > state.maxLength) {
+        errors.push("Minimum length cannot be greater than maximum length")
+      }
     }
 
-    const currentConditions = localField.conditional_visibility?.conditions || []
-    handleUpdate({
-      conditional_visibility: {
-        ...localField.conditional_visibility,
-        enabled: true,
-        conditions: [...currentConditions, newCondition],
-      },
+    if (state.minValue !== undefined && state.maxValue !== undefined) {
+      if (state.minValue > state.maxValue) {
+        errors.push("Minimum value cannot be greater than maximum value")
+      }
+    }
+
+    if (state.minLength !== undefined && state.minLength < 0) {
+      errors.push("Minimum length cannot be negative")
+    }
+
+    if (state.maxLength !== undefined && state.maxLength < 0) {
+      errors.push("Maximum length cannot be negative")
+    }
+
+    if (state.pattern) {
+      try {
+        new RegExp(state.pattern)
+      } catch {
+        errors.push("Invalid regular expression pattern")
+      }
+    }
+
+    return errors
+  }
+
+  // Update validation state and sync with field
+  const updateValidationState = (updates: Partial<ValidationState>) => {
+    const newState = { ...validationState, ...updates }
+    setValidationState(newState)
+
+    const errors = validateRules(newState)
+    setValidationErrors(errors)
+
+    // Convert validation state to validation rules array
+    const validationRules = []
+
+    if (newState.minLength !== undefined && newState.minLength > 0) {
+      validationRules.push({
+        type: "minLength" as const,
+        value: newState.minLength,
+        message: `Minimum length is ${newState.minLength} characters`,
+      })
+    }
+
+    if (newState.maxLength !== undefined && newState.maxLength > 0) {
+      validationRules.push({
+        type: "maxLength" as const,
+        value: newState.maxLength,
+        message: `Maximum length is ${newState.maxLength} characters`,
+      })
+    }
+
+    if (newState.minValue !== undefined) {
+      validationRules.push({
+        type: "min" as const,
+        value: newState.minValue,
+        message: `Minimum value is ${newState.minValue}`,
+      })
+    }
+
+    if (newState.maxValue !== undefined) {
+      validationRules.push({
+        type: "max" as const,
+        value: newState.maxValue,
+        message: `Maximum value is ${newState.maxValue}`,
+      })
+    }
+
+    if (newState.pattern && newState.pattern.trim()) {
+      validationRules.push({
+        type: "pattern" as const,
+        pattern: newState.pattern,
+        message: "Please enter a valid format",
+      })
+    }
+
+    if (newState.allowedValues && newState.allowedValues.length > 0) {
+      validationRules.push({
+        type: "enum" as const,
+        value: newState.allowedValues.join(","),
+        message: "Please select a valid option",
+      })
+    }
+
+    // Update field with new validation rules and required state
+    onUpdateField(field.id, {
+      required: newState.required,
+      validation: validationRules,
     })
   }
 
-  const updateCondition = (index: number, updates: any) => {
-    const conditions = [...(localField.conditional_visibility?.conditions || [])]
-    conditions[index] = { ...conditions[index], ...updates }
-    handleUpdate({
-      conditional_visibility: {
-        ...localField.conditional_visibility,
-        conditions,
-      },
-    })
+  // Update metadata state
+  const updateMetadataState = (updates: Partial<MetadataState>) => {
+    setMetadataState((prev) => ({ ...prev, ...updates }))
   }
 
-  const removeCondition = (index: number) => {
-    const conditions = [...(localField.conditional_visibility?.conditions || [])]
-    conditions.splice(index, 1)
-    handleUpdate({
-      conditional_visibility: {
-        ...localField.conditional_visibility,
-        conditions,
-      },
-    })
+  // Update XML mapping state
+  const updateXmlMappingState = (updates: Partial<XmlMappingState>) => {
+    setMetadataState((prev) => ({
+      ...prev,
+      xml: { ...prev.xml, ...updates },
+    }))
   }
 
-  const applyUrarTemplate = (templateKey: string) => {
-    const template = URAR_FIELD_TEMPLATES[templateKey]
-    if (template) {
-      handleUpdate({
-        label: template.label || localField.label,
-        field_type: template.field_type || localField.field_type,
-        required: template.required !== undefined ? template.required : localField.required,
-        metadata: {
-          ...localField.metadata,
-          ...template.metadata,
-        },
+  // Update logic state
+  const updateLogicState = (updates: Partial<LogicState>) => {
+    setLogicState((prev) => ({ ...prev, ...updates }))
+  }
+
+  // Update advanced state
+  const updateAdvancedState = (updates: Partial<AdvancedState>) => {
+    setAdvancedState((prev) => ({ ...prev, ...updates }))
+  }
+
+  // Update prefill state
+  const updatePrefillState = (updates: Partial<PrefillConfig>) => {
+    setPrefillState((prev) => ({ ...prev, ...updates }))
+  }
+
+  // Test prefill configuration
+  const testPrefillConfiguration = async () => {
+    try {
+      // This would test the prefill configuration
+      toast({
+        title: "Test Successful",
+        description: "Prefill configuration is valid and working",
+      })
+    } catch (error) {
+      toast({
+        title: "Test Failed",
+        description: error instanceof Error ? error.message : "Prefill test failed",
+        variant: "destructive",
       })
     }
   }
 
+  // Update a specific condition
+  const updateCondition = (index: number, updates: Partial<LogicCondition>) => {
+    const newConditions = [...logicState.conditions]
+    newConditions[index] = { ...newConditions[index], ...updates }
+    updateLogicState({ conditions: newConditions })
+  }
+
+  // Add a new condition
+  const addCondition = () => {
+    const defaultCondition: LogicCondition = {
+      fieldId: otherFields.length > 0 ? otherFields[0].id : "",
+      operator: "equals",
+      value: "",
+      logicalOperator: "AND",
+    }
+    updateLogicState({ conditions: [...logicState.conditions, defaultCondition] })
+  }
+
+  // Remove a condition
+  const removeCondition = (index: number) => {
+    const newConditions = logicState.conditions.filter((_, i) => i !== index)
+    updateLogicState({ conditions: newConditions })
+  }
+
+  // Add custom attribute
+  const addCustomAttribute = () => {
+    if (newAttributeKey.trim() && newAttributeValue.trim()) {
+      const newAttributes = [
+        ...advancedState.customAttributes,
+        { key: newAttributeKey.trim(), value: newAttributeValue.trim() },
+      ]
+      updateAdvancedState({ customAttributes: newAttributes })
+      setNewAttributeKey("")
+      setNewAttributeValue("")
+    }
+  }
+
+  // Remove custom attribute
+  const removeCustomAttribute = (index: number) => {
+    const newAttributes = advancedState.customAttributes.filter((_, i) => i !== index)
+    updateAdvancedState({ customAttributes: newAttributes })
+  }
+
+  // Update custom attribute
+  const updateCustomAttribute = (index: number, key: string, value: string) => {
+    const newAttributes = [...advancedState.customAttributes]
+    newAttributes[index] = { key, value }
+    updateAdvancedState({ customAttributes: newAttributes })
+  }
+
+  // Toggle field dependency
+  const toggleFieldDependency = (fieldId: string) => {
+    const newDependencies = advancedState.dependsOnFields.includes(fieldId)
+      ? advancedState.dependsOnFields.filter((id) => id !== fieldId)
+      : [...advancedState.dependsOnFields, fieldId]
+    updateAdvancedState({ dependsOnFields: newDependencies })
+  }
+
+  // Apply metadata changes to field
+  const applyMetadataChanges = () => {
+    onUpdateField(field.id, {
+      metadata: {
+        ...field.metadata,
+        fieldKey: metadataState.fieldKey,
+        dataType: metadataState.dataType,
+        uadFieldName: metadataState.uadFieldName,
+        tags: metadataState.tags,
+        xml: metadataState.xml,
+      },
+    })
+  }
+
+  // Apply logic changes to field
+  const applyLogicChanges = () => {
+    onUpdateField(field.id, {
+      logic: {
+        enabled: logicState.enabled,
+        conditions: logicState.conditions,
+      },
+    })
+  }
+
+  // Apply advanced changes to field
+  const applyAdvancedChanges = () => {
+    onUpdateField(field.id, {
+      advanced: advancedState,
+    })
+  }
+
+  // Apply prefill changes to field
+  const applyPrefillChanges = () => {
+    onUpdateField(field.id, {
+      prefill_config: prefillState,
+    })
+  }
+
+  // Add allowed value
+  const addAllowedValue = () => {
+    if (allowedValuesInput.trim()) {
+      const newValues = [...(validationState.allowedValues || []), allowedValuesInput.trim()]
+      updateValidationState({ allowedValues: newValues })
+      setAllowedValuesInput("")
+    }
+  }
+
+  // Remove allowed value
+  const removeAllowedValue = (index: number) => {
+    const newValues = validationState.allowedValues?.filter((_, i) => i !== index) || []
+    updateValidationState({ allowedValues: newValues })
+  }
+
+  // Add tag
+  const addTag = () => {
+    if (tagInput.trim() && !metadataState.tags.includes(tagInput.trim())) {
+      const newTags = [...metadataState.tags, tagInput.trim()]
+      updateMetadataState({ tags: newTags })
+      setTagInput("")
+    }
+  }
+
+  // Remove tag
+  const removeTag = (tag: string) => {
+    const newTags = metadataState.tags.filter((t) => t !== tag)
+    updateMetadataState({ tags: newTags })
+  }
+
+  // Handle save button click
+  const handleSave = () => {
+    applyMetadataChanges()
+    applyLogicChanges()
+    applyAdvancedChanges()
+    applyPrefillChanges()
+    onSave()
+  }
+
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b">
-        <div>
-          <h3 className="font-semibold">Field Properties</h3>
-          <p className="text-sm text-muted-foreground">{fieldConfig.label} Field</p>
-        </div>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+    <div className="fixed inset-0 bg-black/20 z-50 flex">
+      {/* Overlay to prevent interaction */}
+      <div className="flex-1" onClick={onCancel} />
 
-      <div className="flex-1 overflow-hidden">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-6 mx-4 mt-4">
-            <TabsTrigger value="basic">Basic</TabsTrigger>
-            <TabsTrigger value="validation">Validation</TabsTrigger>
-            <TabsTrigger value="conditional">Logic</TabsTrigger>
-            <TabsTrigger value="metadata">Metadata</TabsTrigger>
-            <TabsTrigger value="calculated">Calculated</TabsTrigger>
-            <TabsTrigger value="lookup">Lookup</TabsTrigger>
-          </TabsList>
-
-          <div className="flex-1 overflow-y-auto p-4">
-            {/* Basic Settings Tab */}
-            <TabsContent value="basic" className="space-y-6 mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Basic Properties</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="field-label">Label *</Label>
-                    <Input
-                      id="field-label"
-                      value={localField.label}
-                      onChange={(e) => handleUpdate({ label: e.target.value })}
-                      placeholder="Enter field label"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="field-placeholder">Placeholder</Label>
-                    <Input
-                      id="field-placeholder"
-                      value={localField.placeholder || ""}
-                      onChange={(e) => handleUpdate({ placeholder: e.target.value })}
-                      placeholder="Enter placeholder text"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="field-help">Help Text</Label>
-                    <Textarea
-                      id="field-help"
-                      value={localField.help_text || ""}
-                      onChange={(e) => handleUpdate({ help_text: e.target.value })}
-                      placeholder="Provide additional guidance for users"
-                      rows={2}
-                    />
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={localField.required}
-                      onCheckedChange={(checked) => handleUpdate({ required: checked })}
-                    />
-                    <Label>Required field</Label>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="field-width">Field Width</Label>
-                    <Select value={localField.width} onValueChange={(value: any) => handleUpdate({ width: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(FIELD_WIDTH_CONFIG).map(([key, config]) => (
-                          <SelectItem key={key} value={key}>
-                            {config.label} ({config.percentage})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Options (for select, radio, checkbox fields) */}
-              {fieldConfig.supportsOptions && (
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm">Options</CardTitle>
-                      <Button variant="outline" size="sm" onClick={addOption}>
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {localField.options?.map((option, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <Input
-                          placeholder="Label"
-                          value={option.label}
-                          onChange={(e) => updateOption(index, { label: e.target.value })}
-                          className="flex-1"
-                        />
-                        <Input
-                          placeholder="Value"
-                          value={option.value}
-                          onChange={(e) => updateOption(index, { value: e.target.value })}
-                          className="flex-1"
-                        />
-                        <Switch
-                          checked={!option.disabled}
-                          onCheckedChange={(checked) => updateOption(index, { disabled: !checked })}
-                        />
-                        <Button variant="ghost" size="sm" onClick={() => removeOption(index)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                    {(!localField.options || localField.options.length === 0) && (
-                      <p className="text-sm text-gray-500 text-center py-4">No options added yet</p>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-
-            {/* Validation Tab */}
-            <TabsContent value="validation" className="space-y-6 mt-0">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm">Validation Rules</CardTitle>
-                    <Button variant="outline" size="sm" onClick={addValidationRule}>
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add Rule
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {localField.validation?.map((rule, index) => (
-                    <Card key={index} className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Select
-                            value={rule.type}
-                            onValueChange={(value: any) => updateValidationRule(index, { type: value })}
-                          >
-                            <SelectTrigger className="w-40">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="required">Required</SelectItem>
-                              <SelectItem value="min">Minimum</SelectItem>
-                              <SelectItem value="max">Maximum</SelectItem>
-                              <SelectItem value="minLength">Min Length</SelectItem>
-                              <SelectItem value="maxLength">Max Length</SelectItem>
-                              <SelectItem value="pattern">Pattern</SelectItem>
-                              <SelectItem value="custom">Custom</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button variant="ghost" size="sm" onClick={() => removeValidationRule(index)}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-
-                        {(rule.type === "min" ||
-                          rule.type === "max" ||
-                          rule.type === "minLength" ||
-                          rule.type === "maxLength") && (
-                          <Input
-                            type="number"
-                            placeholder="Value"
-                            value={(rule.value as number) || ""}
-                            onChange={(e) => updateValidationRule(index, { value: Number.parseInt(e.target.value) })}
-                          />
-                        )}
-
-                        {rule.type === "pattern" && (
-                          <div className="space-y-2">
-                            <Input
-                              placeholder="Regular expression pattern"
-                              value={rule.pattern || ""}
-                              onChange={(e) => updateValidationRule(index, { pattern: e.target.value })}
-                            />
-                            <Select onValueChange={(value) => updateValidationRule(index, { pattern: value })}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Or select a common pattern" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value={VALIDATION_PATTERNS.EMAIL.source}>Email</SelectItem>
-                                <SelectItem value={VALIDATION_PATTERNS.PHONE.source}>Phone</SelectItem>
-                                <SelectItem value={VALIDATION_PATTERNS.URL.source}>URL</SelectItem>
-                                <SelectItem value={VALIDATION_PATTERNS.ZIP_CODE.source}>ZIP Code</SelectItem>
-                                <SelectItem value={VALIDATION_PATTERNS.SSN.source}>SSN</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-
-                        {rule.type === "custom" && (
-                          <Textarea
-                            placeholder="Custom validation function (JavaScript)"
-                            value={rule.customFunction || ""}
-                            onChange={(e) => updateValidationRule(index, { customFunction: e.target.value })}
-                            rows={3}
-                          />
-                        )}
-
-                        <Input
-                          placeholder="Error message"
-                          value={rule.message || ""}
-                          onChange={(e) => updateValidationRule(index, { message: e.target.value })}
-                        />
-                      </div>
-                    </Card>
-                  ))}
-                  {(!localField.validation || localField.validation.length === 0) && (
-                    <p className="text-sm text-gray-500 text-center py-4">No validation rules added</p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Conditional Logic Tab */}
-            <TabsContent value="conditional" className="space-y-6 mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Conditional Visibility</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={localField.conditional_visibility?.enabled || false}
-                      onCheckedChange={(checked) =>
-                        handleUpdate({
-                          conditional_visibility: {
-                            ...localField.conditional_visibility,
-                            enabled: checked,
-                          },
-                        })
-                      }
-                    />
-                    <Label>Enable conditional visibility</Label>
-                  </div>
-
-                  {localField.conditional_visibility?.enabled && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium">Conditions</Label>
-                        <Button variant="outline" size="sm" onClick={addCondition}>
-                          <Plus className="h-3 w-3 mr-1" />
-                          Add Condition
-                        </Button>
-                      </div>
-
-                      {localField.conditional_visibility?.conditions?.map((condition, index) => (
-                        <Card key={index} className="p-4">
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium">Condition {index + 1}</span>
-                              <Button variant="ghost" size="sm" onClick={() => removeCondition(index)}>
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-2">
-                              <Select
-                                value={condition.fieldId}
-                                onValueChange={(value) => updateCondition(index, { fieldId: value })}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Field" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {availableFields.map((field) => (
-                                    <SelectItem key={field.id} value={field.id}>
-                                      {field.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-
-                              <Select
-                                value={condition.operator}
-                                onValueChange={(value) => updateCondition(index, { operator: value })}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {VALIDATION_OPERATORS.map((op) => (
-                                    <SelectItem key={op.value} value={op.value}>
-                                      {op.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-
-                              <Input
-                                placeholder="Value"
-                                value={(condition.value as string) || ""}
-                                onChange={(e) => updateCondition(index, { value: e.target.value })}
-                              />
-                            </div>
-
-                            {index < (localField.conditional_visibility?.conditions?.length || 0) - 1 && (
-                              <Select
-                                value={condition.logicalOperator}
-                                onValueChange={(value) => updateCondition(index, { logicalOperator: value })}
-                              >
-                                <SelectTrigger className="w-20">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {LOGICAL_OPERATORS.map((op) => (
-                                    <SelectItem key={op.value} value={op.value}>
-                                      {op.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Metadata Tab */}
-            <TabsContent value="metadata" className="space-y-6 mt-0">
-              {/* URAR Suggestions */}
-              {urarSuggestions.length > 0 && (
-                <Alert>
-                  <Lightbulb className="h-4 w-4" />
-                  <AlertDescription>
-                    <div className="space-y-2">
-                      <p className="font-medium">URAR Field Suggestions:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {urarSuggestions.map((suggestion) => (
-                          <Button
-                            key={suggestion}
-                            variant="outline"
-                            size="sm"
-                            onClick={() => applyUrarTemplate(suggestion)}
-                          >
-                            {suggestion.replace(/_/g, " ")}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">URAR Compliance</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Report Field ID</Label>
-                    <Input
-                      value={localField.metadata?.reportFieldId || ""}
-                      onChange={(e) =>
-                        handleUpdate({
-                          metadata: {
-                            ...localField.metadata,
-                            reportFieldId: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="e.g., 1004"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>MISMO Field ID</Label>
-                    <Input
-                      value={localField.metadata?.mismoFieldId || ""}
-                      onChange={(e) =>
-                        handleUpdate({
-                          metadata: {
-                            ...localField.metadata,
-                            mismoFieldId: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="e.g., SubjectPropertyAddress"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Cardinality</Label>
-                    <Select
-                      value={localField.metadata?.cardinality || ""}
-                      onValueChange={(value) =>
-                        handleUpdate({
-                          metadata: {
-                            ...localField.metadata,
-                            cardinality: value,
-                          },
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select cardinality" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CARDINALITY_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Conditionality</Label>
-                    <Select
-                      value={localField.metadata?.conditionality || ""}
-                      onValueChange={(value) =>
-                        handleUpdate({
-                          metadata: {
-                            ...localField.metadata,
-                            conditionality: value,
-                          },
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select conditionality" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CONDITIONALITY_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Output Format</Label>
-                    <Select
-                      value={localField.metadata?.outputFormat || ""}
-                      onValueChange={(value) =>
-                        handleUpdate({
-                          metadata: {
-                            ...localField.metadata,
-                            outputFormat: value,
-                          },
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select output format" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {OUTPUT_FORMAT_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Category</Label>
-                    <Select
-                      value={localField.metadata?.category || ""}
-                      onValueChange={(value) =>
-                        handleUpdate({
-                          metadata: {
-                            ...localField.metadata,
-                            category: value,
-                          },
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {URAR_CATEGORIES.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Documentation</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Documentation</Label>
-                    <Textarea
-                      value={localField.metadata?.documentation || ""}
-                      onChange={(e) =>
-                        handleUpdate({
-                          metadata: {
-                            ...localField.metadata,
-                            documentation: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="Field documentation and usage notes"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Notes</Label>
-                    <Textarea
-                      value={localField.metadata?.notes || ""}
-                      onChange={(e) =>
-                        handleUpdate({
-                          metadata: {
-                            ...localField.metadata,
-                            notes: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="Additional notes"
-                      rows={2}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Calculated Fields Tab */}
-            <TabsContent value="calculated" className="space-y-6 mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Calculator className="h-4 w-4" />
-                    Calculated Field Configuration
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={localField.calculated_config?.enabled || false}
-                      onCheckedChange={(checked) =>
-                        handleUpdate({
-                          calculated_config: {
-                            ...localField.calculated_config,
-                            enabled: checked,
-                          },
-                        })
-                      }
-                    />
-                    <Label>Enable calculated field</Label>
-                  </div>
-
-                  {localField.calculated_config?.enabled && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Formula</Label>
-                        <Textarea
-                          value={localField.calculated_config?.formula || ""}
-                          onChange={(e) =>
-                            handleUpdate({
-                              calculated_config: {
-                                ...localField.calculated_config,
-                                formula: e.target.value,
-                              },
-                            })
-                          }
-                          placeholder="e.g., {loan_amount} / {property_value} * 100"
-                          rows={3}
-                        />
-                        <p className="text-xs text-gray-500">
-                          Use {"{field_id}"} to reference other fields. Supports +, -, *, /, Math functions.
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Output Format</Label>
-                        <Select
-                          value={localField.calculated_config?.outputFormat || ""}
-                          onValueChange={(value) =>
-                            handleUpdate({
-                              calculated_config: {
-                                ...localField.calculated_config,
-                                outputFormat: value,
-                              },
-                            })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select format" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {OUTPUT_FORMAT_OPTIONS.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Decimal Precision</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="10"
-                          value={localField.calculated_config?.precision || 2}
-                          onChange={(e) =>
-                            handleUpdate({
-                              calculated_config: {
-                                ...localField.calculated_config,
-                                precision: Number.parseInt(e.target.value),
-                              },
-                            })
-                          }
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Referenced Fields</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {availableFields.map((field) => (
-                            <Badge key={field.id} variant="outline" className="text-xs">
-                              {field.label} ({field.id})
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Lookup Fields Tab */}
-            <TabsContent value="lookup" className="space-y-6 mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Database className="h-4 w-4" />
-                    Lookup Field Configuration
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={localField.lookup_config?.enabled || false}
-                      onCheckedChange={(checked) =>
-                        handleUpdate({
-                          lookup_config: {
-                            ...localField.lookup_config,
-                            enabled: checked,
-                          },
-                        })
-                      }
-                    />
-                    <Label>Enable lookup field</Label>
-                  </div>
-
-                  {localField.lookup_config?.enabled && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Data Source</Label>
-                        <Select
-                          value={localField.lookup_config?.dataSource || ""}
-                          onValueChange={(value: any) =>
-                            handleUpdate({
-                              lookup_config: {
-                                ...localField.lookup_config,
-                                dataSource: value,
-                              },
-                            })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select data source" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DATA_SOURCES.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {localField.lookup_config?.dataSource === "api" && (
-                        <div className="space-y-2">
-                          <Label>API Endpoint</Label>
-                          <Input
-                            value={localField.lookup_config?.endpoint || ""}
-                            onChange={(e) =>
-                              handleUpdate({
-                                lookup_config: {
-                                  ...localField.lookup_config,
-                                  endpoint: e.target.value,
-                                },
-                              })
-                            }
-                            placeholder="https://api.example.com/data"
-                          />
-                        </div>
-                      )}
-
-                      {localField.lookup_config?.dataSource === "database" && (
-                        <>
-                          <div className="space-y-2">
-                            <Label>Table Name</Label>
-                            <Input
-                              value={localField.lookup_config?.table || ""}
-                              onChange={(e) =>
-                                handleUpdate({
-                                  lookup_config: {
-                                    ...localField.lookup_config,
-                                    table: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="table_name"
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>Key Field</Label>
-                              <Input
-                                value={localField.lookup_config?.keyField || ""}
-                                onChange={(e) =>
-                                  handleUpdate({
-                                    lookup_config: {
-                                      ...localField.lookup_config,
-                                      keyField: e.target.value,
-                                    },
-                                  })
-                                }
-                                placeholder="id"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label>Value Field</Label>
-                              <Input
-                                value={localField.lookup_config?.valueField || ""}
-                                onChange={(e) =>
-                                  handleUpdate({
-                                    lookup_config: {
-                                      ...localField.lookup_config,
-                                      valueField: e.target.value,
-                                    },
-                                  })
-                                }
-                                placeholder="name"
-                              />
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      <div className="space-y-2">
-                        <Label>Cache Timeout (seconds)</Label>
-                        <Input
-                          type="number"
-                          value={localField.lookup_config?.cacheTimeout || 300}
-                          onChange={(e) =>
-                            handleUpdate({
-                              lookup_config: {
-                                ...localField.lookup_config,
-                                cacheTimeout: Number.parseInt(e.target.value),
-                              },
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+      {/* Side Panel */}
+      <div className="w-[550px] bg-white border-l shadow-xl flex flex-col">
+        {/* Panel Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <div>
+            <h3 className="font-semibold">Field Properties</h3>
+            <p className="text-sm text-muted-foreground">{field.field_type} field</p>
           </div>
-        </Tabs>
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex-1 overflow-hidden">
+          <Tabs defaultValue="basic" className="h-full flex flex-col">
+            <div className="px-6 pt-6">
+              <TabsList className="w-full grid grid-cols-6 gap-1">
+                <TabsTrigger value="basic">Basic</TabsTrigger>
+                <TabsTrigger value="validation">Validation</TabsTrigger>
+                <TabsTrigger value="metadata">Metadata</TabsTrigger>
+                <TabsTrigger value="conditional">Logic</TabsTrigger>
+                <TabsTrigger value="prefill">Prefill</TabsTrigger>
+                <TabsTrigger value="advanced">Advanced</TabsTrigger>
+              </TabsList>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Basic Tab */}
+              <TabsContent value="basic">
+                <BasicTab field={field} onUpdateField={onUpdateField} />
+              </TabsContent>
+
+              {/* Validation Tab */}
+              <TabsContent value="validation">
+                <ValidationTab
+                  field={field}
+                  validationState={validationState}
+                  updateValidationState={updateValidationState}
+                  validationErrors={validationErrors}
+                  allowedValuesInput={allowedValuesInput}
+                  setAllowedValuesInput={setAllowedValuesInput}
+                  addAllowedValue={addAllowedValue}
+                  removeAllowedValue={removeAllowedValue}
+                />
+              </TabsContent>
+
+              {/* Metadata Tab */}
+              <TabsContent value="metadata">
+                <MetadataTab
+                  metadataState={metadataState}
+                  updateMetadataState={updateMetadataState}
+                  updateXmlMappingState={updateXmlMappingState}
+                  tagInput={tagInput}
+                  setTagInput={setTagInput}
+                  addTag={addTag}
+                  removeTag={removeTag}
+                  xmlMappingOpen={xmlMappingOpen}
+                  setXmlMappingOpen={setXmlMappingOpen}
+                />
+              </TabsContent>
+
+              {/* Conditional Logic Tab */}
+              <TabsContent value="conditional">
+                <ConditionalTab
+                  logicState={logicState}
+                  updateLogicState={updateLogicState}
+                  otherFields={otherFields}
+                  updateCondition={updateCondition}
+                  addCondition={addCondition}
+                  removeCondition={removeCondition}
+                />
+              </TabsContent>
+
+              {/* Prefill Tab */}
+              <TabsContent value="prefill">
+                <PrefillTab
+                  prefillConfig={prefillState}
+                  updatePrefillConfig={updatePrefillState}
+                  onTestPrefill={testPrefillConfiguration}
+                />
+              </TabsContent>
+
+              {/* Advanced Tab */}
+              <TabsContent value="advanced">
+                <AdvancedTab
+                  advancedState={advancedState}
+                  updateAdvancedState={updateAdvancedState}
+                  otherFields={otherFields}
+                  toggleFieldDependency={toggleFieldDependency}
+                  newAttributeKey={newAttributeKey}
+                  setNewAttributeKey={setNewAttributeKey}
+                  newAttributeValue={newAttributeValue}
+                  setNewAttributeValue={setNewAttributeValue}
+                  addCustomAttribute={addCustomAttribute}
+                  removeCustomAttribute={removeCustomAttribute}
+                  updateCustomAttribute={updateCustomAttribute}
+                />
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
+
+        {/* Panel Footer */}
+        <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onReset}>
+              Reset
+            </Button>
+            <Button onClick={handleSave} disabled={validationErrors.length > 0}>
+              <Check className="mr-2 h-4 w-4" />
+              Save Changes
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -548,6 +548,18 @@ export const LookupConfigSchema = z.object({
   cacheTimeout: z.number().optional(),
 })
 
+// Prefill configuration schema
+export const PrefillConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  source: z.enum(["api", "internal", "lookup"]),
+  key: z.string().optional(),
+  endpoint: z.string().optional(),
+  fieldMap: z.record(z.string()).optional(),
+  fallbackValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  cacheTimeout: z.number().optional().default(300),
+  retryAttempts: z.number().optional().default(3),
+})
+
 export const FormFieldMetadataSchema = z.object({
   // URAR/MISMO compliance fields
   reportFieldId: z.string().optional(),
@@ -575,6 +587,7 @@ export const FormFieldMetadataSchema = z.object({
   custom: z.record(z.any()).optional(),
 })
 
+// Fixed: Use a single schema instead of discriminated union with extend
 export const FormFieldSchema = z.object({
   id: z.string().uuid(),
   section_id: z.string().uuid(),
@@ -592,6 +605,7 @@ export const FormFieldSchema = z.object({
   conditional_visibility: ConditionalVisibilitySchema.optional(),
   calculated_config: CalculatedConfigSchema.optional(),
   lookup_config: LookupConfigSchema.optional(),
+  prefill_config: PrefillConfigSchema.optional(),
   metadata: FormFieldMetadataSchema.optional(),
 
   // Timestamps
@@ -661,6 +675,8 @@ export interface CalculatedConfig extends z.infer<typeof CalculatedConfigSchema>
 
 export interface LookupConfig extends z.infer<typeof LookupConfigSchema> {}
 
+export interface PrefillConfig extends z.infer<typeof PrefillConfigSchema> {}
+
 export interface FieldOption extends z.infer<typeof FieldOptionSchema> {}
 
 // Form builder utility types
@@ -725,6 +741,7 @@ export const createDefaultField = (
     conditional_visibility: { enabled: false },
     calculated_config: config.supportsCalculation ? { enabled: false } : undefined,
     lookup_config: config.supportsLookup ? { enabled: false, dataSource: "static" } : undefined,
+    prefill_config: { enabled: false, source: "internal" },
     metadata: {},
   }
 }

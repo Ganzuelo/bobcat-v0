@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Plus, Edit, Trash2, Zap, AlertTriangle, CheckCircle } from "lucide-react"
+import { useRuleContext } from "@/hooks/use-rule-context"
 
 interface Rule {
   id: string
@@ -62,6 +63,16 @@ export default function RulesEnginePage() {
 
   const [selectedRule, setSelectedRule] = useState<Rule | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const { setCurrentRule } = useRuleContext()
+
+  useEffect(() => {
+    setCurrentRule(selectedRule)
+
+    // Cleanup
+    return () => {
+      setCurrentRule(null)
+    }
+  }, [selectedRule, setCurrentRule])
 
   const getRuleTypeColor = (type: Rule["type"]) => {
     switch (type) {

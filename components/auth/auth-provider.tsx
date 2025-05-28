@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react"
 import { supabase } from "@/lib/supabase-client"
 import { AuthService } from "@/lib/auth-service"
 import type { AuthContextType, AuthUser, UserProfile } from "@/lib/auth-types"
@@ -23,14 +23,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const initialized = useRef(false)
 
   useEffect(() => {
+    // Prevent double initialization in development
+    if (initialized.current) return
+    initialized.current = true
+
+    let mounted = true
+
     // Get initial session
     const getInitialSession = async () => {
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession()
+
+        if (!mounted) return
 
         if (session?.user) {
           setUser(session.user as AuthUser)
@@ -39,7 +48,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } catch (error) {
         console.error("Error getting initial session:", error)
       } finally {
-        setLoading(false)
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
 
@@ -49,6 +60,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
+
       try {
         if (session?.user) {
           setUser(session.user as AuthUser)
@@ -60,11 +73,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } catch (error) {
         console.error("Error in auth state change:", error)
       } finally {
-        setLoading(false)
+        if (mounted) {
+          setLoading(false)
+        }
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const loadUserProfile = async (authUser: any) => {
@@ -74,7 +92,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (error) {
         console.error("Error loading/creating user profile:", error)
-        // Don't throw error, just log it and continue without profile
         setProfile(null)
       } else {
         setProfile(profile)
@@ -104,13 +121,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return { error: new Error("No user logged in") }
 
-    // Update profile in our users table
     const { data, error } = await AuthService.updateUserProfile(user.id, updates)
 
     if (!error && data) {
       setProfile(data)
 
-      // Also update user metadata in Supabase Auth if relevant fields changed
       const metadataUpdates: any = {}
       if (updates.first_name !== undefined) metadataUpdates.first_name = updates.first_name
       if (updates.last_name !== undefined) metadataUpdates.last_name = updates.last_name

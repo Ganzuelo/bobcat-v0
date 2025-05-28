@@ -1,81 +1,127 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Trash2, GripVertical, Eye, Save, FileText } from "lucide-react"
-
-interface FormField {
-  id: string
-  type: "text" | "number" | "email" | "textarea" | "select" | "checkbox" | "date"
-  label: string
-  placeholder?: string
-  required: boolean
-  options?: string[]
-}
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Plus, Search, Edit, Trash2, Copy, BarChart3 } from "lucide-react"
+import { DatabaseService } from "@/lib/database-service"
+import { CreateFormModal } from "@/components/form-builder/create-form-modal"
+import { createFormStructure, type FormConfig } from "@/lib/form-templates"
+import type { Form } from "@/lib/database-types"
 
 export default function FormBuilderPage() {
-  const [formName, setFormName] = useState("")
-  const [formDescription, setFormDescription] = useState("")
-  const [formType, setFormType] = useState<"urar" | "custom" | "inspection">("custom")
-  const [fields, setFields] = useState<FormField[]>([])
+  const [forms, setForms] = useState<Form[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [typeFilter, setTypeFilter] = useState<string>("all")
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const router = useRouter()
 
-  const addField = (type: FormField["type"]) => {
-    const newField: FormField = {
-      id: `field_${Date.now()}`,
-      type,
-      label: `New ${type} field`,
-      required: false,
-      ...(type === "select" && { options: ["Option 1", "Option 2"] }),
+  useEffect(() => {
+    loadForms()
+  }, [])
+
+  const loadForms = async () => {
+    setLoading(true)
+    try {
+      const userId = await DatabaseService.getCurrentUserId()
+      const formsData = await DatabaseService.getForms(userId || undefined)
+      setForms(formsData)
+    } catch (error) {
+      console.error("Error loading forms:", error)
+    } finally {
+      setLoading(false)
     }
-    setFields([...fields, newField])
   }
 
-  const updateField = (id: string, updates: Partial<FormField>) => {
-    setFields(fields.map((field) => (field.id === id ? { ...field, ...updates } : field)))
+  const filteredForms = forms.filter((form) => {
+    const matchesSearch =
+      form.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      form.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = statusFilter === "all" || form.status === statusFilter
+    const matchesType = typeFilter === "all" || form.form_type === typeFilter
+
+    return matchesSearch && matchesStatus && matchesType
+  })
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "published":
+        return "bg-green-100 text-green-800"
+      case "draft":
+        return "bg-yellow-100 text-yellow-800"
+      case "archived":
+        return "bg-gray-100 text-gray-800"
+      case "template":
+        return "bg-blue-100 text-blue-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
   }
 
-  const removeField = (id: string) => {
-    setFields(fields.filter((field) => field.id !== id))
+  // Get display name for form type
+  const getFormTypeDisplay = (formType: string) => {
+    // Check if there's an original form type in settings
+    const form = forms.find((f) => f.form_type === formType)
+    if (form?.settings?.originalFormType) {
+      switch (form.settings.originalFormType) {
+        case "uad_3_6":
+          return "UAD 3.6"
+        case "uad_2_6":
+          return "UAD 2.6"
+        case "bpo":
+          return "BPO"
+        default:
+          return formType.charAt(0).toUpperCase() + formType.slice(1)
+      }
+    }
+
+    // Default display based on database form_type
+    switch (formType) {
+      case "urar":
+        return "URAR"
+      case "assessment":
+        return "Assessment"
+      case "custom":
+        return "Custom"
+      default:
+        return formType.charAt(0).toUpperCase() + formType.slice(1)
+    }
   }
 
-  const urarTemplate = () => {
-    const urarFields: FormField[] = [
-      { id: "property_address", type: "text", label: "Property Address", required: true },
-      { id: "property_city", type: "text", label: "City", required: true },
-      { id: "property_state", type: "text", label: "State", required: true },
-      { id: "property_zip", type: "text", label: "ZIP Code", required: true },
-      { id: "borrower_name", type: "text", label: "Borrower Name", required: true },
-      { id: "lender_name", type: "text", label: "Lender Name", required: true },
-      { id: "appraiser_name", type: "text", label: "Appraiser Name", required: true },
-      { id: "appraiser_license", type: "text", label: "Appraiser License", required: true },
-      { id: "appraisal_date", type: "date", label: "Appraisal Date", required: true },
-      { id: "property_value", type: "number", label: "Property Value ($)", required: true },
-      { id: "loan_amount", type: "number", label: "Loan Amount ($)", required: true },
-      {
-        id: "property_type",
-        type: "select",
-        label: "Property Type",
-        required: true,
-        options: ["Single Family", "Condo", "Townhouse", "Multi Family"],
-      },
-      {
-        id: "occupancy_type",
-        type: "select",
-        label: "Occupancy Type",
-        required: true,
-        options: ["Owner Occupied", "Investment", "Second Home"],
-      },
-    ]
-    setFields(urarFields)
-    setFormName("URAR - Uniform Residential Appraisal Report")
-    setFormDescription("Standard residential appraisal report form")
-    setFormType("urar")
+  const deleteForm = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this form?")) return
+
+    try {
+      await DatabaseService.deleteForm(id)
+      setForms(forms.filter((f) => f.id !== id))
+    } catch (error) {
+      console.error("Error deleting form:", error)
+    }
+  }
+
+  const handleCreateForm = async (formConfig: FormConfig) => {
+    try {
+      // Create form structure based on config
+      const formStructure = createFormStructure(formConfig)
+
+      // Save the form structure to database
+      const savedStructure = await DatabaseService.saveFormStructure(formStructure)
+
+      // Navigate to the form builder with the new form
+      router.push(`/form-builder/${savedStructure.form.id}`)
+    } catch (error) {
+      console.error("Error creating form:", error)
+    }
+  }
+
+  const handleEditForm = (id: string) => {
+    router.push(`/form-builder/${id}`)
   }
 
   return (
@@ -83,186 +129,135 @@ export default function FormBuilderPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Form Builder</h1>
-          <p className="text-muted-foreground">Create and customize forms with drag-and-drop functionality</p>
+          <p className="text-muted-foreground">Create and manage your forms</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Eye className="mr-2 h-4 w-4" />
-            Preview
-          </Button>
-          <Button>
-            <Save className="mr-2 h-4 w-4" />
-            Save Form
-          </Button>
-        </div>
+        <Button onClick={() => setShowCreateModal(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create Form
+        </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Form Configuration */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Form Configuration</CardTitle>
-              <CardDescription>Set up your form's basic information and type</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="form-name">Form Name</Label>
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="form-name"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="Enter form name"
+                  placeholder="Search forms..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
                 />
               </div>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value="template">Template</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="urar">URAR</SelectItem>
+                <SelectItem value="assessment">Assessment</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
+                <SelectItem value="survey">Survey</SelectItem>
+                <SelectItem value="application">Application</SelectItem>
+                <SelectItem value="inspection">Inspection</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="form-description">Description</Label>
-                <Textarea
-                  id="form-description"
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="Describe your form"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="form-type">Form Type</Label>
-                <Select value={formType} onValueChange={(value: any) => setFormType(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="custom">Custom Form</SelectItem>
-                    <SelectItem value="urar">URAR Report</SelectItem>
-                    <SelectItem value="inspection">Property Inspection</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button onClick={urarTemplate} variant="outline" className="w-full">
-                <FileText className="mr-2 h-4 w-4" />
-                Load URAR Template
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Field Types */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Field Types</CardTitle>
-              <CardDescription>Drag or click to add fields to your form</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { type: "text", label: "Text" },
-                  { type: "number", label: "Number" },
-                  { type: "email", label: "Email" },
-                  { type: "textarea", label: "Textarea" },
-                  { type: "select", label: "Select" },
-                  { type: "checkbox", label: "Checkbox" },
-                  { type: "date", label: "Date" },
-                ].map((fieldType) => (
-                  <Button
-                    key={fieldType.type}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addField(fieldType.type as FormField["type"])}
-                    className="justify-start"
-                  >
-                    <Plus className="mr-2 h-3 w-3" />
-                    {fieldType.label}
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      {/* Forms Grid */}
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-
-        {/* Form Builder */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Form Fields</CardTitle>
-              <CardDescription>Configure your form fields and their properties</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {fields.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                  <p>No fields added yet</p>
-                  <p className="text-sm">Add fields from the panel on the left</p>
+      ) : filteredForms.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-12">
+            <div className="text-muted-foreground mb-4">
+              {forms.length === 0 ? "No forms created yet" : "No forms match your filters"}
+            </div>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Your First Form
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredForms.map((form) => (
+            <Card key={form.id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">{form.title}</CardTitle>
+                    <CardDescription className="line-clamp-2">{form.description || "No description"}</CardDescription>
+                  </div>
+                  <Badge className={getStatusColor(form.status)}>{form.status}</Badge>
                 </div>
-              ) : (
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-4">
-                  {fields.map((field, index) => (
-                    <Card key={field.id} className="p-4">
-                      <div className="flex items-start gap-4">
-                        <GripVertical className="h-5 w-5 text-muted-foreground mt-2 cursor-move" />
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{getFormTypeDisplay(form.form_type)}</Badge>
+                    <Badge variant="outline">v{form.version}</Badge>
+                    {form.tags && form.tags.length > 0 && <Badge variant="secondary">{form.tags[0]}</Badge>}
+                  </div>
 
-                        <div className="flex-1 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <Badge variant="secondary">{field.type}</Badge>
-                            <Button variant="ghost" size="sm" onClick={() => removeField(field.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                  <div className="text-sm text-muted-foreground">
+                    Updated {new Date(form.updated_at).toLocaleDateString()}
+                  </div>
 
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label>Field Label</Label>
-                              <Input
-                                value={field.label}
-                                onChange={(e) => updateField(field.id, { label: e.target.value })}
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label>Placeholder</Label>
-                              <Input
-                                value={field.placeholder || ""}
-                                onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
-                                placeholder="Enter placeholder text"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`required-${field.id}`}
-                              checked={field.required}
-                              onChange={(e) => updateField(field.id, { required: e.target.checked })}
-                              className="rounded border-gray-300"
-                            />
-                            <Label htmlFor={`required-${field.id}`}>Required field</Label>
-                          </div>
-
-                          {field.type === "select" && (
-                            <div className="space-y-2">
-                              <Label>Options (one per line)</Label>
-                              <Textarea
-                                value={field.options?.join("\n") || ""}
-                                onChange={(e) =>
-                                  updateField(field.id, {
-                                    options: e.target.value.split("\n").filter(Boolean),
-                                  })
-                                }
-                                placeholder="Option 1&#10;Option 2&#10;Option 3"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                  <div className="flex gap-2">
+                    <Button size="sm" className="flex-1" onClick={() => handleEditForm(form.id)}>
+                      <Edit className="mr-2 h-3 w-3" />
+                      Edit
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <BarChart3 className="h-3 w-3" />
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => deleteForm(form.id)}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      </div>
+      )}
+
+      <CreateFormModal open={showCreateModal} onOpenChange={setShowCreateModal} onCreateForm={handleCreateForm} />
     </div>
   )
 }

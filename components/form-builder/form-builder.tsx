@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Save, Settings, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { DatabaseService } from "@/lib/database-service"
+import { supabase } from "@/lib/supabase-client"
 import { FieldPalette } from "./field-palette"
 import { FormCanvas } from "./form-canvas"
 import { FormPreview } from "./form-preview"
@@ -38,9 +38,21 @@ export function FormBuilder({ formId, onSave }: FormBuilderProps) {
   const [draggedItem, setDraggedItem] = useState<any>(null)
   const { toast } = useToast()
 
+  // Add this right after all the useState declarations
+  useEffect(() => {
+    console.log("FormBuilder component mounted successfully")
+    console.log("formStructure:", formStructure)
+  }, [])
+
+  // Add this simple test function
+  const testFunction = () => {
+    console.log("TEST FUNCTION CALLED")
+    alert("Test function works!")
+  }
+
   useEffect(() => {
     console.log("FormBuilder mounted with formId:", formId)
-    if (formId) {
+    if (formId && formId !== "new") {
       loadForm()
     } else {
       initializeNewForm()
@@ -61,8 +73,8 @@ export function FormBuilder({ formId, onSave }: FormBuilderProps) {
         tags: [],
         settings: {},
         metadata: {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: "",
+        updated_at: "",
       },
       pages: [
         {
@@ -72,8 +84,8 @@ export function FormBuilder({ formId, onSave }: FormBuilderProps) {
           description: "",
           page_order: 1,
           settings: {},
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          created_at: "",
+          updated_at: "",
           sections: [],
         },
       ],
@@ -84,14 +96,67 @@ export function FormBuilder({ formId, onSave }: FormBuilderProps) {
   }
 
   const loadForm = async () => {
-    if (!formId) return
+    if (!formId || formId === "new") return
 
     console.log("Loading form with ID:", formId)
     setLoading(true)
     setError(null)
 
     try {
-      const structure = await DatabaseService.getFormStructure(formId)
+      // Load form data
+      const { data: form, error: formError } = await supabase.from("forms").select("*").eq("id", formId).single()
+
+      if (formError) throw formError
+
+      // Load pages
+      const { data: pages, error: pagesError } = await supabase
+        .from("form_pages")
+        .select("*")
+        .eq("form_id", formId)
+        .order("page_order")
+
+      if (pagesError) throw pagesError
+
+      // Load sections and fields for each page
+      const pagesWithSections = await Promise.all(
+        pages.map(async (page) => {
+          const { data: sections, error: sectionsError } = await supabase
+            .from("form_sections")
+            .select("*")
+            .eq("page_id", page.id)
+            .order("section_order")
+
+          if (sectionsError) throw sectionsError
+
+          const sectionsWithFields = await Promise.all(
+            sections.map(async (section) => {
+              const { data: fields, error: fieldsError } = await supabase
+                .from("form_fields")
+                .select("*")
+                .eq("section_id", section.id)
+                .order("field_order")
+
+              if (fieldsError) throw fieldsError
+
+              return { ...section, fields }
+            }),
+          )
+
+          return { ...page, sections: sectionsWithFields }
+        }),
+      )
+
+      // Load rules
+      const { data: rules, error: rulesError } = await supabase.from("form_rules").select("*").eq("form_id", formId)
+
+      if (rulesError) throw rulesError
+
+      const structure = {
+        form,
+        pages: pagesWithSections,
+        rules: rules || [],
+      }
+
       console.log("Loaded form structure:", structure)
       setFormStructure(structure)
     } catch (error) {
@@ -115,14 +180,15 @@ export function FormBuilder({ formId, onSave }: FormBuilderProps) {
       prev
         ? {
             ...prev,
-            form: { ...prev.form, ...updates, updated_at: new Date().toISOString() },
+            form: { ...prev.form, ...updates },
           }
         : null,
     )
   }
 
+  // SIMPLIFIED SAVE FUNCTION - FOCUS ONLY ON SAVING THE FORM FIRST
   const saveForm = async () => {
-    console.log("Save form clicked")
+    console.log("=== SAVE FORM CLICKED ===")
 
     if (!formStructure) {
       console.error("No form structure to save")
@@ -151,50 +217,61 @@ export function FormBuilder({ formId, onSave }: FormBuilderProps) {
     try {
       console.log("Getting current user...")
       // Get current user ID
-      const userId = await DatabaseService.getCurrentUserId()
-      console.log("Current user ID:", userId)
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
 
-      if (!userId) {
+      if (userError) {
+        console.error("Error getting user:", userError)
+        throw new Error("Failed to get current user")
+      }
+
+      if (!user) {
         throw new Error("You must be logged in to save forms")
       }
 
-      let savedForm: Form
+      console.log("Current user ID:", user.id)
 
-      if (formId && formStructure.form.created_at) {
-        console.log("Updating existing form...")
-        // Update existing form
-        savedForm = await DatabaseService.updateForm(formId, {
-          ...formStructure.form,
-          updated_at: new Date().toISOString(),
-        })
-        console.log("Form updated successfully:", savedForm)
-
-        toast({
-          title: "Success",
-          description: "Form updated successfully",
-        })
-      } else {
-        console.log("Creating new form...")
-        // Create new form
-        const formToCreate = {
-          ...formStructure.form,
-          created_by: userId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-        console.log("Form data to create:", formToCreate)
-
-        savedForm = await DatabaseService.createForm(formToCreate)
-        console.log("Form created successfully:", savedForm)
-
-        toast({
-          title: "Success",
-          description: "Form created successfully",
-        })
+      // STEP 1: Save just the form first to verify basic functionality
+      const formData = {
+        ...formStructure.form,
+        created_by: user.id,
+        updated_at: new Date().toISOString(),
       }
 
-      // Update the form structure with the saved form data
+      // If it's a new form, set created_at
+      if (!formData.created_at) {
+        formData.created_at = new Date().toISOString()
+      }
+
+      console.log("Saving form data:", formData)
+
+      let savedForm: Form
+
+      if (formId && formId !== "new") {
+        // Update existing form
+        const { data, error } = await supabase.from("forms").update(formData).eq("id", formId).select().single()
+
+        if (error) throw error
+        savedForm = data
+        console.log("Form updated successfully:", savedForm)
+      } else {
+        // Create new form
+        const { data, error } = await supabase.from("forms").insert(formData).select().single()
+
+        if (error) throw error
+        savedForm = data
+        console.log("Form created successfully:", savedForm)
+      }
+
+      // Update the form structure with the saved form
       setFormStructure((prev) => (prev ? { ...prev, form: savedForm } : null))
+
+      toast({
+        title: "Success",
+        description: "Form saved successfully",
+      })
 
       onSave?.(savedForm)
     } catch (error) {
@@ -318,9 +395,7 @@ export function FormBuilder({ formId, onSave }: FormBuilderProps) {
               ...page,
               sections: page.sections.map((section) => ({
                 ...section,
-                fields: section.fields.map((field) =>
-                  field.id === fieldId ? { ...field, ...updates, updated_at: new Date().toISOString() } : field,
-                ),
+                fields: section.fields.map((field) => (field.id === fieldId ? { ...field, ...updates } : field)),
               })),
             })),
           }
@@ -479,7 +554,17 @@ export function FormBuilder({ formId, onSave }: FormBuilderProps) {
               <Settings className="mr-2 h-4 w-4" />
               Settings
             </Button>
-            <Button onClick={saveForm} disabled={saving}>
+            <Button variant="outline" onClick={testFunction}>
+              Test Button
+            </Button>
+            <Button
+              onClick={() => {
+                console.log("BUTTON CLICKED - This should appear in console")
+                alert("Button clicked!")
+                saveForm()
+              }}
+              disabled={saving}
+            >
               <Save className="mr-2 h-4 w-4" />
               {saving ? "Saving..." : "Save Form"}
             </Button>

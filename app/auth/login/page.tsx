@@ -10,42 +10,56 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/components/auth/auth-provider"
-import { Eye, EyeOff, Building2, FileText, BarChart3, Shield, Zap, ChevronLeft, ChevronRight } from "lucide-react"
+import { Eye, EyeOff, Cat, FileText, Zap, BarChart3, Shield, Grid3X3, ChevronLeft, ChevronRight, Settings } from 'lucide-react'
 
 const features = [
   {
-    icon: FileText,
-    title: "Intelligent Form Builder",
+    icon: Grid3X3,
+    title: "Drag & Drop Form Builder",
     description:
-      "Create URAR-compliant forms with drag-and-drop simplicity. Pre-built templates and smart field validation ensure accuracy every time.",
+      "Create URAR-compliant forms with our intuitive drag-and-drop interface. Pre-built field types, smart validation, and responsive layouts make form creation effortless.",
   },
   {
     icon: Zap,
-    title: "Automated Rules Engine",
+    title: "Intelligent Rules Engine",
     description:
-      "Set up business rules that automatically validate data, calculate values, and route forms for review. Reduce errors and save time.",
+      "Set up business rules that automatically validate data, calculate values, and route forms for review. Reduce errors and ensure compliance with automated workflows.",
   },
   {
     icon: BarChart3,
     title: "Smart Decision Manager",
     description:
-      "AI-powered insights help you make better decisions faster. Track performance, identify trends, and optimize your workflow.",
+      "AI-powered insights help you make better decisions faster. Track form performance, identify bottlenecks, and optimize your appraisal workflow with real-time analytics.",
   },
   {
     icon: Shield,
-    title: "MISMO Compliance",
+    title: "MISMO & UAD Compliance",
     description:
-      "Built-in compliance with URAR and MISMO standards. Automatic field mapping and validation ensure regulatory compliance.",
+      "Built-in compliance with URAR, MISMO, and UAD 3.6 standards. Automatic field mapping, XML export, and validation ensure regulatory compliance every time.",
+  },
+  {
+    icon: FileText,
+    title: "Dynamic Field Prefill",
+    description:
+      "Automatically populate forms with data from multiple sources - internal context, external APIs, or lookup tables. Save time and reduce data entry errors.",
+  },
+  {
+    icon: Settings,
+    title: "Advanced Customization",
+    description:
+      "Power-user features including conditional logic, calculated fields, custom validation rules, and XML mapping. Build exactly what your workflow needs.",
   },
 ]
 
 export default function LoginPage() {
-  // Add these safety checks and error handling
   const [mounted, setMounted] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+  const [rememberPassword, setRememberPassword] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [currentFeature, setCurrentFeature] = useState(0)
@@ -56,19 +70,77 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true)
+
+    // Load saved credentials on mount
+    loadSavedCredentials()
   }, [])
 
-  // Add this safety check before the auto-advance carousel useEffect
+  // Load saved credentials from localStorage
+  const loadSavedCredentials = () => {
+    try {
+      const savedEmail = localStorage.getItem("bobcat_saved_email")
+      const savedPassword = localStorage.getItem("bobcat_saved_password")
+      const savedRememberMe = localStorage.getItem("bobcat_remember_me") === "true"
+      const savedRememberPassword = localStorage.getItem("bobcat_remember_password") === "true"
+
+      if (savedEmail && savedRememberMe) {
+        setEmail(savedEmail)
+        setRememberMe(true)
+      }
+
+      if (savedPassword && savedRememberPassword) {
+        setPassword(savedPassword)
+        setRememberPassword(true)
+      }
+    } catch (error) {
+      console.error("Error loading saved credentials:", error)
+    }
+  }
+
+  // Save credentials to localStorage
+  const saveCredentials = () => {
+    try {
+      if (rememberMe && email) {
+        localStorage.setItem("bobcat_saved_email", email)
+        localStorage.setItem("bobcat_remember_me", "true")
+      } else {
+        localStorage.removeItem("bobcat_saved_email")
+        localStorage.removeItem("bobcat_remember_me")
+      }
+
+      if (rememberPassword && password) {
+        localStorage.setItem("bobcat_saved_password", password)
+        localStorage.setItem("bobcat_remember_password", "true")
+      } else {
+        localStorage.removeItem("bobcat_saved_password")
+        localStorage.removeItem("bobcat_remember_password")
+      }
+    } catch (error) {
+      console.error("Error saving credentials:", error)
+    }
+  }
+
+  // Clear saved credentials
+  const clearSavedCredentials = () => {
+    try {
+      localStorage.removeItem("bobcat_saved_email")
+      localStorage.removeItem("bobcat_saved_password")
+      localStorage.removeItem("bobcat_remember_me")
+      localStorage.removeItem("bobcat_remember_password")
+    } catch (error) {
+      console.error("Error clearing credentials:", error)
+    }
+  }
+
   useEffect(() => {
     if (!mounted) return
 
     const interval = setInterval(() => {
       setCurrentFeature((prev) => (prev + 1) % features.length)
-    }, 4000)
+    }, 5000) // Slightly longer interval for more features
     return () => clearInterval(interval)
   }, [mounted])
 
-  // Replace the redirect useEffect with this safer version
   useEffect(() => {
     if (!mounted || authLoading) return
 
@@ -78,7 +150,6 @@ export default function LoginPage() {
     }
   }, [user, authLoading, router, searchParams, mounted])
 
-  // Replace the handleSubmit function with this safer version
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!mounted) return
@@ -92,9 +163,17 @@ export default function LoginPage() {
         return
       }
 
+      // Save credentials before attempting login
+      saveCredentials()
+
       const result = await signIn(email, password)
       if (result?.error) {
         setError(result.error.message || "Login failed")
+        // Clear saved password on login failure for security
+        if (rememberPassword) {
+          localStorage.removeItem("bobcat_saved_password")
+          setRememberPassword(false)
+        }
       } else {
         const redirectTo = searchParams?.get("redirectTo") || "/dashboard"
         router.push(redirectTo)
@@ -124,7 +203,6 @@ export default function LoginPage() {
     )
   }
 
-  // Add this early return for safety
   if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -133,19 +211,21 @@ export default function LoginPage() {
     )
   }
 
-  // Don't render if user is already authenticated (will redirect)
   if (user) {
     return null
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex" aria-label="Login page">
       {/* Left Panel - Login Form (40% width) */}
-      <div className="w-2/5 flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
+      <div
+        className="w-2/5 flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8"
+        aria-label="Login form section"
+      >
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <div className="flex justify-center">
-              <Building2 className="h-12 w-12 text-primary" />
+              <Cat className="h-12 w-12 text-primary" />
             </div>
             <h2 className="mt-6 text-3xl font-bold text-gray-900">Welcome back</h2>
             <p className="mt-2 text-sm text-gray-600">Sign in to your Project Bobcat account</p>
@@ -157,7 +237,7 @@ export default function LoginPage() {
               <CardDescription>Enter your credentials to access your account</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6" role="form" aria-label="Sign in to your account">
                 {error && (
                   <Alert variant="destructive">
                     <AlertDescription>{error}</AlertDescription>
@@ -177,6 +257,8 @@ export default function LoginPage() {
                     placeholder="Enter your email"
                     className="h-12"
                     disabled={loading}
+                    aria-label="Email address"
+                    aria-describedby="email-description"
                   />
                 </div>
 
@@ -194,6 +276,8 @@ export default function LoginPage() {
                       placeholder="Enter your password"
                       className="h-12 pr-12"
                       disabled={loading}
+                      aria-label="Password"
+                      aria-describedby="password-description"
                     />
                     <Button
                       type="button"
@@ -202,10 +286,55 @@ export default function LoginPage() {
                       className="absolute right-0 top-0 h-12 px-3 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={loading}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
+                </div>
+
+                {/* Remember Me Options */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember-email"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                      disabled={loading}
+                      aria-label="Remember my email address"
+                    />
+                    <Label htmlFor="remember-email" className="text-sm font-normal cursor-pointer">
+                      Remember my email address
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember-password"
+                      checked={rememberPassword}
+                      onCheckedChange={(checked) => setRememberPassword(checked as boolean)}
+                      disabled={loading}
+                      aria-label="Remember my password (less secure)"
+                    />
+                    <Label htmlFor="remember-password" className="text-sm font-normal cursor-pointer">
+                      Remember my password <span className="text-xs text-gray-500">(less secure)</span>
+                    </Label>
+                  </div>
+
+                  {(rememberMe || rememberPassword) && (
+                    <div className="text-xs text-gray-500">
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs"
+                        onClick={clearSavedCredentials}
+                        aria-label="Clear saved login credentials"
+                      >
+                        Clear saved credentials
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -220,53 +349,33 @@ export default function LoginPage() {
                   {loading ? "Signing in..." : "Sign in"}
                 </Button>
               </form>
-
-              <div className="mt-6 text-center">
-                <p className="text-sm text-gray-600">
-                  Don't have an account?{" "}
-                  <Link href="/auth/signup" className="font-medium text-primary hover:text-primary/80">
-                    Sign up for free
-                  </Link>
-                </p>
-              </div>
             </CardContent>
           </Card>
         </div>
       </div>
 
       {/* Right Panel - Feature Carousel (60% width) */}
-      <div className="w-3/5 relative">
-        {/* Background Image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: "url('/images/bobcat-background.png')",
-          }}
-        >
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-black/40" />
-        </div>
-
+      <div className="w-3/5 relative" style={{ backgroundColor: "#18181B" }} aria-label="Feature showcase">
         {/* Content Overlay */}
         <div className="relative z-10 flex flex-col justify-center items-center h-full p-12 text-white">
           {/* Logo and Title */}
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">Project Bobcat</h1>
-            <p className="text-xl text-gray-200 max-w-md">Build Smarter. Stay Compliant. Move Faster.</p>
+            <p className="text-xl text-gray-200 max-w-md">The Intelligent Form Builder for Real Estate Professionals</p>
           </div>
 
           {/* Feature Carousel */}
-          <div className="w-full max-w-lg">
+          <div className="w-full max-w-2xl">
             <div className="relative bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
               {/* Feature Content */}
-              <div className="text-center min-h-[200px] flex flex-col justify-center">
+              <div className="text-center min-h-[240px] flex flex-col justify-center" aria-live="polite">
                 <div className="flex justify-center mb-6">
                   {React.createElement(features[currentFeature].icon, {
-                    className: "h-12 w-12 text-white",
+                    className: "h-16 w-16 text-white",
                   })}
                 </div>
                 <h3 className="text-2xl font-semibold mb-4 text-white">{features[currentFeature].title}</h3>
-                <p className="text-gray-200 leading-relaxed">{features[currentFeature].description}</p>
+                <p className="text-gray-200 leading-relaxed text-lg">{features[currentFeature].description}</p>
               </div>
 
               {/* Navigation Arrows */}
@@ -276,6 +385,7 @@ export default function LoginPage() {
                   size="sm"
                   onClick={prevFeature}
                   className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white border-0"
+                  aria-label="Previous feature"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
@@ -286,6 +396,7 @@ export default function LoginPage() {
                   size="sm"
                   onClick={nextFeature}
                   className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white border-0"
+                  aria-label="Next feature"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </Button>
@@ -300,6 +411,7 @@ export default function LoginPage() {
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${
                       index === currentFeature ? "bg-white scale-110" : "bg-white/40 hover:bg-white/60"
                     }`}
+                    aria-label={`Go to feature ${index + 1}: ${features[index].title}`}
                   />
                 ))}
               </div>
@@ -308,7 +420,13 @@ export default function LoginPage() {
 
           {/* Bottom Text */}
           <div className="text-center mt-12">
-            <p className="text-gray-300 text-sm">Trusted by real estate professionals nationwide</p>
+            <p className="text-gray-300 text-sm">Trusted by appraisers, inspectors, and real estate professionals</p>
+            <div className="flex items-center justify-center gap-6 mt-4 text-xs text-gray-400">
+              <span>✓ URAR Compliant</span>
+              <span>✓ MISMO Standards</span>
+              <span>✓ UAD 3.6 Ready</span>
+              <span>✓ Enterprise Security</span>
+            </div>
           </div>
         </div>
       </div>
