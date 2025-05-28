@@ -9,8 +9,19 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Project Bobcat - Intelligent Form Builder",
-  description: "The most advanced form builder for real estate professionals",
+  title: "Project Bobcat",
+  description:
+    "Build UAD 3.6-compliant appraisal forms faster with Bobcat. Modular, intelligent, and built for real estate professionals. Powered by smart form logic.",
+  openGraph: {
+    title: "Project Bobcat",
+    description:
+      "Build UAD 3.6-compliant appraisal forms faster with Bobcat. Modular, intelligent, and built for real estate professionals. Powered by smart form logic.",
+  },
+  twitter: {
+    title: "Project Bobcat",
+    description:
+      "Build UAD 3.6-compliant appraisal forms faster with Bobcat. Modular, intelligent, and built for real estate professionals. Powered by smart form logic.",
+  },
     generator: 'v0.dev'
 }
 
