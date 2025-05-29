@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import type { FormStructure } from "@/lib/form-types"
-import { getGridColClass } from "@/lib/form-builder-utils"
+import { getPreviewGridColClass } from "@/lib/form-width-utils"
 import { FieldRenderer } from "./field-renderer"
 
 interface FormPreviewProps {
@@ -39,7 +39,7 @@ export function FormPreview({ formStructure }: FormPreviewProps) {
               <form className="space-y-6">
                 <div className="grid grid-cols-4 gap-4">
                   {currentSection.fields.map((field) => {
-                    const gridColClass = getGridColClass(field.width || "full")
+                    const gridColClass = getPreviewGridColClass(field.width || "full")
                     return (
                       <div key={field.id} className={`${gridColClass} min-w-0`}>
                         <div className="space-y-2 min-w-[120px]">
