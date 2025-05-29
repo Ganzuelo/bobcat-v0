@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import type { FormStructure } from "@/lib/form-types"
-import { getPreviewGridColClass } from "@/lib/form-width-utils"
+import { getGridColClass } from "@/lib/form-builder-utils"
 import { FieldRenderer } from "./field-renderer"
 
 interface FormPreviewProps {
@@ -37,12 +37,11 @@ export function FormPreview({ formStructure }: FormPreviewProps) {
               </div>
             ) : (
               <form className="space-y-6">
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-12 gap-4">
                   {currentSection.fields.map((field) => {
-                    const gridColClass = getPreviewGridColClass(field.width || "full")
-
+                    const gridColClass = getGridColClass(field.width || "full")
                     return (
-                      <div key={field.id} className={`${gridColClass} min-w-0`}>
+                      <div key={field.id} className={`${gridColClass} min-w-[120px]`}>
                         <div className="space-y-2">
                           {field.field_type !== "checkbox" && (
                             <Label htmlFor={field.id} className="text-sm font-medium text-gray-700">
