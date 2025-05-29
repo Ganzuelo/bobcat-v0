@@ -93,8 +93,25 @@ const useFormBuilder = (initialFormStructure: FormStructure) => {
 // Main FormBuilder component
 const FormBuilderV2 = ({ initialFormStructure }: { initialFormStructure: FormStructure }) => {
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
+  const [formStructure, setFormStructure] = useState(initialFormStructure)
 
-  const { formStructure, handleAddPage, handleReorderPages } = useFormBuilder(initialFormStructure)
+  const { handleAddPage, handleReorderPages } = useFormBuilder(initialFormStructure)
+
+  const handleReorderPagesInner = (reorderedPages: Page[]) => {
+    if (!formStructure) return
+
+    const updatedFormStructure = {
+      ...formStructure,
+      pages: reorderedPages,
+    }
+
+    setFormStructure(updatedFormStructure)
+
+    // toast({
+    //   title: "✅ Pages Reordered",
+    //   description: "Page order has been updated",
+    // })
+  }
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -102,8 +119,8 @@ const FormBuilderV2 = ({ initialFormStructure }: { initialFormStructure: FormStr
         pages={formStructure.pages}
         currentPageIndex={currentPageIndex}
         onPageChange={setCurrentPageIndex}
-        onAddPage={handleAddPage}
-        onReorderPages={handleReorderPages}
+        onAddPage={() => handleAddPage({ title: `Page ${formStructure.pages.length + 1}` })}
+        onReorderPages={handleReorderPagesInner}
       />
       <PageContent page={formStructure.pages[currentPageIndex]} />
     </DndProvider>
