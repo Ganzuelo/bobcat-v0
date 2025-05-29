@@ -31,13 +31,14 @@ export function PageTab({ page, index, totalPages, isActive, onPageChange, onMov
   const isLast = index === totalPages - 1
 
   return (
-    <div className="relative flex items-center gap-1 group">
+    <div className="relative flex items-center group">
       {/* Move Left Button */}
       <Button
         variant="ghost"
         size="sm"
         onClick={(e) => {
           e.stopPropagation()
+          console.log("Moving page left:", index) // Debug log
           onMoveLeft(index)
         }}
         disabled={isFirst}
@@ -52,13 +53,13 @@ export function PageTab({ page, index, totalPages, isActive, onPageChange, onMov
         variant={isActive ? "default" : "outline"}
         size="sm"
         onClick={() => onPageChange(index)}
-        className="relative flex items-center gap-1.5 px-2.5 py-1.5 h-auto"
+        className="relative flex items-center gap-1 px-2 py-1 h-auto mx-0.5"
       >
         {/* Page Title */}
         <span className="font-medium text-sm whitespace-nowrap">{page.title || `Page ${index + 1}`}</span>
 
         {/* Field Count Badge */}
-        <Badge variant={isActive ? "secondary" : "outline"} className="text-xs shrink-0">
+        <Badge variant={isActive ? "secondary" : "outline"} className="text-xs shrink-0 ml-1">
           {getFieldCount(page)}
         </Badge>
       </Button>
@@ -69,6 +70,7 @@ export function PageTab({ page, index, totalPages, isActive, onPageChange, onMov
         size="sm"
         onClick={(e) => {
           e.stopPropagation()
+          console.log("Moving page right:", index) // Debug log
           onMoveRight(index)
         }}
         disabled={isLast}
