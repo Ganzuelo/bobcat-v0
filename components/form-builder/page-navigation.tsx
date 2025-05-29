@@ -12,6 +12,18 @@ interface PageNavigationProps {
   onAddPage: () => void
 }
 
+const getFieldCount = (page: FormPage & { sections: (FormSection & { fields: FormField[] })[] }) => {
+  if (!page.sections || !Array.isArray(page.sections)) {
+    return 0
+  }
+  return page.sections.reduce((total, section) => {
+    if (!section || !section.fields || !Array.isArray(section.fields)) {
+      return total
+    }
+    return total + section.fields.length
+  }, 0)
+}
+
 export function PageNavigation({ pages, currentPageIndex, onPageChange, onAddPage }: PageNavigationProps) {
   return (
     <div className="flex items-center justify-between p-4 border-b bg-white">
@@ -26,20 +38,23 @@ export function PageNavigation({ pages, currentPageIndex, onPageChange, onAddPag
         </Button>
 
         <div className="flex items-center gap-2">
-          {pages.map((page, index) => (
-            <Button
-              key={page.id}
-              variant={index === currentPageIndex ? "default" : "outline"}
-              size="sm"
-              onClick={() => onPageChange(index)}
-              className="relative"
-            >
-              {page.title}
-              <Badge variant="secondary" className="ml-2 text-xs">
-                {page.sections.reduce((total, section) => total + section.fields.length, 0)}
-              </Badge>
-            </Button>
-          ))}
+          {pages.map((page, index) => {
+            const isActive = index === currentPageIndex
+            return (
+              <Button
+                key={page.id}
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                onClick={() => onPageChange(index)}
+                className="relative"
+              >
+                {page.title}
+                <Badge variant={isActive ? "secondary" : "outline"} className="text-xs shrink-0">
+                  {getFieldCount(page)}
+                </Badge>
+              </Button>
+            )
+          })}
         </div>
 
         <Button

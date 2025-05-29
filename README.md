@@ -47,7 +47,7 @@
 
 ## 📦 Getting Started
 
-```bash
+\`\`\`bash
 git clone https://github.com/YOUR_USERNAME/bobcat.git
 cd bobcat
 pnpm install

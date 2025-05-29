@@ -35,6 +35,36 @@ export const FIELD_WIDTH_CONFIG: Record<FieldWidthKey, { label: string; gridCols
   },
 }
 
+// Helper function to validate field width - NOW EXPORTED
+export function isValidFieldWidth(width: string): width is FieldWidthKey {
+  return width in FIELD_WIDTH_CONFIG
+}
+
+// Helper function to normalize width keys (handle legacy values)
+function normalizeWidthKey(width: string): FieldWidthKey {
+  // Handle legacy width values
+  const legacyMapping: Record<string, FieldWidthKey> = {
+    quarter: "one_quarter",
+    third: "one_third",
+    half: "one_half",
+    three_quarters: "three_quarters",
+    full: "full",
+  }
+
+  // Check if it's a legacy value
+  if (legacyMapping[width]) {
+    return legacyMapping[width]
+  }
+
+  // Check if it's already a valid width
+  if (isValidFieldWidth(width)) {
+    return width as FieldWidthKey
+  }
+
+  // Default to full width
+  return "full"
+}
+
 // Helper function to get the grid column class based on width
 export function getGridColClass(width: string): string {
   const normalizedWidth = normalizeWidthKey(width)
@@ -80,36 +110,6 @@ export function getResponsiveWidthClasses(width?: string): string {
 
   const normalizedWidth = normalizeWidthKey(width)
   return responsiveWidthMap[normalizedWidth] || "w-full"
-}
-
-// Helper function to normalize width keys (handle legacy values)
-function normalizeWidthKey(width: string): FieldWidthKey {
-  // Handle legacy width values
-  const legacyMapping: Record<string, FieldWidthKey> = {
-    quarter: "one_quarter",
-    third: "one_third",
-    half: "one_half",
-    three_quarters: "three_quarters",
-    full: "full",
-  }
-
-  // Check if it's a legacy value
-  if (legacyMapping[width]) {
-    return legacyMapping[width]
-  }
-
-  // Check if it's already a valid width
-  if (isValidFieldWidth(width)) {
-    return width as FieldWidthKey
-  }
-
-  // Default to full width
-  return "full"
-}
-
-// Helper function to validate field width
-function isValidFieldWidth(width: string): width is FieldWidthKey {
-  return width in FIELD_WIDTH_CONFIG
 }
 
 // Width options for field editor dropdown

@@ -95,9 +95,27 @@ export function useFormBuilder(formId?: string) {
 
       if (pagesError) throw pagesError
 
+      // Ensure proper structure and ordering
+      const structuredPages = (pages || []).map((page, pageIndex) => ({
+        ...page,
+        page_order: pageIndex + 1,
+        sections: (page.form_sections || [])
+          .sort((a, b) => a.section_order - b.section_order)
+          .map((section, sectionIndex) => ({
+            ...section,
+            section_order: sectionIndex + 1,
+            fields: (section.form_fields || [])
+              .sort((a, b) => a.field_order - b.field_order)
+              .map((field, fieldIndex) => ({
+                ...field,
+                field_order: fieldIndex + 1,
+              })),
+          })),
+      }))
+
       setFormStructure({
         form,
-        pages: pages || [],
+        pages: structuredPages,
         rules: [],
       })
     } catch (error) {
@@ -122,85 +140,180 @@ export function useFormBuilder(formId?: string) {
       } = await supabase.auth.getUser()
       if (!user) throw new Error("Not authenticated")
 
-      // Save form
+      // Ensure pages is an array before processing
+      const pages = Array.isArray(formStructure.pages) ? formStructure.pages : []
+
+      // Normalize and validate the form structure before saving
+      const normalizedFormStructure = {
+        ...formStructure,
+        pages: pages.map((page, pageIndex) => {
+          const sections = Array.isArray(page.sections) ? page.sections : []
+          return {
+            ...page,
+            page_order: pageIndex + 1, // Ensure sequential page ordering
+            sections: sections.map((section, sectionIndex) => {
+              const fields = Array.isArray(section.fields) ? section.fields : []
+              return {
+                ...section,
+                section_order: sectionIndex + 1, // Ensure sequential section ordering
+                fields: fields.map((field, fieldIndex) => ({
+                  ...field,
+                  field_order: fieldIndex + 1, // Ensure sequential field ordering
+                })),
+              }
+            }),
+          }
+        }),
+      }
+
+      // Prepare form data with proper constraint handling
+      const currentTime = new Date().toISOString()
       const formData = {
-        id: formStructure.form.id,
-        title: formStructure.form.title,
-        description: formStructure.form.description,
-        form_type: formStructure.form.form_type,
-        version: formStructure.form.version,
-        status: formStructure.form.status,
+        id: normalizedFormStructure.form.id,
+        title: normalizedFormStructure.form.title,
+        description: normalizedFormStructure.form.description,
+        form_type: normalizedFormStructure.form.form_type,
+        version: normalizedFormStructure.form.version,
+        status: normalizedFormStructure.form.status,
         created_by: user.id,
-        tags: formStructure.form.tags,
-        settings: formStructure.form.settings,
-        metadata: formStructure.form.metadata,
-        updated_at: new Date().toISOString(),
-        ...(formStructure.form.created_at ? {} : { created_at: new Date().toISOString() }),
+        tags: Array.isArray(normalizedFormStructure.form.tags) ? normalizedFormStructure.form.tags : [],
+        settings: normalizedFormStructure.form.settings || {},
+        metadata: normalizedFormStructure.form.metadata || {},
+        updated_at: currentTime,
+        // Handle published_at based on status to satisfy database constraints
+        ...(normalizedFormStructure.form.status === "published"
+          ? { published_at: normalizedFormStructure.form.published_at || currentTime }
+          : { published_at: null }),
+        // Handle archived_at based on status
+        ...(normalizedFormStructure.form.status === "archived"
+          ? { archived_at: normalizedFormStructure.form.archived_at || currentTime }
+          : { archived_at: null }),
+        ...(normalizedFormStructure.form.created_at ? {} : { created_at: currentTime }),
       }
 
       const { data: savedForm, error: formError } = await supabase.from("forms").upsert(formData).select().single()
       if (formError) throw formError
 
-      // Save pages, sections, and fields
-      for (const page of formStructure.pages) {
+      // Delete existing pages, sections, and fields to avoid constraint violations
+      if (formId && formId !== "new") {
+        try {
+          // Get existing page IDs first
+          const { data: existingPages } = await supabase.from("form_pages").select("id").eq("form_id", savedForm.id)
+
+          if (existingPages && existingPages.length > 0) {
+            const pageIds = existingPages.map((p) => p.id)
+
+            // Get existing section IDs
+            const { data: existingSections } = await supabase.from("form_sections").select("id").in("page_id", pageIds)
+
+            if (existingSections && existingSections.length > 0) {
+              const sectionIds = existingSections.map((s) => s.id)
+
+              // Delete fields first
+              await supabase.from("form_fields").delete().in("section_id", sectionIds)
+            }
+
+            // Delete sections
+            await supabase.from("form_sections").delete().in("page_id", pageIds)
+
+            // Delete pages
+            await supabase.from("form_pages").delete().eq("form_id", savedForm.id)
+          }
+        } catch (deleteError) {
+          console.warn("Error during cleanup, continuing with save:", deleteError)
+        }
+      }
+
+      // Save pages, sections, and fields with proper ordering
+      for (let pageIndex = 0; pageIndex < normalizedFormStructure.pages.length; pageIndex++) {
+        const page = normalizedFormStructure.pages[pageIndex]
+
+        const pageData = {
+          id: page.id,
+          form_id: savedForm.id,
+          title: page.title || `Page ${pageIndex + 1}`,
+          description: page.description || "",
+          page_order: pageIndex + 1,
+          settings: page.settings || {},
+          created_at: currentTime,
+          updated_at: currentTime,
+        }
+
         const { data: savedPage, error: pageError } = await supabase
           .from("form_pages")
-          .upsert({
-            id: page.id,
-            form_id: savedForm.id,
-            title: page.title,
-            description: page.description,
-            page_order: page.page_order,
-            settings: page.settings,
-          })
+          .insert(pageData)
           .select()
           .single()
 
         if (pageError) throw pageError
 
-        for (const section of page.sections) {
+        // Ensure sections is an array
+        const sections = Array.isArray(page.sections) ? page.sections : []
+
+        // Save sections for this page
+        for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
+          const section = sections[sectionIndex]
+
+          const sectionData = {
+            id: section.id,
+            page_id: savedPage.id,
+            title: section.title || `Section ${sectionIndex + 1}`,
+            description: section.description || "",
+            section_order: sectionIndex + 1,
+            settings: section.settings || {},
+            created_at: currentTime,
+            updated_at: currentTime,
+          }
+
           const { data: savedSection, error: sectionError } = await supabase
             .from("form_sections")
-            .upsert({
-              id: section.id,
-              page_id: savedPage.id,
-              title: section.title,
-              description: section.description,
-              section_order: section.section_order,
-              settings: section.settings,
-            })
+            .insert(sectionData)
             .select()
             .single()
 
           if (sectionError) throw sectionError
 
-          for (let i = 0; i < section.fields.length; i++) {
-            const field = section.fields[i]
-            const { error: fieldError } = await supabase.from("form_fields").upsert({
+          // Ensure fields is an array
+          const fields = Array.isArray(section.fields) ? section.fields : []
+
+          // Save fields for this section
+          for (let fieldIndex = 0; fieldIndex < fields.length; fieldIndex++) {
+            const field = fields[fieldIndex]
+
+            const fieldData = {
               id: field.id,
               section_id: savedSection.id,
               field_type: field.field_type,
-              label: field.label,
+              label: field.label || "Untitled Field",
               placeholder: field.placeholder || "",
               help_text: field.help_text || "",
               required: field.required || false,
               width: field.width || "full",
-              field_order: i + 1,
-              options: Array.isArray(field.options) && field.options.length > 0 ? field.options : [],
-              validation: field.validation || {}, // Ensure it's always an object
+              field_order: fieldIndex + 1,
+              options: Array.isArray(field.options) ? field.options : [],
+              validation: field.validation || {},
               conditional_visibility: field.conditional_visibility || {},
               calculated_config: field.calculated_config || {},
               lookup_config: field.lookup_config || {},
               metadata: field.metadata || {},
-            })
+              created_at: currentTime,
+              updated_at: currentTime,
+            }
 
+            const { error: fieldError } = await supabase.from("form_fields").insert(fieldData)
             if (fieldError) throw fieldError
           }
         }
       }
 
+      // Update the form structure with the saved form
       setFormStructure((prev) => (prev ? { ...prev, form: savedForm } : null))
-      toast({ title: "Success", description: "Form saved successfully" })
+
+      toast({
+        title: "Success",
+        description: "Form saved successfully",
+      })
+
       onSave?.(savedForm)
     } catch (error) {
       console.error("Error saving form:", error)

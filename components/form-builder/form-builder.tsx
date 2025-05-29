@@ -1,644 +1,401 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { DndContext, type DragEndEvent, type DragStartEvent, closestCenter, DragOverlay } from "@dnd-kit/core"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
-import { Save, Settings, AlertCircle } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { supabase } from "@/lib/supabase-client"
-import { FieldPalette } from "./field-palette"
-import { FormCanvas } from "./form-canvas"
-import { FormPreview } from "./form-preview"
-import { PageNavigation } from "./page-navigation"
-import { FieldEditor } from "./field-editor"
-import { SectionEditor } from "./section-editor"
-import { FormSettingsPanel } from "./form-settings-panel"
-import type { Form, FormStructure, FieldType, FieldWidth } from "@/lib/database-types"
-import type { FormField, FormSection, FormPage } from "@/lib/form-types"
-import { useToast } from "@/hooks/use-toast"
+import type React from "react"
+import { useState, useCallback } from "react"
+import { DndProvider } from "react-dnd"
+import { HTML5Backend } from "react-dnd-html5-backend"
+import { TouchBackend } from "react-dnd-touch-backend"
+import update from "immutability-helper"
+import { v4 as uuidv4 } from "uuid"
 
-interface FormBuilderProps {
-  formId?: string
-  onSave?: (form: Form) => void
-}
+import Section from "./section"
+import AddSectionButton from "./add-section-button"
+import PageSettings from "./page-settings"
+import QuestionPalette from "./question-palette"
 
-export function FormBuilder({ formId, onSave }: FormBuilderProps) {
-  const [formStructure, setFormStructure] = useState<FormStructure | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("design")
-  const [previewMode, setPreviewMode] = useState(false)
-  const [currentPageIndex, setCurrentPageIndex] = useState(0)
-  const [selectedField, setSelectedField] = useState<FormField | null>(null)
-  const [selectedSection, setSelectedSection] = useState<FormSection | null>(null)
-  const [draggedItem, setDraggedItem] = useState<any>(null)
-  const { toast } = useToast()
+import { QuestionType } from "./types"
 
-  // Add this right after all the useState declarations
-  useEffect(() => {
-    console.log("FormBuilder component mounted successfully")
-    console.log("formStructure:", formStructure)
-  }, [])
+const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0
 
-  // Add this simple test function
-  const testFunction = () => {
-    console.log("TEST FUNCTION CALLED")
-    alert("Test function works!")
-  }
-
-  useEffect(() => {
-    console.log("FormBuilder mounted with formId:", formId)
-    if (formId && formId !== "new") {
-      loadForm()
-    } else {
-      initializeNewForm()
-    }
-  }, [formId])
-
-  const initializeNewForm = () => {
-    console.log("Initializing new form")
-    const newFormStructure: FormStructure = {
-      form: {
-        id: crypto.randomUUID(),
-        title: "New Form",
-        description: "",
-        form_type: "custom",
-        version: 1,
-        status: "draft",
-        created_by: "",
-        tags: [],
-        settings: {},
-        metadata: {},
-        created_at: "",
-        updated_at: "",
-      },
-      pages: [
+const FormBuilder: React.FC = () => {
+  const [pages, setPages] = useState([
+    {
+      id: uuidv4(),
+      title: "Page 1",
+      description: "Description for Page 1",
+      sections: [
         {
-          id: crypto.randomUUID(),
-          form_id: "",
-          title: "Page 1",
-          description: "",
-          page_order: 1,
-          settings: {},
-          created_at: "",
-          updated_at: "",
-          sections: [],
+          id: uuidv4(),
+          title: "Section 1",
+          questions: [
+            { id: uuidv4(), text: "Question 1", type: QuestionType.TEXT },
+            { id: uuidv4(), text: "Question 2", type: QuestionType.NUMBER },
+          ],
         },
       ],
-      rules: [],
-    }
-    setFormStructure(newFormStructure)
-    console.log("New form structure created:", newFormStructure)
-  }
+    },
+  ])
+  const [selectedPageId, setSelectedPageId] = useState(pages[0].id)
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false)
 
-  const loadForm = async () => {
-    if (!formId || formId === "new") return
+  const backend = isTouchDevice ? TouchBackend : HTML5Backend
 
-    console.log("Loading form with ID:", formId)
-    setLoading(true)
-    setError(null)
+  const moveQuestion = useCallback(
+    (dragIndex: number, hoverIndex: number, sourceSectionId: string, targetSectionId: string, pageId: string) => {
+      setPages((prevPages) => {
+        const pageIndex = prevPages.findIndex((p) => p.id === pageId)
+        if (pageIndex === -1) return prevPages
 
-    try {
-      // Load form data
-      const { data: form, error: formError } = await supabase.from("forms").select("*").eq("id", formId).single()
+        const page = prevPages[pageIndex]
+        const sourceSectionIndex = page.sections.findIndex((section) => section.id === sourceSectionId)
+        const targetSectionIndex = page.sections.findIndex((section) => section.id === targetSectionId)
 
-      if (formError) throw formError
+        if (sourceSectionIndex === -1 || targetSectionIndex === -1) return prevPages
 
-      // Load pages
-      const { data: pages, error: pagesError } = await supabase
-        .from("form_pages")
-        .select("*")
-        .eq("form_id", formId)
-        .order("page_order")
+        const sourceSection = page.sections[sourceSectionIndex]
+        const targetSection = page.sections[targetSectionIndex]
 
-      if (pagesError) throw pagesError
+        const question = sourceSection.questions[dragIndex]
 
-      // Load sections and fields for each page
-      const pagesWithSections = await Promise.all(
-        pages.map(async (page) => {
-          const { data: sections, error: sectionsError } = await supabase
-            .from("form_sections")
-            .select("*")
-            .eq("page_id", page.id)
-            .order("section_order")
+        // If moving within the same section
+        if (sourceSectionId === targetSectionId) {
+          const updatedSections = update(page.sections, {
+            [sourceSectionIndex]: {
+              questions: {
+                $splice: [
+                  [dragIndex, 1],
+                  [hoverIndex, 0, question],
+                ],
+              },
+            },
+          })
 
-          if (sectionsError) throw sectionsError
+          return update(prevPages, {
+            [pageIndex]: {
+              sections: { $set: updatedSections },
+            },
+          })
+        } else {
+          // Moving to a different section
+          const updatedSourceSections = update(page.sections, {
+            [sourceSectionIndex]: {
+              questions: { $splice: [[dragIndex, 1]] },
+            },
+          })
 
-          const sectionsWithFields = await Promise.all(
-            sections.map(async (section) => {
-              const { data: fields, error: fieldsError } = await supabase
-                .from("form_fields")
-                .select("*")
-                .eq("section_id", section.id)
-                .order("field_order")
+          const updatedTargetSections = update(page.sections, {
+            [targetSectionIndex]: {
+              questions: { $splice: [[hoverIndex, 0, question]] },
+            },
+          })
 
-              if (fieldsError) throw fieldsError
-
-              return { ...section, fields }
-            }),
-          )
-
-          return { ...page, sections: sectionsWithFields }
-        }),
-      )
-
-      // Load rules
-      const { data: rules, error: rulesError } = await supabase.from("form_rules").select("*").eq("form_id", formId)
-
-      if (rulesError) throw rulesError
-
-      const structure = {
-        form,
-        pages: pagesWithSections,
-        rules: rules || [],
-      }
-
-      console.log("Loaded form structure:", structure)
-      setFormStructure(structure)
-    } catch (error) {
-      console.error("Error loading form:", error)
-      setError(error instanceof Error ? error.message : "Failed to load form")
-      toast({
-        title: "Error",
-        description: "Failed to load form",
-        variant: "destructive",
+          return update(prevPages, {
+            [pageIndex]: {
+              sections: {
+                $set: [
+                  ...updatedSourceSections.slice(0, sourceSectionIndex),
+                  updatedSourceSections[sourceSectionIndex],
+                  ...updatedTargetSections.slice(0, targetSectionIndex),
+                  updatedTargetSections[targetSectionIndex],
+                  ...updatedSourceSections.slice(sourceSectionIndex + 1, updatedSourceSections.length),
+                ],
+              },
+            },
+          })
+        }
       })
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+    [setPages],
+  )
 
-  const updateForm = (updates: Partial<Form>) => {
-    console.log("Updating form with:", updates)
-    if (!formStructure) return
+  const moveSection = useCallback(
+    (dragIndex: number, hoverIndex: number, pageId: string) => {
+      setPages((prevPages) => {
+        const pageIndex = prevPages.findIndex((p) => p.id === pageId)
+        if (pageIndex === -1) return prevPages
 
-    setFormStructure((prev) =>
-      prev
-        ? {
-            ...prev,
-            form: { ...prev.form, ...updates },
-          }
-        : null,
-    )
-  }
+        const page = prevPages[pageIndex]
+        const updatedSections = update(page.sections, {
+          $splice: [
+            [dragIndex, 1],
+            [hoverIndex, 0, page.sections[dragIndex]],
+          ],
+        })
 
-  // SIMPLIFIED SAVE FUNCTION - FOCUS ONLY ON SAVING THE FORM FIRST
-  const saveForm = async () => {
-    console.log("=== SAVE FORM CLICKED ===")
-
-    if (!formStructure) {
-      console.error("No form structure to save")
-      toast({
-        title: "Error",
-        description: "No form data to save",
-        variant: "destructive",
+        return update(prevPages, {
+          [pageIndex]: {
+            sections: { $set: updatedSections },
+          },
+        })
       })
-      return
-    }
+    },
+    [setPages],
+  )
 
-    // Basic validation
-    if (!formStructure.form.title.trim()) {
-      console.error("Form title is required")
-      toast({
-        title: "Validation Error",
-        description: "Form title is required",
-        variant: "destructive",
+  const addQuestion = useCallback(
+    (sectionId: string, type: QuestionType, pageId: string) => {
+      setPages((prevPages) => {
+        const pageIndex = prevPages.findIndex((p) => p.id === pageId)
+        if (pageIndex === -1) return prevPages
+
+        const page = prevPages[pageIndex]
+        const sectionIndex = page.sections.findIndex((section) => section.id === sectionId)
+        if (sectionIndex === -1) return prevPages
+
+        const updatedSections = update(page.sections, {
+          [sectionIndex]: {
+            questions: { $push: [{ id: uuidv4(), text: "New Question", type: type }] },
+          },
+        })
+
+        return update(prevPages, {
+          [pageIndex]: {
+            sections: { $set: updatedSections },
+          },
+        })
       })
-      return
-    }
+    },
+    [setPages],
+  )
 
-    setSaving(true)
-    setError(null)
+  const addSection = useCallback(
+    (pageId: string) => {
+      setPages((prevPages) => {
+        const pageIndex = prevPages.findIndex((p) => p.id === pageId)
+        if (pageIndex === -1) return prevPages
 
-    try {
-      console.log("Getting current user...")
-      // Get current user ID
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser()
-
-      if (userError) {
-        console.error("Error getting user:", userError)
-        throw new Error("Failed to get current user")
-      }
-
-      if (!user) {
-        throw new Error("You must be logged in to save forms")
-      }
-
-      console.log("Current user ID:", user.id)
-
-      // STEP 1: Save just the form first to verify basic functionality
-      const formData = {
-        ...formStructure.form,
-        created_by: user.id,
-        updated_at: new Date().toISOString(),
-      }
-
-      // If it's a new form, set created_at
-      if (!formData.created_at) {
-        formData.created_at = new Date().toISOString()
-      }
-
-      console.log("Saving form data:", formData)
-
-      let savedForm: Form
-
-      if (formId && formId !== "new") {
-        // Update existing form
-        const { data, error } = await supabase.from("forms").update(formData).eq("id", formId).select().single()
-
-        if (error) throw error
-        savedForm = data
-        console.log("Form updated successfully:", savedForm)
-      } else {
-        // Create new form
-        const { data, error } = await supabase.from("forms").insert(formData).select().single()
-
-        if (error) throw error
-        savedForm = data
-        console.log("Form created successfully:", savedForm)
-      }
-
-      // Update the form structure with the saved form
-      setFormStructure((prev) => (prev ? { ...prev, form: savedForm } : null))
-
-      toast({
-        title: "Success",
-        description: "Form saved successfully",
+        const updatedPages = update(prevPages, {
+          [pageIndex]: {
+            sections: { $push: [{ id: uuidv4(), title: "New Section", questions: [] }] },
+          },
+        })
+        return updatedPages
       })
+    },
+    [setPages],
+  )
 
-      onSave?.(savedForm)
-    } catch (error) {
-      console.error("Error saving form:", error)
-      const errorMessage = error instanceof Error ? error.message : "Failed to save form. Please try again."
-      setError(errorMessage)
-      toast({
-        title: "Save Failed",
-        description: errorMessage,
-        variant: "destructive",
+  const updateQuestionText = useCallback(
+    (questionId: string, newText: string, sectionId: string, pageId: string) => {
+      setPages((prevPages) => {
+        const pageIndex = prevPages.findIndex((p) => p.id === pageId)
+        if (pageIndex === -1) return prevPages
+
+        const page = prevPages[pageIndex]
+        const sectionIndex = page.sections.findIndex((section) => section.id === sectionId)
+        if (sectionIndex === -1) return prevPages
+
+        const questionIndex = page.sections[sectionIndex].questions.findIndex((question) => question.id === questionId)
+        if (questionIndex === -1) return prevPages
+
+        const updatedPages = update(prevPages, {
+          [pageIndex]: {
+            sections: {
+              [sectionIndex]: {
+                questions: {
+                  [questionIndex]: { text: { $set: newText } },
+                },
+              },
+            },
+          },
+        })
+        return updatedPages
       })
-    } finally {
-      setSaving(false)
-    }
-  }
+    },
+    [setPages],
+  )
 
-  const addPage = () => {
-    if (!formStructure) return
+  const updateSectionTitle = useCallback(
+    (sectionId: string, newTitle: string, pageId: string) => {
+      setPages((prevPages) => {
+        const pageIndex = prevPages.findIndex((p) => p.id === pageId)
+        if (pageIndex === -1) return prevPages
 
-    const newPage: FormPage & { sections: (FormSection & { fields: FormField[] })[] } = {
-      id: crypto.randomUUID(),
-      form_id: formStructure.form.id,
-      title: `Page ${formStructure.pages.length + 1}`,
-      description: "",
-      page_order: formStructure.pages.length + 1,
-      settings: {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      sections: [],
-    }
+        const page = prevPages[pageIndex]
+        const sectionIndex = page.sections.findIndex((section) => section.id === sectionId)
+        if (sectionIndex === -1) return prevPages
 
-    setFormStructure((prev) =>
-      prev
-        ? {
-            ...prev,
-            pages: [...prev.pages, newPage],
-          }
-        : null,
-    )
-  }
+        const updatedPages = update(prevPages, {
+          [pageIndex]: {
+            sections: {
+              [sectionIndex]: { title: { $set: newTitle } },
+            },
+          },
+        })
+        return updatedPages
+      })
+    },
+    [setPages],
+  )
 
-  const addSection = (pageId: string) => {
-    if (!formStructure) return
+  const updatePageTitle = useCallback(
+    (pageId: string, newTitle: string) => {
+      setPages((prevPages) => {
+        const pageIndex = prevPages.findIndex((p) => p.id === pageId)
+        if (pageIndex === -1) return prevPages
 
-    const page = formStructure.pages.find((p) => p.id === pageId)
-    if (!page) return
+        const updatedPages = update(prevPages, {
+          [pageIndex]: { title: { $set: newTitle } },
+        })
+        return updatedPages
+      })
+    },
+    [setPages],
+  )
 
-    const newSection: FormSection & { fields: FormField[] } = {
-      id: crypto.randomUUID(),
-      page_id: pageId,
-      title: `Section ${page.sections.length + 1}`,
-      description: "",
-      section_order: page.sections.length + 1,
-      settings: {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      fields: [],
-    }
+  const updatePageDescription = useCallback(
+    (pageId: string, newDescription: string) => {
+      setPages((prevPages) => {
+        const pageIndex = prevPages.findIndex((p) => p.id === pageId)
+        if (pageIndex === -1) return prevPages
 
-    setFormStructure((prev) =>
-      prev
-        ? {
-            ...prev,
-            pages: prev.pages.map((p) => (p.id === pageId ? { ...p, sections: [...p.sections, newSection] } : p)),
-          }
-        : null,
-    )
-  }
+        const updatedPages = update(prevPages, {
+          [pageIndex]: { description: { $set: newDescription } },
+        })
+        return updatedPages
+      })
+    },
+    [setPages],
+  )
 
-  const addField = (sectionId: string, fieldType: FieldType, width: FieldWidth = "full") => {
-    if (!formStructure) return
+  const deleteQuestion = useCallback(
+    (questionId: string, sectionId: string, pageId: string) => {
+      setPages((prevPages) => {
+        const pageIndex = prevPages.findIndex((p) => p.id === pageId)
+        if (pageIndex === -1) return prevPages
 
-    const section = formStructure.pages.flatMap((p) => p.sections).find((s) => s.id === sectionId)
-    if (!section) return
+        const page = prevPages[pageIndex]
+        const sectionIndex = page.sections.findIndex((section) => section.id === sectionId)
+        if (sectionIndex === -1) return prevPages
 
-    const newField: FormField = {
-      id: crypto.randomUUID(),
-      section_id: sectionId,
-      field_type: fieldType,
-      label: `New ${fieldType} field`,
-      placeholder: "",
-      help_text: "",
-      required: false,
-      width,
-      field_order: section.fields.length + 1,
-      options: fieldType === "select" || fieldType === "radio" || fieldType === "checkbox" ? [] : undefined,
-      validation: [],
-      conditional_visibility: { enabled: false },
-      calculated_config: { enabled: false },
-      lookup_config: { enabled: false, dataSource: "static" },
-      metadata: {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
+        const questionIndex = page.sections[sectionIndex].questions.findIndex((question) => question.id === questionId)
+        if (questionIndex === -1) return prevPages
 
-    setFormStructure((prev) =>
-      prev
-        ? {
-            ...prev,
-            pages: prev.pages.map((page) => ({
-              ...page,
-              sections: page.sections.map((s) => (s.id === sectionId ? { ...s, fields: [...s.fields, newField] } : s)),
-            })),
-          }
-        : null,
-    )
+        const updatedSections = update(page.sections, {
+          [sectionIndex]: {
+            questions: { $splice: [[questionIndex, 1]] },
+          },
+        })
 
-    // Auto-select the new field for editing
-    setSelectedField(newField)
-    setSelectedSection(null)
-  }
+        return update(prevPages, {
+          [pageIndex]: {
+            sections: { $set: updatedSections },
+          },
+        })
+      })
+    },
+    [setPages],
+  )
 
-  const updateField = (fieldId: string, updates: Partial<FormField>) => {
-    if (!formStructure) return
+  const deleteSection = useCallback(
+    (sectionId: string, pageId: string) => {
+      setPages((prevPages) => {
+        const pageIndex = prevPages.findIndex((p) => p.id === pageId)
+        if (pageIndex === -1) return prevPages
 
-    setFormStructure((prev) =>
-      prev
-        ? {
-            ...prev,
-            pages: prev.pages.map((page) => ({
-              ...page,
-              sections: page.sections.map((section) => ({
-                ...section,
-                fields: section.fields.map((field) => (field.id === fieldId ? { ...field, ...updates } : field)),
-              })),
-            })),
-          }
-        : null,
-    )
+        const sectionIndex = prevPages[pageIndex].sections.findIndex((section) => section.id === sectionId)
+        if (sectionIndex === -1) return prevPages
 
-    // Update selected field if it's the one being updated
-    if (selectedField?.id === fieldId) {
-      setSelectedField((prev) => (prev ? { ...prev, ...updates } : null))
-    }
-  }
+        const updatedPages = update(prevPages, {
+          [pageIndex]: {
+            sections: { $splice: [[sectionIndex, 1]] },
+          },
+        })
+        return updatedPages
+      })
+    },
+    [setPages],
+  )
 
-  const deleteField = (fieldId: string) => {
-    if (!formStructure) return
+  const addPage = useCallback(() => {
+    setPages((prevPages) => [
+      ...prevPages,
+      {
+        id: uuidv4(),
+        title: "New Page",
+        description: "",
+        sections: [],
+      },
+    ])
+  }, [setPages])
 
-    setFormStructure((prev) =>
-      prev
-        ? {
-            ...prev,
-            pages: prev.pages.map((page) => ({
-              ...page,
-              sections: page.sections.map((section) => ({
-                ...section,
-                fields: section.fields.filter((field) => field.id !== fieldId),
-              })),
-            })),
-          }
-        : null,
-    )
+  const deletePage = useCallback(
+    (pageId: string) => {
+      setPages((prevPages) => prevPages.filter((page) => page.id !== pageId))
+    },
+    [setPages],
+  )
 
-    if (selectedField?.id === fieldId) {
-      setSelectedField(null)
-    }
-  }
+  const selectedPage = pages.find((page) => page.id === selectedPageId)
 
-  const duplicateField = (fieldId: string) => {
-    if (!formStructure) return
-
-    const field = formStructure.pages
-      .flatMap((p) => p.sections)
-      .flatMap((s) => s.fields)
-      .find((f) => f.id === fieldId)
-
-    if (!field) return
-
-    const duplicatedField: FormField = {
-      ...field,
-      id: crypto.randomUUID(),
-      label: `${field.label} (Copy)`,
-      field_order: field.field_order + 1,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-
-    setFormStructure((prev) =>
-      prev
-        ? {
-            ...prev,
-            pages: prev.pages.map((page) => ({
-              ...page,
-              sections: page.sections.map((section) => ({
-                ...section,
-                fields: section.fields.includes(field)
-                  ? [
-                      ...section.fields.slice(0, field.field_order),
-                      duplicatedField,
-                      ...section.fields.slice(field.field_order),
-                    ]
-                  : section.fields,
-              })),
-            })),
-          }
-        : null,
-    )
-  }
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setDraggedItem(event.active.data.current)
-  }
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (!over) return
-
-    const activeData = active.data.current
-    const overData = over.data.current
-
-    // Handle field type drag from palette
-    if (activeData?.type === "field-type" && overData?.type === "section") {
-      addField(overData.sectionId, activeData.fieldType, "full")
-    }
-
-    setDraggedItem(null)
-  }
-
-  // Get all available fields for conditional logic and calculations
-  const getAllFields = (): FormField[] => {
-    if (!formStructure) return []
-    return formStructure.pages.flatMap((page) => page.sections.flatMap((section) => section.fields))
-  }
-
-  const currentPage = formStructure?.pages[currentPageIndex]
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p>Loading form...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Alert className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      </div>
-    )
-  }
-
-  if (!formStructure) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p>No form data available</p>
-      </div>
-    )
+  if (!selectedPage) {
+    return <div>No page selected.</div>
   }
 
   return (
-    <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="h-screen flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-white">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="text-xl font-semibold">{formStructure.form.title}</h1>
-              <p className="text-sm text-muted-foreground">
-                Form Builder {formStructure.form.status && `• ${formStructure.form.status}`}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={previewMode} onCheckedChange={setPreviewMode} />
-              <Label htmlFor="preview-mode" className="text-sm">
-                Preview Mode
-              </Label>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setActiveTab("settings")}>
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </Button>
-            <Button variant="outline" onClick={testFunction}>
-              Test Button
-            </Button>
-            <Button
-              onClick={() => {
-                console.log("BUTTON CLICKED - This should appear in console")
-                alert("Button clicked!")
-                saveForm()
-              }}
-              disabled={saving}
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {saving ? "Saving..." : "Save Form"}
-            </Button>
-          </div>
+    <DndProvider backend={backend}>
+      <div style={{ display: "flex", height: "100vh" }}>
+        {/* Form Builder Area */}
+        <div style={{ flex: 3, padding: "20px", overflowY: "auto" }}>
+          <h1>Form Builder</h1>
+
+          {/* Page Settings */}
+          <PageSettings
+            page={selectedPage}
+            onTitleChange={(newTitle) => updatePageTitle(selectedPageId, newTitle)}
+            onDescriptionChange={(newDescription) => updatePageDescription(selectedPageId, newDescription)}
+          />
+
+          {selectedPage.sections.map((section, index) => (
+            <Section
+              key={section.id}
+              index={index}
+              id={section.id}
+              title={section.title}
+              questions={section.questions}
+              moveQuestion={moveQuestion}
+              moveSection={moveSection}
+              addQuestion={addQuestion}
+              updateQuestionText={updateQuestionText}
+              updateSectionTitle={updateSectionTitle}
+              deleteQuestion={deleteQuestion}
+              deleteSection={deleteSection}
+              pageId={selectedPageId}
+            />
+          ))}
+
+          <AddSectionButton pageId={selectedPageId} onAddSection={addSection} />
         </div>
 
-        {/* Page Navigation */}
-        {!previewMode && (
-          <PageNavigation
-            pages={formStructure.pages}
-            currentPageIndex={currentPageIndex}
-            onPageChange={setCurrentPageIndex}
-            onAddPage={addPage}
-          />
-        )}
-
-        <div className="flex-1 flex overflow-hidden">
-          {/* Field Palette Sidebar */}
-          {!previewMode && (
-            <div className="w-80 border-r bg-gray-50 overflow-y-auto">
-              <FieldPalette />
-            </div>
-          )}
-
-          {/* Main Canvas */}
-          <div className="flex-1 overflow-y-auto">
-            {previewMode ? (
-              <FormPreview formStructure={formStructure} currentPageIndex={currentPageIndex} />
-            ) : (
-              <FormCanvas
-                page={currentPage}
-                onAddSection={addSection}
-                onSelectField={setSelectedField}
-                onSelectSection={setSelectedSection}
-                onUpdateField={updateField}
-                onDeleteField={deleteField}
-                onDuplicateField={duplicateField}
-              />
-            )}
+        {/* Sidebar */}
+        <div style={{ flex: 1, padding: "20px", backgroundColor: "#f0f0f0", overflowY: "auto" }}>
+          <h2>Sidebar</h2>
+          <div>
+            <button onClick={() => setIsPaletteOpen(!isPaletteOpen)}>
+              {isPaletteOpen ? "Close Question Palette" : "Open Question Palette"}
+            </button>
           </div>
 
-          {/* Properties Panel */}
-          {!previewMode && (
-            <div className="w-80 border-l bg-white overflow-y-auto">
-              {selectedField ? (
-                <FieldEditor
-                  field={selectedField}
-                  availableFields={getAllFields().filter((f) => f.id !== selectedField.id)}
-                  onUpdate={(updates) => updateField(selectedField.id, updates)}
-                  onClose={() => setSelectedField(null)}
-                />
-              ) : selectedSection ? (
-                <SectionEditor
-                  section={selectedSection}
-                  onUpdate={(updates) => {
-                    // Implement section update logic
-                  }}
-                  onClose={() => setSelectedSection(null)}
-                />
-              ) : (
-                <FormSettingsPanel form={formStructure.form} onUpdate={updateForm} />
-              )}
-            </div>
-          )}
+          {/* Question Palette */}
+          {isPaletteOpen && <QuestionPalette addQuestion={addQuestion} selectedPageId={selectedPageId} />}
+
+          {/* Page Management */}
+          <div>
+            <h3>Pages</h3>
+            <ul>
+              {pages.map((page) => (
+                <li key={page.id}>
+                  <button onClick={() => setSelectedPageId(page.id)}>{page.title}</button>
+                  <button onClick={() => deletePage(page.id)}>Delete Page</button>
+                </li>
+              ))}
+            </ul>
+            <button onClick={addPage}>Add New Page</button>
+          </div>
         </div>
       </div>
-
-      <DragOverlay>
-        {draggedItem && (
-          <div className="bg-white border rounded-lg p-2 shadow-lg">
-            <Badge variant="secondary">{draggedItem.fieldType || draggedItem.type}</Badge>
-          </div>
-        )}
-      </DragOverlay>
-    </DndContext>
+    </DndProvider>
   )
 }
+
+export default FormBuilder

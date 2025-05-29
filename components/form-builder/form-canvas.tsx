@@ -10,6 +10,7 @@ import { FieldRenderer } from "./field-renderer"
 
 interface FormCanvasProps {
   formStructure: FormStructure
+  currentPageIndex: number
   onEditField: (field: FormField) => void
   onDeleteField: (fieldId: string) => void
   onMoveFieldUp: (fieldId: string) => void
@@ -19,6 +20,7 @@ interface FormCanvasProps {
 
 export function FormCanvas({
   formStructure,
+  currentPageIndex,
   onEditField,
   onDeleteField,
   onMoveFieldUp,
@@ -54,7 +56,7 @@ export function FormCanvas({
     )
   }
 
-  const currentPage = formStructure.pages[0]
+  const currentPage = formStructure.pages[currentPageIndex]
 
   if (!currentPage) {
     return (

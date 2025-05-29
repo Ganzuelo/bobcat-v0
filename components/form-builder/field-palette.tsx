@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Plus, Search, FileText, Layout, ChevronDown, ChevronRight } from "lucide-react"
+import { Plus, Search, Layout, ChevronDown, ChevronRight } from "lucide-react"
 import { getFieldTypesByCategory, type FieldType, type FieldCategory } from "@/lib/form-types"
 import { AddSectionModal } from "./add-section-modal"
 import { AddPageModal } from "./add-page-modal"
@@ -106,28 +106,16 @@ export function FieldPalette({ onAddField, onAddPage, onAddSection }: FieldPalet
             {/* Structure Actions */}
             <div className="space-y-3">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Form Structure</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 text-xs"
-                  onClick={() => setShowAddPageModal(true)}
-                  disabled={!onAddPage}
-                >
-                  <FileText className="h-3 w-3 mr-1.5" />
-                  Add Page
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 text-xs"
-                  onClick={() => setShowAddSectionModal(true)}
-                  disabled={!onAddSection}
-                >
-                  <Layout className="h-3 w-3 mr-1.5" />
-                  Add Section
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 text-xs w-full"
+                onClick={() => setShowAddSectionModal(true)}
+                disabled={!onAddSection}
+              >
+                <Layout className="h-3 w-3 mr-1.5" />
+                Add Section
+              </Button>
             </div>
 
             <Separator />
