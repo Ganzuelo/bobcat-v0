@@ -12,10 +12,15 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core"
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
-import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { restrictToHorizontalAxis, restrictToParentElement } from "@dnd-kit/modifiers"
 import type { FormPage, FormSection, FormField } from "@/lib/form-types"
-import { SortablePage } from "./sortable-page"
+import { SortablePageTab } from "./sortable-page-tab"
 
 interface PageNavigationProps {
   pages: (FormPage & { sections: (FormSection & { fields: FormField[] })[] })[]
@@ -23,7 +28,7 @@ interface PageNavigationProps {
   onPageChange: (index: number) => void
   onAddPage: () => void
   onReorderPages?: (pages: (FormPage & { sections: (FormSection & { fields: FormField[] })[] })[]) => void
-  onEditPage?: (page: FormPage) => void
+  onDeletePage?: (index: number) => void
 }
 
 export function PageNavigation({
@@ -32,7 +37,7 @@ export function PageNavigation({
   onPageChange,
   onAddPage,
   onReorderPages,
-  onEditPage,
+  onDeletePage,
 }: PageNavigationProps) {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -82,7 +87,7 @@ export function PageNavigation({
     }
   }
 
-  const handleMoveUp = (index: number) => {
+  const handleMoveLeft = (index: number) => {
     if (index > 0) {
       const reorderedPages = arrayMove(pages, index, index - 1)
       const updatedPages = reorderedPages.map((page, idx) => ({
@@ -101,7 +106,7 @@ export function PageNavigation({
     }
   }
 
-  const handleMoveDown = (index: number) => {
+  const handleMoveRight = (index: number) => {
     if (index < pages.length - 1) {
       const reorderedPages = arrayMove(pages, index, index + 1)
       const updatedPages = reorderedPages.map((page, idx) => ({
@@ -121,47 +126,41 @@ export function PageNavigation({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 border-b bg-white">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-700">Pages</h3>
-        <Button variant="outline" size="sm" onClick={onAddPage}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Page
-        </Button>
-      </div>
-
-      {/* Pages List */}
-      <div className="space-y-2">
+    <div className="flex items-center justify-between p-4 border-b bg-white">
+      {/* Page Tabs */}
+      <div className="flex items-center gap-1 flex-1 overflow-x-auto">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+          modifiers={[restrictToHorizontalAxis, restrictToParentElement]}
         >
-          <SortableContext items={pages.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-            {pages.map((page, index) => (
-              <SortablePage
-                key={page.id}
-                page={page}
-                index={index}
-                totalPages={pages.length}
-                isActive={index === currentPageIndex}
-                onPageChange={onPageChange}
-                onMoveUp={handleMoveUp}
-                onMoveDown={handleMoveDown}
-                onEditPage={onEditPage}
-              />
-            ))}
+          <SortableContext items={pages.map((p) => p.id)} strategy={horizontalListSortingStrategy}>
+            <div className="flex items-center gap-1">
+              {pages.map((page, index) => (
+                <SortablePageTab
+                  key={page.id}
+                  page={page}
+                  index={index}
+                  totalPages={pages.length}
+                  isActive={index === currentPageIndex}
+                  onPageChange={onPageChange}
+                  onMoveLeft={handleMoveLeft}
+                  onMoveRight={handleMoveRight}
+                  onDeletePage={onDeletePage}
+                />
+              ))}
+            </div>
           </SortableContext>
         </DndContext>
       </div>
 
-      {/* Page Counter */}
-      <div className="text-xs text-muted-foreground text-center">
-        Page {currentPageIndex + 1} of {pages.length}
-      </div>
+      {/* Add Page Button */}
+      <Button variant="outline" size="sm" onClick={onAddPage} className="ml-4 shrink-0">
+        <Plus className="h-4 w-4 mr-2" />
+        Add Page
+      </Button>
     </div>
   )
 }
