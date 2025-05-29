@@ -1,31 +1,64 @@
 "use client"
 
+import { FormCanvas } from "@/components/form-builder/form-canvas-simple"
+import { PageNavigation } from "@/components/form-builder/page-navigation-simple"
+import { useFormBuilder } from "@/hooks/use-form-builder-simple"
 import { DevModeIndicator } from "@/components/dev-mode-indicator"
 
 export default function HomePage() {
-  console.log("HomePage is rendering")
+  const {
+    formData,
+    currentPageIndex,
+    handlePageChange,
+    handleReorderPages,
+    handleSectionAdd,
+    handleSectionDelete,
+    handleFieldAdd,
+    handleFieldEdit,
+    handleFieldDelete,
+  } = useFormBuilder()
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Project Bobcat - Form Builder</h1>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Test Page</h2>
-          <p className="text-gray-600 mb-4">If you can see this, React is working correctly.</p>
-
-          <div className="space-y-4">
-            <button
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              onClick={() => alert("Button clicked!")}
-            >
-              Test Button
-            </button>
-
-            <div className="p-4 bg-green-50 border border-green-200 rounded">
-              <p className="text-green-800">✅ Basic rendering is working</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex flex-col h-screen">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Project Bobcat</h1>
+              <p className="text-sm text-gray-600">Form Builder</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-500">
+                {formData.pages?.length || 0} pages • {formData.title}
+              </span>
             </div>
           </div>
+        </header>
+
+        {/* Page Navigation */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <PageNavigation
+            pages={formData.pages || []}
+            currentPageIndex={currentPageIndex}
+            onPageChange={handlePageChange}
+            onReorderPages={handleReorderPages}
+          />
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto">
+          <FormCanvas
+            formData={formData}
+            currentPageIndex={currentPageIndex}
+            onFieldEdit={handleFieldEdit}
+            onFieldDelete={handleFieldDelete}
+            onSectionAdd={handleSectionAdd}
+            onSectionDelete={handleSectionDelete}
+            onFieldAdd={handleFieldAdd}
+            onPageChange={handlePageChange}
+            onReorderPages={handleReorderPages}
+          />
         </div>
       </div>
 
