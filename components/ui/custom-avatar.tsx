@@ -22,7 +22,7 @@ export function CustomAvatar({ src, alt, initials, backgroundColor, size = "md",
   return (
     <Avatar className={cn(sizeClasses[size], className)}>
       {src && <AvatarImage src={src || "/placeholder.svg"} alt={alt} />}
-      <AvatarFallback style={{ backgroundColor }} className="text-white font-medium">
+      <AvatarFallback style={{ backgroundColor }} className="text-white font-medium flex items-center justify-center">
         {initials}
       </AvatarFallback>
     </Avatar>
