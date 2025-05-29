@@ -1,30 +1,54 @@
-# bobcat-v0
+# 🦡 Project Bobcat
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+**Project Bobcat** is a dynamic, collaborative form-building platform designed to support the next generation of residential appraisal reports, including UAD 3.6. It empowers appraisers and developers to build, customize, and manage complex forms with advanced logic, validations, and live previews.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/ganzuelos-projects/v0-bobcat-v0)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/Snu3LA155lK)
+## 🚀 Features
 
-## Overview
+- **Modular Form Builder**  
+  Drag-and-drop UI for creating multi-page forms with sections and fields.
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+- **Advanced Field Types**  
+  Supports standard inputs, calculated fields, lookup tables, image uploads, and more.
 
-## Deployment
+- **UAD 3.6 Compliance**  
+  Built to align with Fannie Mae’s URAR Delivery Specification and MISMO standards.
 
-Your project is live at:
+- **Rules Engine & Decision Manager**  
+  Configure field-level rules, validations, and business logic with a no-code interface.
 
-**[https://vercel.com/ganzuelos-projects/v0-bobcat-v0](https://vercel.com/ganzuelos-projects/v0-bobcat-v0)**
+- **Collaboration Tools**  
+  Real-time editing, live user presence indicators, and form access management.
 
-## Build your app
+- **Preview & Export**  
+  View forms in real-time preview mode, export to JSON/XML, and generate PDF previews.
 
-Continue building your app on:
+## 🛠️ Tech Stack
 
-**[https://v0.dev/chat/projects/Snu3LA155lK](https://v0.dev/chat/projects/Snu3LA155lK)**
+- **Frontend:** Next.js 15, React 19, TypeScript  
+- **Styling:** Tailwind CSS, shadcn/ui  
+- **Backend:** Supabase (PostgreSQL, Auth, Edge Functions)  
+- **Hosting:** Vercel (Frontend), Supabase (Backend)
 
-## How It Works
+## 📁 Project Structure
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+- `src/components/form-builder` — Main form builder UI components  
+- `src/lib/schema` — UAD 3.6-compliant field schema and JSON models  
+- `src/pages/dashboard` — User dashboard and saved forms  
+- `src/pages/preview` — Public form preview mode  
+- `src/pages/rules-engine` — Rules and decision manager module  
+- `supabase/` — Edge functions, RLS policies, and database setup
+
+## 🧠 Key Concepts
+
+- **Field Schema**: Each field includes metadata, validation, layout, and optional logic rules.  
+- **Rules Engine**: Define visibility, requirements, and value calculations using conditionals.  
+- **Form States**: Draft, Published, Archived with user access controls.  
+- **Live Collaboration**: Powered by Supabase real-time listeners and presence tracking.
+
+## 📦 Getting Started
+
+```bash
+git clone https://github.com/YOUR_USERNAME/bobcat.git
+cd bobcat
+pnpm install
+pnpm dev
