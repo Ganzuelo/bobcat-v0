@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Footer } from "@/components/footer"
 import { FormProvider } from "@/hooks/use-form-context"
+import { RuleProvider } from "@/hooks/use-rule-context"
 
 export default function DashboardLayout({
   children,
@@ -13,13 +14,15 @@ export default function DashboardLayout({
   return (
     <ProtectedRoute>
       <FormProvider>
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset className="flex flex-col min-h-screen">
-            <main className="flex-1 p-6">{children}</main>
-            <Footer />
-          </SidebarInset>
-        </SidebarProvider>
+        <RuleProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset className="flex flex-col min-h-screen">
+              <main className="flex-1 p-6">{children}</main>
+              <Footer />
+            </SidebarInset>
+          </SidebarProvider>
+        </RuleProvider>
       </FormProvider>
     </ProtectedRoute>
   )
