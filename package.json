@@ -55,6 +55,7 @@
     "react": "^19",
     "react-day-picker": "8.10.1",
     "react-dnd": "latest",
+    "react-dnd-html5-backend": "latest",
     "react-dom": "^19",
     "react-hook-form": "latest",
     "react-resizable-panels": "^2.1.7",
