@@ -286,7 +286,11 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
         {/* Main Canvas */}
         <div className="flex-1 p-6 overflow-y-auto">
           {previewMode ? (
-            <FormPreview formStructure={formStructure} currentPageIndex={currentPageIndex} />
+            <FormPreview
+              formStructure={formStructure}
+              currentPageIndex={currentPageIndex}
+              key={currentPageIndex} // Add key to force re-render when page changes
+            />
           ) : (
             <FormCanvas
               formStructure={formStructure}

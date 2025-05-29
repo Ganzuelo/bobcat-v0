@@ -16,7 +16,6 @@ interface FormPreviewProps {
 
 export function FormPreview({ formStructure, currentPageIndex = 0, onSubmit }: FormPreviewProps) {
   const [formData, setFormData] = useState<Record<string, any>>({})
-  const [currentPage, setCurrentPage] = useState(currentPageIndex)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Ensure formStructure and pages exist
@@ -34,9 +33,9 @@ export function FormPreview({ formStructure, currentPageIndex = 0, onSubmit }: F
     )
   }
 
-  // Ensure currentPage is valid
-  const safeCurrentPage = Math.min(Math.max(0, currentPage), formStructure.pages.length - 1)
-  const page = formStructure.pages[safeCurrentPage]
+  // Use the passed currentPageIndex directly instead of internal state
+  const safeCurrentPageIndex = Math.min(Math.max(0, currentPageIndex), formStructure.pages.length - 1)
+  const page = formStructure.pages[safeCurrentPageIndex]
 
   // Ensure page exists
   if (!page) {
@@ -57,15 +56,13 @@ export function FormPreview({ formStructure, currentPageIndex = 0, onSubmit }: F
   const sections = Array.isArray(page.sections) ? page.sections : []
 
   const handlePrevPage = () => {
-    if (safeCurrentPage > 0) {
-      setCurrentPage(safeCurrentPage - 1)
-    }
+    // This should be handled by the parent component, not internally
+    console.log("Previous page navigation should be handled by parent")
   }
 
   const handleNextPage = () => {
-    if (safeCurrentPage < formStructure.pages.length - 1) {
-      setCurrentPage(safeCurrentPage + 1)
-    }
+    // This should be handled by the parent component, not internally
+    console.log("Next page navigation should be handled by parent")
   }
 
   const handleFieldChange = (fieldId: string, value: any) => {
@@ -112,8 +109,6 @@ export function FormPreview({ formStructure, currentPageIndex = 0, onSubmit }: F
       console.log("Form submitted:", formData)
     }
   }
-
-  const isLastPage = safeCurrentPage === formStructure.pages.length - 1
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -176,19 +171,15 @@ export function FormPreview({ formStructure, currentPageIndex = 0, onSubmit }: F
 
           {/* Navigation */}
           <div className="flex justify-between pt-4">
-            <Button variant="outline" onClick={handlePrevPage} disabled={safeCurrentPage === 0}>
+            <Button variant="outline" disabled>
               <ChevronLeft className="mr-2 h-4 w-4" />
               Previous
             </Button>
 
-            {isLastPage ? (
-              <Button onClick={handleSubmit}>Submit</Button>
-            ) : (
-              <Button onClick={handleNextPage}>
-                Next
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            )}
+            <Button disabled>
+              {safeCurrentPageIndex === formStructure.pages.length - 1 ? "Submit" : "Next"}
+              {safeCurrentPageIndex < formStructure.pages.length - 1 && <ChevronRight className="ml-2 h-4 w-4" />}
+            </Button>
           </div>
         </CardContent>
       </Card>
