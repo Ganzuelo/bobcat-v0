@@ -3,16 +3,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Info } from "lucide-react"
 import type { FormStructure } from "@/lib/form-types"
 import { getGridColClass } from "@/lib/form-builder-utils"
 import { FieldRenderer } from "./field-renderer"
 
 interface FormPreviewProps {
   formStructure: FormStructure
+  currentPageIndex: number
 }
 
-export function FormPreview({ formStructure }: FormPreviewProps) {
-  const currentPage = formStructure.pages[0]
+export function FormPreview({ formStructure, currentPageIndex }: FormPreviewProps) {
+  // Use the passed currentPageIndex instead of hardcoding to index 0
+  const currentPage = formStructure.pages[currentPageIndex]
   const currentSection = currentPage?.sections[0]
 
   return (
@@ -23,8 +27,16 @@ export function FormPreview({ formStructure }: FormPreviewProps) {
         {formStructure.form.description && <p className="text-gray-600 text-lg">{formStructure.form.description}</p>}
       </div>
 
+      {/* Page Title */}
+      {currentPage && (
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-800">{currentPage.title}</h2>
+          {currentPage.description && <p className="text-gray-600 mt-1">{currentPage.description}</p>}
+        </div>
+      )}
+
       {/* Form Content */}
-      {currentSection && (
+      {currentSection ? (
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="text-xl">{currentSection.title}</CardTitle>
@@ -33,7 +45,7 @@ export function FormPreview({ formStructure }: FormPreviewProps) {
           <CardContent>
             {currentSection.fields.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
-                <p>No fields in this form yet.</p>
+                <p>No fields in this section yet.</p>
               </div>
             ) : (
               <form className="space-y-6">
@@ -44,10 +56,28 @@ export function FormPreview({ formStructure }: FormPreviewProps) {
                       <div key={field.id} className={`${gridColClass} min-w-[120px] w-full`}>
                         <div className="space-y-2 w-full">
                           {field.field_type !== "checkbox" && (
-                            <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 w-full">
-                              {field.label}
-                              {field.required && <span className="text-red-500 ml-1">*</span>}
-                            </Label>
+                            <div className="flex items-center gap-2 w-full">
+                              <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 flex-1">
+                                {field.label}
+                                {field.required && <span className="text-red-500 ml-1">*</span>}
+                              </Label>
+                              {field.guidance && (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      type="button"
+                                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                                      aria-label="Field guidance"
+                                    >
+                                      <Info className="h-4 w-4" />
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-80 p-3">
+                                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{field.guidance}</div>
+                                  </PopoverContent>
+                                </Popover>
+                              )}
+                            </div>
                           )}
                           {field.help_text && <p className="text-xs text-gray-500 mb-1 w-full">{field.help_text}</p>}
                           <div className="w-full">
@@ -74,6 +104,14 @@ export function FormPreview({ formStructure }: FormPreviewProps) {
                 )}
               </form>
             )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="shadow-lg">
+          <CardContent className="p-8">
+            <div className="text-center py-12 text-gray-500">
+              <p>No sections available on this page.</p>
+            </div>
           </CardContent>
         </Card>
       )}
