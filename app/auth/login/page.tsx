@@ -343,20 +343,7 @@ export default function LoginPage() {
                     </Label>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="remember-password"
-                      checked={rememberPassword}
-                      onCheckedChange={(checked) => setRememberPassword(checked as boolean)}
-                      disabled={loading}
-                      aria-label="Remember my password (less secure)"
-                    />
-                    <Label htmlFor="remember-password" className="text-sm font-normal cursor-pointer">
-                      Remember my password <span className="text-xs text-gray-500">(less secure)</span>
-                    </Label>
-                  </div>
-
-                  {(rememberMe || rememberPassword) && (
+                  {rememberMe && (
                     <div className="text-xs text-gray-500">
                       <Button
                         type="button"
