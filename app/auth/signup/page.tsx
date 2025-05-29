@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
+import * as LucideIcons from "lucide-react"
 import { useAuth } from "@/components/auth/auth-provider"
 import type { SignUpFormData } from "@/lib/auth-types"
 
@@ -67,6 +68,8 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [currentBenefit, setCurrentBenefit] = useState(0)
+  const [appName, setAppName] = useState("Project Bobcat")
+  const [logoIconName, setLogoIconName] = useState("Cat")
 
   // Auto-advance carousel
   useEffect(() => {
@@ -74,6 +77,20 @@ export default function SignUpPage() {
       setCurrentBenefit((prev) => (prev + 1) % benefits.length)
     }, 4000)
     return () => clearInterval(interval)
+  }, [])
+
+  // Load app settings
+  useEffect(() => {
+    const savedAppName = localStorage.getItem("appName")
+    const savedLogoIcon = localStorage.getItem("logoIcon")
+
+    if (savedAppName) {
+      setAppName(savedAppName)
+    }
+
+    if (savedLogoIcon) {
+      setLogoIconName(savedLogoIcon)
+    }
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,6 +143,14 @@ export default function SignUpPage() {
     setCurrentBenefit((prev) => (prev - 1 + benefits.length) % benefits.length)
   }
 
+  // Get the icon component dynamically
+  const getLogoIcon = () => {
+    const IconComponent = (LucideIcons as any)[logoIconName]
+    return IconComponent || Building2 // Fallback to Building2 if icon not found
+  }
+
+  const LogoIcon = getLogoIcon()
+
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -161,7 +186,7 @@ export default function SignUpPage() {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <div className="flex justify-center">
-              <Building2 className="h-12 w-12 text-primary" />
+              <LogoIcon className="h-12 w-12 text-primary" />
             </div>
             <h2 className="mt-6 text-3xl font-bold text-gray-900">Create your account</h2>
             <p className="mt-2 text-sm text-gray-600">Join thousands of real estate professionals</p>
@@ -170,7 +195,7 @@ export default function SignUpPage() {
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle>Get Started</CardTitle>
-              <CardDescription>Create your Project Bobcat account</CardDescription>
+              <CardDescription>Create your {appName} account</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -315,9 +340,9 @@ export default function SignUpPage() {
           {/* Logo and Title */}
           <div className="text-center mb-12">
             <div className="flex justify-center mb-4">
-              <Building2 className="h-16 w-16 text-white" />
+              <LogoIcon className="h-16 w-16 text-white" />
             </div>
-            <h1 className="text-4xl font-bold mb-4">Join Project Bobcat</h1>
+            <h1 className="text-4xl font-bold mb-4">Join {appName}</h1>
             <p className="text-xl text-gray-200 max-w-md">Transform your real estate workflow today</p>
           </div>
 

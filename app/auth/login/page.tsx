@@ -12,7 +12,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/components/auth/auth-provider"
-import { Eye, EyeOff, Cat, FileText, Zap, BarChart3, Shield, Grid3X3, ChevronLeft, ChevronRight, Settings } from 'lucide-react'
+import {
+  Cat,
+  FileText,
+  Zap,
+  BarChart3,
+  Shield,
+  Grid3X3,
+  ChevronLeft,
+  ChevronRight,
+  Settings,
+  Eye,
+  EyeOff,
+} from "lucide-react"
+import * as LucideIcons from "lucide-react"
 
 const features = [
   {
@@ -63,6 +76,8 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [currentFeature, setCurrentFeature] = useState(0)
+  const [appName, setAppName] = useState("Project Bobcat")
+  const [logoIconName, setLogoIconName] = useState("Cat")
 
   const { signIn, user, loading: authLoading } = useAuth()
   const router = useRouter()
@@ -73,6 +88,18 @@ export default function LoginPage() {
 
     // Load saved credentials on mount
     loadSavedCredentials()
+
+    // Load app settings
+    const savedAppName = localStorage.getItem("appName")
+    const savedLogoIcon = localStorage.getItem("logoIcon")
+
+    if (savedAppName) {
+      setAppName(savedAppName)
+    }
+
+    if (savedLogoIcon) {
+      setLogoIconName(savedLogoIcon)
+    }
   }, [])
 
   // Load saved credentials from localStorage
@@ -194,6 +221,14 @@ export default function LoginPage() {
     setCurrentFeature((prev) => (prev - 1 + features.length) % features.length)
   }
 
+  // Get the icon component dynamically
+  const getLogoIcon = () => {
+    const IconComponent = (LucideIcons as any)[logoIconName]
+    return IconComponent || Cat // Fallback to Cat if icon not found
+  }
+
+  const LogoIcon = getLogoIcon()
+
   // Show loading spinner while checking auth
   if (authLoading) {
     return (
@@ -225,10 +260,10 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <div className="flex justify-center">
-              <Cat className="h-12 w-12 text-primary" />
+              <LogoIcon className="h-12 w-12 text-primary" />
             </div>
             <h2 className="mt-6 text-3xl font-bold text-gray-900">Welcome back</h2>
-            <p className="mt-2 text-sm text-gray-600">Sign in to your Project Bobcat account</p>
+            <p className="mt-2 text-sm text-gray-600">Sign in to your {appName} account</p>
           </div>
 
           <Card className="shadow-lg">
@@ -360,7 +395,7 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col justify-center items-center h-full p-12 text-white">
           {/* Logo and Title */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">Project Bobcat</h1>
+            <h1 className="text-4xl font-bold mb-4">{appName}</h1>
             <p className="text-xl text-gray-200 max-w-md">The Intelligent Form Builder for Real Estate Professionals</p>
           </div>
 
