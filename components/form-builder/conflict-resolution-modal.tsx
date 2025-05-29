@@ -9,18 +9,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { AlertTriangle, FileText, SkipForward, RefreshCw, Edit } from "lucide-react"
-import type { ImportConflict } from "@/lib/enhanced-form-import"
+import { AlertTriangle } from "lucide-react"
 import { useState } from "react"
+import type { ImportConflict } from "@/lib/enhanced-form-import"
 
 interface ConflictResolutionModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onResolve: (resolutions: Record<string, "skip" | "overwrite" | "rename">) => void
+  onResolve: (resolutions: { conflictResolutions: Record<string, string>; pages?: any[] }) => void
   onCancel: () => void
   conflicts: ImportConflict[]
 }
@@ -33,7 +32,11 @@ export function ConflictResolutionModal({
   conflicts,
 }: ConflictResolutionModalProps) {
   const [resolutions, setResolutions] = useState<Record<string, "skip" | "overwrite" | "rename">>({})
-  const [newNames, setNewNames] = useState<Record<string, string>>({})
+
+  // Safety check - if we don't have valid conflicts, don't render the modal
+  if (!conflicts || conflicts.length === 0) {
+    return null
+  }
 
   const handleCancel = () => {
     onCancel()
@@ -41,131 +44,91 @@ export function ConflictResolutionModal({
   }
 
   const handleResolve = () => {
-    onResolve(resolutions)
+    onResolve({ conflictResolutions: resolutions })
     onOpenChange(false)
   }
 
-  const getConflictKey = (conflict: ImportConflict) => {
-    return `${conflict.pageId}-${conflict.sectionId}`
+  const handleResolutionChange = (conflictKey: string, value: "skip" | "overwrite" | "rename") => {
+    setResolutions((prev) => ({
+      ...prev,
+      [conflictKey]: value,
+    }))
   }
-
-  const setResolution = (conflictKey: string, resolution: "skip" | "overwrite" | "rename") => {
-    setResolutions((prev) => ({ ...prev, [conflictKey]: resolution }))
-  }
-
-  const setNewName = (conflictKey: string, name: string) => {
-    setNewNames((prev) => ({ ...prev, [conflictKey]: name }))
-  }
-
-  const getResolutionIcon = (resolution: "skip" | "overwrite" | "rename") => {
-    switch (resolution) {
-      case "skip":
-        return <SkipForward className="h-4 w-4" />
-      case "overwrite":
-        return <RefreshCw className="h-4 w-4" />
-      case "rename":
-        return <Edit className="h-4 w-4" />
-    }
-  }
-
-  const allConflictsResolved = conflicts.every((conflict) => {
-    const key = getConflictKey(conflict)
-    const resolution = resolutions[key]
-    return resolution && (resolution !== "rename" || newNames[key])
-  })
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <AlertDialogContent className="max-w-2xl">
         <AlertDialogHeader>
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
             <AlertDialogTitle>Resolve Import Conflicts</AlertDialogTitle>
           </div>
           <AlertDialogDescription>
-            The following conflicts were detected during import. Please choose how to resolve each one.
+            Please resolve the following conflicts before proceeding with the import.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="space-y-4">
+        <div className="max-h-[400px] overflow-y-auto space-y-4 py-2">
           {conflicts.map((conflict, index) => {
-            const conflictKey = getConflictKey(conflict)
-            const currentResolution = resolutions[conflictKey] || conflict.suggestedAction
-
+            const conflictKey = `${conflict.pageId}-${conflict.sectionId}`
             return (
               <Card key={index} className="border-amber-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Conflict {index + 1}: {conflict.type.replace("_", " ")}
-                  </CardTitle>
-                  <CardDescription className="text-sm">{conflict.message}</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="pt-4">
                   <div className="space-y-3">
-                    <Label className="text-sm font-medium">Choose resolution:</Label>
+                    <div className="text-sm font-medium text-amber-700">{conflict.message}</div>
+
                     <RadioGroup
-                      value={currentResolution}
-                      onValueChange={(value) => setResolution(conflictKey, value as "skip" | "overwrite" | "rename")}
+                      value={resolutions[conflictKey] || conflict.suggestedAction}
+                      onValueChange={(value) =>
+                        handleResolutionChange(conflictKey, value as "skip" | "overwrite" | "rename")
+                      }
                     >
-                      {/* Skip Option */}
                       <div className="flex items-start space-x-3 space-y-0">
-                        <RadioGroupItem value="skip" id={`skip-${index}`} className="mt-1" />
+                        <RadioGroupItem value="skip" id={`skip-${index}`} />
                         <div className="grid gap-1.5 leading-none">
                           <Label
                             htmlFor={`skip-${index}`}
-                            className="flex items-center gap-2 text-sm font-medium leading-none"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                           >
-                            {getResolutionIcon("skip")}
-                            Skip this section
+                            Skip
                           </Label>
                           <p className="text-xs text-muted-foreground">
-                            Keep the existing section, don't import this one
+                            Keep the existing section and ignore the imported one.
                           </p>
                         </div>
                       </div>
 
-                      {/* Overwrite Option */}
                       <div className="flex items-start space-x-3 space-y-0">
-                        <RadioGroupItem value="overwrite" id={`overwrite-${index}`} className="mt-1" />
+                        <RadioGroupItem value="overwrite" id={`overwrite-${index}`} />
                         <div className="grid gap-1.5 leading-none">
                           <Label
                             htmlFor={`overwrite-${index}`}
-                            className="flex items-center gap-2 text-sm font-medium leading-none"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                           >
-                            {getResolutionIcon("overwrite")}
-                            Replace existing section
+                            Overwrite
                           </Label>
                           <p className="text-xs text-muted-foreground">
-                            Replace the existing section with the imported one
+                            Replace the existing section with the imported one.
                           </p>
                         </div>
                       </div>
 
-                      {/* Rename Option */}
-                      <div className="flex items-start space-x-3 space-y-0">
-                        <RadioGroupItem value="rename" id={`rename-${index}`} className="mt-1" />
-                        <div className="grid gap-1.5 leading-none w-full">
-                          <Label
-                            htmlFor={`rename-${index}`}
-                            className="flex items-center gap-2 text-sm font-medium leading-none"
-                          >
-                            {getResolutionIcon("rename")}
-                            Rename and import both
-                          </Label>
-                          <p className="text-xs text-muted-foreground mb-2">
-                            Give the imported section a new ID and keep both sections
-                          </p>
-                          {currentResolution === "rename" && (
-                            <Input
-                              placeholder="Enter new section name"
-                              value={newNames[conflictKey] || ""}
-                              onChange={(e) => setNewName(conflictKey, e.target.value)}
-                              className="text-sm"
-                            />
-                          )}
+                      {conflict.suggestedAction === "rename" && (
+                        <div className="flex items-start space-x-3 space-y-0">
+                          <RadioGroupItem value="rename" id={`rename-${index}`} />
+                          <div className="grid gap-1.5 leading-none">
+                            <Label
+                              htmlFor={`rename-${index}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              Rename
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              Import as a new section with a different ID.
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </RadioGroup>
                   </div>
                 </CardContent>
@@ -176,11 +139,9 @@ export function ConflictResolutionModal({
 
         <AlertDialogFooter>
           <Button variant="outline" onClick={handleCancel}>
-            Cancel Import
+            Cancel
           </Button>
-          <Button onClick={handleResolve} disabled={!allConflictsResolved}>
-            Apply Resolutions
-          </Button>
+          <Button onClick={handleResolve}>Apply Resolutions</Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

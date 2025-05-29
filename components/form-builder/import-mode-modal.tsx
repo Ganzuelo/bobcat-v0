@@ -22,8 +22,8 @@ interface ImportModeModalProps {
   onOpenChange: (open: boolean) => void
   onConfirm: (mode: ImportMode) => void
   onCancel: () => void
-  importData: ValidatedImportForm
-  analysis: ImportAnalysis
+  importData: ValidatedImportForm | null
+  analysis: ImportAnalysis | null
   hasExistingForm: boolean
 }
 
@@ -39,6 +39,11 @@ export function ImportModeModal({
   const [selectedMode, setSelectedMode] = useState<ImportMode>(
     hasExistingForm ? ImportMode.APPEND_SECTIONS : ImportMode.OVERWRITE,
   )
+
+  // Safety check - if we don't have valid data, don't render the modal
+  if (!importData || !analysis) {
+    return null
+  }
 
   const handleCancel = () => {
     onCancel()
@@ -72,7 +77,16 @@ export function ImportModeModal({
     }
   }
 
-  const hasConflicts = analysis.conflicts.length > 0
+  // Safely check for conflicts
+  const hasConflicts = analysis?.conflicts?.length > 0 || false
+
+  // Get summary data with fallbacks
+  const summary = analysis?.summary || {
+    newPages: 0,
+    newSections: 0,
+    replacedSections: 0,
+    totalFields: 0,
+  }
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -101,11 +115,11 @@ export function ImportModeModal({
                     </div>
                     <div className="flex items-center gap-2">
                       <Grid3X3 className="h-3 w-3 text-muted-foreground" />
-                      <span>{analysis.summary.newSections + analysis.summary.replacedSections} sections</span>
+                      <span>{summary.newSections + summary.replacedSections} sections</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <FileText className="h-3 w-3 text-muted-foreground" />
-                      <span>{analysis.summary.totalFields} fields</span>
+                      <span>{summary.totalFields} fields</span>
                     </div>
                   </div>
                 </CardContent>
@@ -219,14 +233,13 @@ export function ImportModeModal({
                     <div>
                       <div className="font-medium text-green-600">Will Add:</div>
                       <div className="text-muted-foreground">
-                        {analysis.summary.newPages} pages, {analysis.summary.newSections} sections
+                        {summary.newPages} pages, {summary.newSections} sections
                       </div>
                     </div>
                     <div>
                       <div className="font-medium text-blue-600">Will Replace:</div>
                       <div className="text-muted-foreground">
-                        {selectedMode === ImportMode.REPLACE_MATCHING_SECTIONS ? analysis.summary.replacedSections : 0}{" "}
-                        sections
+                        {selectedMode === ImportMode.REPLACE_MATCHING_SECTIONS ? summary.replacedSections : 0} sections
                       </div>
                     </div>
                   </div>

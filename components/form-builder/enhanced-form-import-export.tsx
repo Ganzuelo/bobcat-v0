@@ -126,14 +126,19 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
           // Analyze import for conflicts
           const analysis = analyzeImport(validationResult.data, formStructure, ImportMode.APPEND_SECTIONS)
 
-          // Show import mode modal
+          // Store the validated form data
+          setImportFormData(validationResult.data)
+
+          // Store the analysis results
           setImportAnalysis(analysis)
+
+          // Show import mode modal
           setShowImportModeModal(true)
         } else {
           // New form, proceed with direct import
           const newFormStructure = convertImportToFormStructure(validationResult.data)
           setImportData(newFormStructure)
-          setImportFormData(validationResult.data!)
+          setImportFormData(validationResult.data)
           setShowConfirmation(true)
         }
       } catch (error) {
@@ -330,15 +335,18 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
         hasExistingForm={hasExistingForm}
       />
 
-      <ImportModeModal
-        open={showImportModeModal}
-        onOpenChange={setShowImportModeModal}
-        onConfirm={handleImportModeSelected}
-        onCancel={handleCancelImport}
-        importData={importFormData!}
-        analysis={importAnalysis!}
-        hasExistingForm={!!formStructure}
-      />
+      {/* Only render the ImportModeModal if we have valid data */}
+      {importFormData && importAnalysis && (
+        <ImportModeModal
+          open={showImportModeModal}
+          onOpenChange={setShowImportModeModal}
+          onConfirm={handleImportModeSelected}
+          onCancel={handleCancelImport}
+          importData={importFormData}
+          analysis={importAnalysis}
+          hasExistingForm={!!formStructure}
+        />
+      )}
 
       <ConflictResolutionModal
         open={showConflictModal}
