@@ -23,6 +23,9 @@ import { AdvancedTab } from "./field-editor/advanced-tab"
 import { PrefillTab } from "./field-editor/prefill-tab"
 import { CarryforwardTab } from "./field-editor/carryforward-tab"
 import { toast } from "@/components/ui/use-toast"
+import { ErrorBoundary } from "@/components/error-boundary"
+import { useErrorReporting } from "@/hooks/use-error-reporting"
+import { AlertTriangle } from "lucide-react"
 
 export function FieldEditor({
   field,
@@ -146,6 +149,8 @@ export function FieldEditor({
   const [xmlMappingOpen, setXmlMappingOpen] = useState(false)
   const [newAttributeKey, setNewAttributeKey] = useState("")
   const [newAttributeValue, setNewAttributeValue] = useState("")
+
+  const { reportError } = useErrorReporting()
 
   // Update state when field changes
   useEffect(() => {
@@ -452,139 +457,223 @@ export function FieldEditor({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/20 z-50 flex">
-      {/* Overlay to prevent interaction */}
-      <div className="flex-1" onClick={onCancel} />
-
-      {/* Side Panel */}
-      <div className="w-[550px] bg-white border-l shadow-xl flex flex-col">
-        {/* Panel Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <div>
-            <h3 className="font-semibold">Field Properties</h3>
-            <p className="text-sm text-muted-foreground">{field.field_type} field</p>
+    <ErrorBoundary
+      fallback={
+        <div className="fixed inset-0 bg-black/20 z-50 flex">
+          <div className="flex-1" onClick={onCancel} />
+          <div className="w-[550px] bg-white border-l shadow-xl flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <div>
+                <h3 className="font-semibold text-destructive">Field Editor Error</h3>
+                <p className="text-sm text-muted-foreground">Unable to load field properties</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={onCancel}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 p-6 flex items-center justify-center">
+              <div className="text-center space-y-4">
+                <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
+                <div>
+                  <h4 className="font-medium">Field Editor Crashed</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    There was an error loading the field properties panel.
+                  </p>
+                </div>
+                <Button onClick={onCancel}>Close Editor</Button>
+              </div>
+            </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onCancel}>
-            <X className="h-4 w-4" />
-          </Button>
         </div>
+      }
+      context="Field Editor"
+      onError={(error) =>
+        reportError(error, {
+          component: "FieldEditor",
+          fieldId: field.id,
+          additionalData: { fieldType: field.field_type, fieldLabel: field.label },
+        })
+      }
+    >
+      <div className="fixed inset-0 bg-black/20 z-50 flex">
+        {/* Overlay to prevent interaction */}
+        <div className="flex-1" onClick={onCancel} />
 
-        {/* Tabs */}
-        <div className="flex-1 overflow-hidden">
-          <Tabs defaultValue="basic" className="h-full flex flex-col">
-            <div className="px-6 pt-6">
-              <TabsList className="w-full grid grid-cols-7 gap-1">
-                <TabsTrigger value="basic">Basic</TabsTrigger>
-                <TabsTrigger value="validation">Validation</TabsTrigger>
-                <TabsTrigger value="metadata">Metadata</TabsTrigger>
-                <TabsTrigger value="conditional">Logic</TabsTrigger>
-                <TabsTrigger value="prefill">Prefill</TabsTrigger>
-                <TabsTrigger value="carryforward">Carry</TabsTrigger>
-                <TabsTrigger value="advanced">Advanced</TabsTrigger>
-              </TabsList>
+        {/* Side Panel */}
+        <div className="w-[550px] bg-white border-l shadow-xl flex flex-col">
+          {/* Panel Header */}
+          <div className="flex items-center justify-between p-4 border-b">
+            <div>
+              <h3 className="font-semibold">Field Properties</h3>
+              <p className="text-sm text-muted-foreground">{field.field_type} field</p>
             </div>
+            <Button variant="ghost" size="sm" onClick={onCancel}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
-              {/* Basic Tab */}
-              <TabsContent value="basic">
-                <BasicTab field={field} onUpdateField={onUpdateField} />
-              </TabsContent>
+          {/* Tabs */}
+          <div className="flex-1 overflow-hidden">
+            <ErrorBoundary
+              fallback={
+                <div className="p-6 text-center">
+                  <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Error loading field editor tabs</p>
+                </div>
+              }
+              context="Field Editor Tabs"
+            >
+              <Tabs defaultValue="basic" className="h-full flex flex-col">
+                <div className="px-6 pt-6">
+                  <TabsList className="w-full grid grid-cols-7 gap-1">
+                    <TabsTrigger value="basic">Basic</TabsTrigger>
+                    <TabsTrigger value="validation">Validation</TabsTrigger>
+                    <TabsTrigger value="metadata">Metadata</TabsTrigger>
+                    <TabsTrigger value="conditional">Logic</TabsTrigger>
+                    <TabsTrigger value="prefill">Prefill</TabsTrigger>
+                    <TabsTrigger value="carryforward">Carry</TabsTrigger>
+                    <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                  </TabsList>
+                </div>
 
-              {/* Validation Tab */}
-              <TabsContent value="validation">
-                <ValidationTab
-                  field={field}
-                  validationState={validationState}
-                  updateValidationState={updateValidationState}
-                  validationErrors={validationErrors}
-                  allowedValuesInput={allowedValuesInput}
-                  setAllowedValuesInput={setAllowedValuesInput}
-                  addAllowedValue={addAllowedValue}
-                  removeAllowedValue={removeAllowedValue}
-                />
-              </TabsContent>
+                <div className="flex-1 overflow-y-auto p-6">
+                  {/* Basic Tab */}
+                  <TabsContent value="basic">
+                    <ErrorBoundary
+                      fallback={<div className="text-sm text-muted-foreground">Error loading basic tab</div>}
+                      context="Basic Tab"
+                    >
+                      <BasicTab field={field} onUpdateField={onUpdateField} />
+                    </ErrorBoundary>
+                  </TabsContent>
 
-              {/* Metadata Tab */}
-              <TabsContent value="metadata">
-                <MetadataTab
-                  metadataState={metadataState}
-                  updateMetadataState={updateMetadataState}
-                  updateXmlMappingState={updateXmlMappingState}
-                  tagInput={tagInput}
-                  setTagInput={setTagInput}
-                  addTag={addTag}
-                  removeTag={removeTag}
-                  xmlMappingOpen={xmlMappingOpen}
-                  setXmlMappingOpen={setXmlMappingOpen}
-                />
-              </TabsContent>
+                  {/* Validation Tab */}
+                  <TabsContent value="validation">
+                    <ErrorBoundary
+                      fallback={<div className="text-sm text-muted-foreground">Error loading validation tab</div>}
+                      context="Validation Tab"
+                    >
+                      <ValidationTab
+                        field={field}
+                        validationState={validationState}
+                        updateValidationState={updateValidationState}
+                        validationErrors={validationErrors}
+                        allowedValuesInput={allowedValuesInput}
+                        setAllowedValuesInput={setAllowedValuesInput}
+                        addAllowedValue={addAllowedValue}
+                        removeAllowedValue={removeAllowedValue}
+                      />
+                    </ErrorBoundary>
+                  </TabsContent>
 
-              {/* Conditional Logic Tab */}
-              <TabsContent value="conditional">
-                <ConditionalTab
-                  logicState={logicState}
-                  updateLogicState={updateLogicState}
-                  otherFields={otherFields}
-                  updateCondition={updateCondition}
-                  addCondition={addCondition}
-                  removeCondition={removeCondition}
-                />
-              </TabsContent>
+                  {/* Metadata Tab */}
+                  <TabsContent value="metadata">
+                    <ErrorBoundary
+                      fallback={<div className="text-sm text-muted-foreground">Error loading metadata tab</div>}
+                      context="Metadata Tab"
+                    >
+                      <MetadataTab
+                        metadataState={metadataState}
+                        updateMetadataState={updateMetadataState}
+                        updateXmlMappingState={updateXmlMappingState}
+                        tagInput={tagInput}
+                        setTagInput={setTagInput}
+                        addTag={addTag}
+                        removeTag={removeTag}
+                        xmlMappingOpen={xmlMappingOpen}
+                        setXmlMappingOpen={setXmlMappingOpen}
+                      />
+                    </ErrorBoundary>
+                  </TabsContent>
 
-              {/* Prefill Tab */}
-              <TabsContent value="prefill">
-                <PrefillTab
-                  prefillConfig={prefillState}
-                  updatePrefillConfig={updatePrefillState}
-                  onTestPrefill={testPrefillConfiguration}
-                />
-              </TabsContent>
+                  {/* Conditional Logic Tab */}
+                  <TabsContent value="conditional">
+                    <ErrorBoundary
+                      fallback={<div className="text-sm text-muted-foreground">Error loading conditional tab</div>}
+                      context="Conditional Tab"
+                    >
+                      <ConditionalTab
+                        logicState={logicState}
+                        updateLogicState={updateLogicState}
+                        otherFields={otherFields}
+                        updateCondition={updateCondition}
+                        addCondition={addCondition}
+                        removeCondition={removeCondition}
+                      />
+                    </ErrorBoundary>
+                  </TabsContent>
 
-              {/* Carryforward Tab */}
-              <TabsContent value="carryforward">
-                <CarryforwardTab
-                  carryforwardConfig={carryforwardState}
-                  updateCarryforwardConfig={updateCarryforwardState}
-                  availableFields={otherFields}
-                />
-              </TabsContent>
+                  {/* Prefill Tab */}
+                  <TabsContent value="prefill">
+                    <ErrorBoundary
+                      fallback={<div className="text-sm text-muted-foreground">Error loading prefill tab</div>}
+                      context="Prefill Tab"
+                    >
+                      <PrefillTab
+                        prefillConfig={prefillState}
+                        updatePrefillConfig={updatePrefillState}
+                        onTestPrefill={testPrefillConfiguration}
+                      />
+                    </ErrorBoundary>
+                  </TabsContent>
 
-              {/* Advanced Tab */}
-              <TabsContent value="advanced">
-                <AdvancedTab
-                  advancedState={advancedState}
-                  updateAdvancedState={updateAdvancedState}
-                  otherFields={otherFields}
-                  toggleFieldDependency={toggleFieldDependency}
-                  newAttributeKey={newAttributeKey}
-                  setNewAttributeKey={setNewAttributeKey}
-                  newAttributeValue={newAttributeValue}
-                  setNewAttributeValue={setNewAttributeValue}
-                  addCustomAttribute={addCustomAttribute}
-                  removeCustomAttribute={removeCustomAttribute}
-                  updateCustomAttribute={updateCustomAttribute}
-                />
-              </TabsContent>
+                  {/* Carryforward Tab */}
+                  <TabsContent value="carryforward">
+                    <ErrorBoundary
+                      fallback={<div className="text-sm text-muted-foreground">Error loading carryforward tab</div>}
+                      context="Carryforward Tab"
+                    >
+                      <CarryforwardTab
+                        carryforwardConfig={carryforwardState}
+                        updateCarryforwardConfig={updateCarryforwardState}
+                        availableFields={otherFields}
+                      />
+                    </ErrorBoundary>
+                  </TabsContent>
+
+                  {/* Advanced Tab */}
+                  <TabsContent value="advanced">
+                    <ErrorBoundary
+                      fallback={<div className="text-sm text-muted-foreground">Error loading advanced tab</div>}
+                      context="Advanced Tab"
+                    >
+                      <AdvancedTab
+                        advancedState={advancedState}
+                        updateAdvancedState={updateAdvancedState}
+                        otherFields={otherFields}
+                        toggleFieldDependency={toggleFieldDependency}
+                        newAttributeKey={newAttributeKey}
+                        setNewAttributeKey={setNewAttributeKey}
+                        newAttributeValue={newAttributeValue}
+                        setNewAttributeValue={setNewAttributeValue}
+                        addCustomAttribute={addCustomAttribute}
+                        removeCustomAttribute={removeCustomAttribute}
+                        updateCustomAttribute={updateCustomAttribute}
+                      />
+                    </ErrorBoundary>
+                  </TabsContent>
+                </div>
+              </Tabs>
+            </ErrorBoundary>
+          </div>
+
+          {/* Panel Footer */}
+          <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+            <Button variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onReset}>
+                Reset
+              </Button>
+              <Button onClick={handleSave} disabled={validationErrors.length > 0}>
+                <Check className="mr-2 h-4 w-4" />
+                Save Changes
+              </Button>
             </div>
-          </Tabs>
-        </div>
-
-        {/* Panel Footer */}
-        <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onReset}>
-              Reset
-            </Button>
-            <Button onClick={handleSave} disabled={validationErrors.length > 0}>
-              <Check className="mr-2 h-4 w-4" />
-              Save Changes
-            </Button>
           </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   )
 }

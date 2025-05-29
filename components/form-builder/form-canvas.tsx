@@ -4,12 +4,14 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, ChevronUp, ChevronDown, Settings, SquarePen } from "lucide-react"
+import { Edit, Trash2, ChevronUp, ChevronDown, Settings, SquarePen, AlertTriangle } from "lucide-react"
 import type { FormStructure, FormField } from "@/lib/form-types"
 import { getGridColClass, getWidthLabel } from "@/lib/form-builder-utils"
 import { FieldRenderer } from "./field-renderer"
 import { EditPageModal } from "./edit-page-modal"
 import { EditSectionModal } from "./edit-section-modal"
+import { ErrorBoundary } from "@/components/error-boundary"
+import { useErrorReporting } from "@/hooks/use-error-reporting"
 
 interface FormCanvasProps {
   formStructure: FormStructure
@@ -42,6 +44,8 @@ export function FormCanvas({
     open: false,
     section: null,
   })
+
+  const { reportError } = useErrorReporting()
 
   // Add defensive checks to prevent undefined errors
   if (!formStructure) {
@@ -176,130 +180,199 @@ export function FormCanvas({
         const fields = Array.isArray(section.fields) ? section.fields : []
 
         return (
-          <Card key={section.id} className="overflow-hidden">
-            {/* Section Header */}
-            <CardHeader className="bg-gray-50/50 border-b">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-medium">{section.title || "Untitled Section"}</h3>
-                    {onEditSection && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onEditSection(section.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    )}
+          <ErrorBoundary
+            key={section.id}
+            fallback={
+              <Card className="overflow-hidden">
+                <CardHeader className="bg-gray-50/50 border-b">
+                  <CardTitle>
+                    <div className="flex items-center gap-2 text-destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      Section Error
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="text-center text-muted-foreground">
+                    <p>Unable to render section: {section.title || "Untitled Section"}</p>
+                    <Button variant="outline" size="sm" className="mt-2" onClick={() => window.location.reload()}>
+                      Reload
+                    </Button>
                   </div>
-                  {section.description && <p className="text-sm text-muted-foreground mt-1">{section.description}</p>}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {fields.length || 0} fields
-                  </Badge>
-                  <Button variant="ghost" size="sm" onClick={() => handleEditSection(section)} title="Edit section">
-                    <SquarePen className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
+                </CardContent>
+              </Card>
+            }
+            context={`Section: ${section.title || section.id}`}
+            onError={(error) =>
+              reportError(error, {
+                component: "FormCanvas",
+                action: "render_section",
+                additionalData: { sectionId: section.id, sectionTitle: section.title },
+              })
+            }
+          >
+            <Card className="overflow-hidden">
+              {/* Section Header */}
+              <CardHeader className="bg-gray-50/50 border-b">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-medium">{section.title || "Untitled Section"}</h3>
+                      {onEditSection && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEditSection(section.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    {section.description && <p className="text-sm text-muted-foreground mt-1">{section.description}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {fields.length || 0} fields
+                    </Badge>
+                    <Button variant="ghost" size="sm" onClick={() => handleEditSection(section)} title="Edit section">
+                      <SquarePen className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardTitle>
+              </CardHeader>
 
-            <CardContent className="p-6">
-              {fields.length === 0 ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
-                  <p>No fields in this section. Add fields from the Builder Palette.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 auto-rows-min">
-                  {fields.map((field, index) => {
-                    if (!field) return null
+              <CardContent className="p-6">
+                {fields.length === 0 ? (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+                    <p>No fields in this section. Add fields from the Builder Palette.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 auto-rows-min">
+                    {fields.map((field, index) => {
+                      if (!field) return null
 
-                    const gridColClass = getGridColClass(field.width || "full")
-                    const isFirst = index === 0
-                    const isLast = index === fields.length - 1
+                      const gridColClass = getGridColClass(field.width || "full")
+                      const isFirst = index === 0
+                      const isLast = index === fields.length - 1
 
-                    return (
-                      <div key={field.id || `field-${index}`} className={`${gridColClass} min-w-0`}>
-                        <Card className="group hover:shadow-md transition-shadow border-2 hover:border-blue-300 h-full">
-                          <CardContent className="p-4">
-                            <div className="space-y-3">
-                              {/* Field Header */}
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1">
-                                    <div className="font-medium text-sm">{field.label || "Untitled Field"}</div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <Badge variant="secondary" className="text-xs">
-                                        {field.field_type || "unknown"}
-                                      </Badge>
-                                      <Badge variant="outline" className="text-xs">
-                                        {getWidthLabel(field.width)}
-                                      </Badge>
-                                      {field.required && (
-                                        <Badge variant="destructive" className="text-xs">
-                                          Required
-                                        </Badge>
-                                      )}
+                      return (
+                        <ErrorBoundary
+                          key={field.id || `field-${index}`}
+                          fallback={
+                            <div className={`${gridColClass} min-w-0`}>
+                              <Card className="border-2 border-destructive">
+                                <CardContent className="p-4">
+                                  <div className="flex items-center gap-2 text-destructive">
+                                    <AlertTriangle className="h-4 w-4" />
+                                    <span className="text-sm">Field Error</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {field?.label || "Unknown field"}
+                                  </p>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          }
+                          context={`Field: ${field.label || field.id}`}
+                          onError={(error) =>
+                            reportError(error, {
+                              component: "FormCanvas",
+                              action: "render_field",
+                              fieldId: field.id,
+                              additionalData: { fieldType: field.field_type, fieldLabel: field.label },
+                            })
+                          }
+                        >
+                          <div className={`${gridColClass} min-w-0`}>
+                            <Card className="group hover:shadow-md transition-shadow border-2 hover:border-blue-300 h-full">
+                              <CardContent className="p-4">
+                                <div className="space-y-3">
+                                  {/* Field Header */}
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex-1">
+                                        <div className="font-medium text-sm">{field.label || "Untitled Field"}</div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                          <Badge variant="secondary" className="text-xs">
+                                            {field.field_type || "unknown"}
+                                          </Badge>
+                                          <Badge variant="outline" className="text-xs">
+                                            {getWidthLabel(field.width)}
+                                          </Badge>
+                                          {field.required && (
+                                            <Badge variant="destructive" className="text-xs">
+                                              Required
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => field.id && onMoveFieldUp(field.id)}
+                                        disabled={isFirst || !field.id}
+                                        title="Move up"
+                                      >
+                                        <ChevronUp className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => field.id && onMoveFieldDown(field.id)}
+                                        disabled={isLast || !field.id}
+                                        title="Move down"
+                                      >
+                                        <ChevronDown className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => onEditField(field)}
+                                        title="Edit field"
+                                        disabled={!field}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => field.id && onDeleteField(field.id)}
+                                        title="Delete field"
+                                        disabled={!field.id}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
                                     </div>
                                   </div>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => field.id && onMoveFieldUp(field.id)}
-                                    disabled={isFirst || !field.id}
-                                    title="Move up"
-                                  >
-                                    <ChevronUp className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => field.id && onMoveFieldDown(field.id)}
-                                    disabled={isLast || !field.id}
-                                    title="Move down"
-                                  >
-                                    <ChevronDown className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onEditField(field)}
-                                    title="Edit field"
-                                    disabled={!field}
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => field.id && onDeleteField(field.id)}
-                                    title="Delete field"
-                                    disabled={!field.id}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </div>
 
-                              {/* Field Preview */}
-                              <div className="space-y-2">
-                                <FieldRenderer field={field} isPreviewMode={false} />
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                                  {/* Field Preview */}
+                                  <div className="space-y-2">
+                                    <ErrorBoundary
+                                      fallback={
+                                        <div className="p-2 bg-gray-50 rounded text-xs text-muted-foreground">
+                                          Preview unavailable
+                                        </div>
+                                      }
+                                      context="Field Renderer"
+                                    >
+                                      <FieldRenderer field={field} isPreviewMode={false} />
+                                    </ErrorBoundary>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </ErrorBoundary>
+                      )
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </ErrorBoundary>
         )
       })}
 

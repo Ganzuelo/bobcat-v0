@@ -15,6 +15,16 @@ import { showErrorToast } from "@/lib/error-toast-utils"
 import type { Form, FormStructure } from "@/lib/database-types"
 import { PageNavigation } from "./page-navigation"
 import { FormSettingsModal } from "./form-settings-modal"
+import { ErrorBoundary } from "@/components/error-boundary"
+import {
+  FormBuilderErrorFallback,
+  FieldEditorErrorFallback,
+  FormCanvasErrorFallback,
+  FormPreviewErrorFallback,
+  FieldPaletteErrorFallback,
+  PageNavigationErrorFallback,
+} from "./error-fallbacks"
+import { useErrorReporting } from "@/hooks/use-error-reporting"
 
 interface FormBuilderProps {
   formId?: string
@@ -39,6 +49,7 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
     moveFieldDown,
   } = useFieldOperations(formStructure, setFormStructure)
   const { toast } = useToast()
+  const { reportError } = useErrorReporting()
 
   // Ensure currentPageIndex is valid whenever formStructure changes
   useEffect(() => {
@@ -239,89 +250,128 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
   const pages = Array.isArray(formStructure.pages) ? formStructure.pages : []
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-white">
-        <div className="flex items-center gap-4 flex-1">
-          <div className="flex-1 max-w-md">
-            <h1 className="text-xl font-semibold">{formStructure.form?.title || "Untitled Form"}</h1>
+    <ErrorBoundary
+      fallback={<FormBuilderErrorFallback onRetry={() => window.location.reload()} />}
+      onError={(error, errorInfo) =>
+        reportError(error, {
+          component: "FormBuilderV2",
+          formId: formId,
+          additionalData: { errorInfo },
+        })
+      }
+      context="Form Builder"
+      showDetails={process.env.NODE_ENV === "development"}
+    >
+      <div className="h-screen flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b bg-white">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="flex-1 max-w-md">
+              <h1 className="text-xl font-semibold">{formStructure.form?.title || "Untitled Form"}</h1>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <ErrorBoundary fallback={<Button disabled>Import/Export Error</Button>} context="Import/Export">
+              <EnhancedFormImportExport formStructure={formStructure} onImport={handleImport} />
+            </ErrorBoundary>
+            <Button variant="outline" onClick={() => setShowSettings(true)} className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Settings
+            </Button>
+            <Button
+              variant={previewMode ? "default" : "outline"}
+              onClick={() => setPreviewMode(!previewMode)}
+              className="flex items-center gap-2"
+            >
+              {previewMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {previewMode ? "Exit Preview" : "Preview"}
+            </Button>
+            <Button onClick={handleSaveForm} disabled={saving}>
+              <Save className="mr-2 h-4 w-4" />
+              {saving ? "Saving..." : "Save Form"}
+            </Button>
           </div>
         </div>
-        <div className="flex gap-2">
-          <EnhancedFormImportExport formStructure={formStructure} onImport={handleImport} />
-          <Button variant="outline" onClick={() => setShowSettings(true)} className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Settings
-          </Button>
-          <Button
-            variant={previewMode ? "default" : "outline"}
-            onClick={() => setPreviewMode(!previewMode)}
-            className="flex items-center gap-2"
-          >
-            {previewMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {previewMode ? "Exit Preview" : "Preview"}
-          </Button>
-          <Button onClick={handleSaveForm} disabled={saving}>
-            <Save className="mr-2 h-4 w-4" />
-            {saving ? "Saving..." : "Save Form"}
-          </Button>
-        </div>
-      </div>
 
-      {/* Page Navigation */}
-      <PageNavigation
-        pages={pages}
-        currentPageIndex={currentPageIndex}
-        onPageChange={setCurrentPageIndex}
-        onAddPage={() => handleAddPage({ title: `Page ${pages.length + 1}` })}
-        onReorderPages={handleReorderPages}
-      />
+        {/* Page Navigation */}
+        <ErrorBoundary
+          fallback={<PageNavigationErrorFallback onRetry={() => window.location.reload()} />}
+          context="Page Navigation"
+        >
+          <PageNavigation
+            pages={pages}
+            currentPageIndex={currentPageIndex}
+            onPageChange={setCurrentPageIndex}
+            onAddPage={() => handleAddPage({ title: `Page ${pages.length + 1}` })}
+            onReorderPages={handleReorderPages}
+          />
+        </ErrorBoundary>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Builder Palette - Hide in preview mode */}
-        {!previewMode && (
-          <FieldPalette onAddField={handleAddField} onAddPage={handleAddPage} onAddSection={handleAddSection} />
-        )}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Builder Palette - Hide in preview mode */}
+          {!previewMode && (
+            <ErrorBoundary
+              fallback={<FieldPaletteErrorFallback onRetry={() => window.location.reload()} />}
+              context="Field Palette"
+            >
+              <FieldPalette onAddField={handleAddField} onAddPage={handleAddPage} onAddSection={handleAddSection} />
+            </ErrorBoundary>
+          )}
 
-        {/* Main Canvas */}
-        <div className="flex-1 p-6 overflow-y-auto">
-          {previewMode ? (
-            <FormPreview
-              formStructure={formStructure}
-              currentPageIndex={currentPageIndex}
-              key={currentPageIndex} // Add key to force re-render when page changes
-            />
-          ) : (
-            <FormCanvas
-              formStructure={formStructure}
-              onEditField={editField}
-              onDeleteField={deleteField}
-              onMoveFieldUp={moveFieldUp}
-              onMoveFieldDown={moveFieldDown}
-              currentPageIndex={currentPageIndex}
-            />
+          {/* Main Canvas */}
+          <div className="flex-1 p-6 overflow-y-auto">
+            {previewMode ? (
+              <ErrorBoundary
+                fallback={<FormPreviewErrorFallback onRetry={() => setPreviewMode(false)} />}
+                context="Form Preview"
+              >
+                <FormPreview
+                  formStructure={formStructure}
+                  currentPageIndex={currentPageIndex}
+                  key={currentPageIndex} // Add key to force re-render when page changes
+                />
+              </ErrorBoundary>
+            ) : (
+              <ErrorBoundary
+                fallback={<FormCanvasErrorFallback onRetry={() => window.location.reload()} />}
+                context="Form Canvas"
+              >
+                <FormCanvas
+                  formStructure={formStructure}
+                  onEditField={editField}
+                  onDeleteField={deleteField}
+                  onMoveFieldUp={moveFieldUp}
+                  onMoveFieldDown={moveFieldDown}
+                  currentPageIndex={currentPageIndex}
+                />
+              </ErrorBoundary>
+            )}
+          </div>
+
+          {/* Field Editor Panel */}
+          {selectedField && !previewMode && (
+            <ErrorBoundary fallback={<FieldEditorErrorFallback onRetry={cancelFieldEdit} />} context="Field Editor">
+              <FieldEditor
+                field={selectedField}
+                onUpdateField={updateField}
+                onSave={saveFieldChanges}
+                onReset={resetField}
+                onCancel={cancelFieldEdit}
+              />
+            </ErrorBoundary>
           )}
         </div>
 
-        {/* Field Editor Panel */}
-        {selectedField && !previewMode && (
-          <FieldEditor
-            field={selectedField}
-            onUpdateField={updateField}
-            onSave={saveFieldChanges}
-            onReset={resetField}
-            onCancel={cancelFieldEdit}
+        {/* Form Settings Modal */}
+        <ErrorBoundary fallback={null} context="Form Settings Modal">
+          <FormSettingsModal
+            open={showSettings}
+            onClose={() => setShowSettings(false)}
+            form={formStructure.form}
+            onUpdate={handleUpdateForm}
           />
-        )}
+        </ErrorBoundary>
       </div>
-
-      {/* Form Settings Modal */}
-      <FormSettingsModal
-        open={showSettings}
-        onClose={() => setShowSettings(false)}
-        form={formStructure.form}
-        onUpdate={handleUpdateForm}
-      />
-    </div>
+    </ErrorBoundary>
   )
 }
