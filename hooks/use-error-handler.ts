@@ -178,18 +178,18 @@ const safeSync = useCallback(
   return {
     // Error state
     ...errorState,
-    
+
     // Error management
     handleError,
     clearError,
     retry,
     autoRetry,
-    
+
     // Safe operation wrappers
     safeAsync,
     safeAsyncWithRetry,
     safeSync,
-    
+
     // Utilities
     canRetry,
     hasMaxRetries,
