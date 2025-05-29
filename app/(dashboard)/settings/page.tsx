@@ -16,6 +16,17 @@ import { Settings, Users, Shield, Database, Bell } from "lucide-react"
 export default function SettingsPage() {
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
+  const [appName, setAppName] = useState("Project Bobcat")
+  const [tempAppName, setTempAppName] = useState("Project Bobcat")
+
+  // Add useEffect to load saved app name from localStorage
+  useEffect(() => {
+    const savedAppName = localStorage.getItem("appName")
+    if (savedAppName) {
+      setAppName(savedAppName)
+      setTempAppName(savedAppName)
+    }
+  }, [])
 
   useEffect(() => {
     fetchUsers()
@@ -37,7 +48,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{appName} Settings</h1>
         <p className="text-muted-foreground">Manage your Project Bobcat configuration and preferences</p>
       </div>
 
@@ -63,7 +74,7 @@ export default function SettingsPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="app-name">Application Name</Label>
-                  <Input id="app-name" defaultValue="Project Bobcat" />
+                  <Input id="app-name" value={tempAppName} onChange={(e) => setTempAppName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="company-name">Company Name</Label>
@@ -100,7 +111,16 @@ export default function SettingsPage() {
               <Separator />
 
               <div className="flex justify-end">
-                <Button>Save Changes</Button>
+                <Button
+                  onClick={() => {
+                    setAppName(tempAppName)
+                    localStorage.setItem("appName", tempAppName)
+                    // Trigger a custom event to notify the sidebar
+                    window.dispatchEvent(new CustomEvent("appNameChanged", { detail: tempAppName }))
+                  }}
+                >
+                  Save Changes
+                </Button>
               </div>
             </CardContent>
           </Card>

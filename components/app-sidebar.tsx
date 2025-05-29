@@ -5,7 +5,7 @@ import type React from "react"
 import { Cat, FileText, Settings, Zap, BarChart3, Home, User, LogOut, Shield, ChevronsUpDown } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 import {
   Sidebar,
@@ -211,13 +211,33 @@ function UserProfile() {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar()
+  const [appName, setAppName] = useState("Project Bobcat")
+
+  useEffect(() => {
+    // Load saved app name from localStorage
+    const savedAppName = localStorage.getItem("appName")
+    if (savedAppName) {
+      setAppName(savedAppName)
+    }
+
+    // Listen for app name changes
+    const handleAppNameChange = (event: CustomEvent) => {
+      setAppName(event.detail)
+    }
+
+    window.addEventListener("appNameChanged", handleAppNameChange as EventListener)
+
+    return () => {
+      window.removeEventListener("appNameChanged", handleAppNameChange as EventListener)
+    }
+  }, [])
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="flex h-16 shrink-0 items-center justify-start border-b border-sidebar-border">
         <div className="flex h-full items-center gap-2 px-4">
           <Cat className="h-6 w-6" />
-          {state !== "collapsed" && <span className="font-semibold text-lg">Project Bobcat</span>}
+          {state !== "collapsed" && <span className="font-semibold text-lg">{appName}</span>}
         </div>
       </SidebarHeader>
       <SidebarContent>
