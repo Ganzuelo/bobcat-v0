@@ -5,16 +5,20 @@ import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { EnhancedImportModal } from "./enhanced-import-modal"
-import {
-  formStructureToExportFormat,
-  importFormatToFormStructure,
-  downloadJson,
-  generateExportFilename,
-} from "@/lib/form-import-export"
-import { validateImportForm, formatValidationErrors, type ValidatedImportForm } from "@/lib/form-import-validation"
+import { formStructureToExportFormat, downloadJson, generateExportFilename } from "@/lib/form-import-export"
+import { formatValidationErrors, type ValidatedImportForm } from "@/lib/form-import-validation"
 import type { FormStructure } from "@/lib/database-types"
 import { Download, Upload, Undo2 } from "lucide-react"
 import { showErrorToast } from "@/lib/error-toast-utils"
+import {
+  analyzeImport,
+  convertImportToFormStructure,
+  type ImportAnalysis,
+  ImportMode,
+  validateEnhancedImportForm,
+} from "@/lib/enhanced-form-import"
+import { ImportModeModal } from "./import-mode-modal"
+import { ConflictResolutionModal } from "./conflict-resolution-modal"
 
 interface EnhancedFormImportExportProps {
   formStructure: FormStructure
@@ -29,6 +33,11 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
   const [importFormData, setImportFormData] = useState<ValidatedImportForm | null>(null)
   const [previousFormState, setPreviousFormState] = useState<FormStructure | null>(null)
   const [canRestore, setCanRestore] = useState(false)
+
+  const [showImportModeModal, setShowImportModeModal] = useState(false)
+  const [showConflictModal, setShowConflictModal] = useState(false)
+  const [importAnalysis, setImportAnalysis] = useState<ImportAnalysis | null>(null)
+  const [selectedImportMode, setSelectedImportMode] = useState<ImportMode>(ImportMode.OVERWRITE)
 
   const handleExport = () => {
     try {
@@ -93,7 +102,7 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
         console.log("🔍 Validating form structure...")
 
         // Validate the form structure
-        const validationResult = validateImportForm(jsonData)
+        const validationResult = validateEnhancedImportForm(jsonData)
 
         if (!validationResult.success) {
           console.error("❌ Validation failed:", validationResult.errors)
@@ -108,12 +117,23 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
           setPreviousFormState(formStructure)
         }
 
-        // Convert to internal format
-        const newFormStructure = importFormatToFormStructure(validationResult.data!)
-        setImportData(newFormStructure)
-        setImportFormData(validationResult.data!)
+        // After successful validation, check if form exists
+        const formExists = formStructure?.form?.id === validationResult.data.id
 
-        setShowConfirmation(true)
+        if (formExists) {
+          // Analyze import for conflicts
+          const analysis = analyzeImport(validationResult.data, formStructure, ImportMode.APPEND_SECTIONS)
+
+          // Show import mode modal
+          setImportAnalysis(analysis)
+          setShowImportModeModal(true)
+        } else {
+          // New form, proceed with direct import
+          const newFormStructure = convertImportToFormStructure(validationResult.data)
+          setImportData(newFormStructure)
+          setImportFormData(validationResult.data!)
+          setShowConfirmation(true)
+        }
       } catch (error) {
         console.error("❌ Import error:", error)
         showErrorToast(
@@ -169,6 +189,9 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
     setImportData(null)
     setImportFormData(null)
     setShowConfirmation(false)
+    setShowImportModeModal(false)
+    setShowConflictModal(false)
+    setImportAnalysis(null)
   }
 
   const handleRestore = () => {
@@ -216,6 +239,51 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
     return null
   }
 
+  const handleImportModeSelected = (mode: ImportMode) => {
+    setSelectedImportMode(mode)
+    setShowImportModeModal(false)
+
+    if (importAnalysis?.conflicts?.length) {
+      setShowConflictModal(true)
+    } else {
+      applyImport(mode)
+    }
+  }
+
+  const handleConflictResolution = (resolvedData: any) => {
+    setShowConflictModal(false)
+    applyImport(selectedImportMode, resolvedData)
+  }
+
+  const applyImport = (mode: ImportMode, resolvedData?: any) => {
+    if (!importAnalysis) return
+
+    let finalImportData = importAnalysis.importData
+
+    if (resolvedData) {
+      // Apply conflict resolutions
+      finalImportData = {
+        ...importAnalysis.importData,
+        pages: resolvedData.pages,
+      }
+    }
+
+    const newFormStructure = convertImportToFormStructure(finalImportData)
+
+    onImport(newFormStructure)
+    setCanRestore(true)
+
+    toast({
+      title: "✅ Form Imported Successfully",
+      description: `"${finalImportData.name}" has been imported with ${finalImportData.pages.length} pages.`,
+    })
+
+    // Clean up
+    setImportData(null)
+    setImportFormData(null)
+    setImportAnalysis(null)
+  }
+
   return (
     <>
       <div className="flex gap-2">
@@ -254,6 +322,24 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
         onCancel={handleCancelImport}
         formData={getFormStats()}
         hasExistingForm={hasExistingForm}
+      />
+
+      <ImportModeModal
+        open={showImportModeModal}
+        onOpenChange={setShowImportModeModal}
+        onConfirm={handleImportModeSelected}
+        onCancel={handleCancelImport}
+        importData={importFormData!}
+        analysis={importAnalysis!}
+        hasExistingForm={!!formStructure}
+      />
+
+      <ConflictResolutionModal
+        open={showConflictModal}
+        onOpenChange={setShowConflictModal}
+        onResolve={handleConflictResolution}
+        onCancel={handleCancelImport}
+        conflicts={importAnalysis?.conflicts || []}
       />
     </>
   )
