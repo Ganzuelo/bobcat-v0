@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Eye, EyeOff, Save } from "lucide-react"
+import { Eye, EyeOff, Save, Settings } from "lucide-react"
 import { useFormBuilder } from "@/hooks/use-form-builder"
 import { useFieldOperations } from "@/hooks/use-field-operations"
 import { FieldPalette } from "./field-palette"
@@ -13,6 +13,8 @@ import { EnhancedFormImportExport } from "./enhanced-form-import-export"
 import { useToast } from "@/hooks/use-toast"
 import { showErrorToast } from "@/lib/error-toast-utils"
 import type { Form, FormStructure } from "@/lib/database-types"
+import { PageNavigation } from "./page-navigation"
+import { FormSettingsModal } from "./form-settings-modal"
 
 interface FormBuilderProps {
   formId?: string
@@ -21,6 +23,8 @@ interface FormBuilderProps {
 
 export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
   const [previewMode, setPreviewMode] = useState(false)
+  const [currentPageIndex, setCurrentPageIndex] = useState(0)
+  const [showSettings, setShowSettings] = useState(false)
   const { formStructure, setFormStructure, loading, saving, saveForm } = useFormBuilder(formId)
   const {
     selectedField,
@@ -35,6 +39,17 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
     moveFieldDown,
   } = useFieldOperations(formStructure, setFormStructure)
   const { toast } = useToast()
+
+  // Ensure currentPageIndex is valid whenever formStructure changes
+  useEffect(() => {
+    if (formStructure && formStructure.pages && formStructure.pages.length > 0) {
+      if (currentPageIndex >= formStructure.pages.length) {
+        setCurrentPageIndex(formStructure.pages.length - 1)
+      }
+    } else {
+      setCurrentPageIndex(0)
+    }
+  }, [formStructure, currentPageIndex])
 
   const handleSaveForm = () => {
     saveForm(onSave)
@@ -57,7 +72,13 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
       return
     }
 
-    const currentPage = formStructure.pages[0]
+    const currentPage = formStructure.pages[currentPageIndex]
+    if (!currentPage) {
+      console.log("Current page is undefined")
+      showErrorToast(toast, "Error", "Current page not found")
+      return
+    }
+
     if (!currentPage.sections || currentPage.sections.length === 0) {
       console.log("No sections in current page")
       showErrorToast(toast, "Error", "No sections available in the current page")
@@ -89,7 +110,7 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
       form_id: formStructure.form.id,
       title: pageData.title,
       description: pageData.description || "",
-      page_order: formStructure.pages.length,
+      page_order: formStructure.pages?.length || 0,
       settings: {},
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -110,10 +131,11 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
 
     const updatedFormStructure = {
       ...formStructure,
-      pages: [...formStructure.pages, newPage],
+      pages: [...(formStructure.pages || []), newPage],
     }
 
     setFormStructure(updatedFormStructure)
+    setCurrentPageIndex(formStructure.pages?.length || 0) // Navigate to the new page
 
     toast({
       title: "✅ Page Added",
@@ -127,7 +149,12 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
       return
     }
 
-    const currentPage = formStructure.pages[0] // Add to first page for now
+    const currentPage = formStructure.pages[currentPageIndex]
+    if (!currentPage) {
+      showErrorToast(toast, "Error", "Current page not found")
+      return
+    }
+
     const newSectionId = crypto.randomUUID()
 
     const newSection = {
@@ -164,6 +191,42 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
     setFormStructure(importedForm)
   }
 
+  const handleUpdateForm = (updates: Partial<Form>) => {
+    if (!formStructure) return
+
+    const updatedForm = {
+      ...formStructure.form,
+      ...updates,
+    }
+
+    setFormStructure({
+      ...formStructure,
+      form: updatedForm,
+    })
+  }
+
+  const handleReorderPages = (reorderedPages: any[]) => {
+    if (!formStructure) return
+
+    // Update page_order properties
+    const updatedPages = reorderedPages.map((page, index) => ({
+      ...page,
+      page_order: index + 1,
+    }))
+
+    const updatedFormStructure = {
+      ...formStructure,
+      pages: updatedPages,
+    }
+
+    setFormStructure(updatedFormStructure)
+
+    toast({
+      title: "✅ Pages Reordered",
+      description: "Page order has been updated",
+    })
+  }
+
   if (loading) {
     return <div className="flex items-center justify-center h-64">Loading...</div>
   }
@@ -172,18 +235,24 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
     return <div className="flex items-center justify-center h-64">No form data</div>
   }
 
+  // Ensure pages is an array
+  const pages = Array.isArray(formStructure.pages) ? formStructure.pages : []
+
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-white">
         <div className="flex items-center gap-4 flex-1">
           <div className="flex-1 max-w-md">
-            <h1 className="text-xl font-semibold">{formStructure.form.title}</h1>
+            <h1 className="text-xl font-semibold">{formStructure.form?.title || "Untitled Form"}</h1>
           </div>
-          <p className="text-sm text-muted-foreground">Form Builder</p>
         </div>
         <div className="flex gap-2">
           <EnhancedFormImportExport formStructure={formStructure} onImport={handleImport} />
+          <Button variant="outline" onClick={() => setShowSettings(true)} className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Settings
+          </Button>
           <Button
             variant={previewMode ? "default" : "outline"}
             onClick={() => setPreviewMode(!previewMode)}
@@ -199,6 +268,15 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
         </div>
       </div>
 
+      {/* Page Navigation */}
+      <PageNavigation
+        pages={pages}
+        currentPageIndex={currentPageIndex}
+        onPageChange={setCurrentPageIndex}
+        onAddPage={() => handleAddPage({ title: `Page ${pages.length + 1}` })}
+        onReorderPages={handleReorderPages}
+      />
+
       <div className="flex-1 flex overflow-hidden">
         {/* Builder Palette - Hide in preview mode */}
         {!previewMode && (
@@ -208,7 +286,11 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
         {/* Main Canvas */}
         <div className="flex-1 p-6 overflow-y-auto">
           {previewMode ? (
-            <FormPreview formStructure={formStructure} />
+            <FormPreview
+              formStructure={formStructure}
+              currentPageIndex={currentPageIndex}
+              key={currentPageIndex} // Add key to force re-render when page changes
+            />
           ) : (
             <FormCanvas
               formStructure={formStructure}
@@ -216,6 +298,7 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
               onDeleteField={deleteField}
               onMoveFieldUp={moveFieldUp}
               onMoveFieldDown={moveFieldDown}
+              currentPageIndex={currentPageIndex}
             />
           )}
         </div>
@@ -231,6 +314,14 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
           />
         )}
       </div>
+
+      {/* Form Settings Modal */}
+      <FormSettingsModal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        form={formStructure.form}
+        onUpdate={handleUpdateForm}
+      />
     </div>
   )
 }

@@ -1,14 +1,28 @@
 import type { FormField } from "@/lib/form-types"
 import type { FieldType } from "@/lib/database-types"
-import { FIELD_WIDTH_CONFIG, type FieldWidthKey } from "@/lib/form-width-utils"
-
-// Re-export width utilities for backward compatibility
-export {
+// Fix the import path to use relative path instead of alias
+import {
+  FIELD_WIDTH_CONFIG,
+  type FieldWidthKey,
   getGridColClass,
   getWidthLabel,
   getTailwindWidthClass,
   getResponsiveWidthClasses,
-} from "@/lib/form-width-utils"
+  FIELD_WIDTH_OPTIONS,
+  isValidFieldWidth,
+} from "./form-width-utils"
+
+// Re-export width utilities for external use
+export {
+  FIELD_WIDTH_CONFIG,
+  type FieldWidthKey,
+  getGridColClass,
+  getWidthLabel,
+  getTailwindWidthClass,
+  getResponsiveWidthClasses,
+  FIELD_WIDTH_OPTIONS,
+  isValidFieldWidth,
+}
 
 // Helper function to create a new field with proper width handling
 export const createNewField = (sectionId: string, fieldType: FieldType, fieldOrder: number): FormField => {
@@ -33,36 +47,48 @@ export const createNewField = (sectionId: string, fieldType: FieldType, fieldOrd
   }
 }
 
-// Helper function to validate field width
-export const isValidFieldWidth = (width: string): width is FieldWidthKey => {
-  return width in FIELD_WIDTH_CONFIG
+// Generate unique IDs
+export const generateFieldId = (): string => {
+  return `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
-// Helper function to normalize field width (handle legacy values)
-export const normalizeFieldWidth = (width: string | undefined): FieldWidthKey => {
-  if (!width) return "full"
+export const generateSectionId = (): string => {
+  return `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+}
 
-  // Handle legacy width values
-  const legacyMapping: Record<string, FieldWidthKey> = {
-    quarter: "one_quarter",
-    third: "one_third",
-    half: "one_half",
-    three_quarters: "three_quarters",
-    full: "full",
+// Field validation helpers
+export const validateFieldConfiguration = (field: Partial<FormField>): string[] => {
+  const errors: string[] = []
+
+  if (!field.label?.trim()) {
+    errors.push("Field label is required")
   }
 
-  // Check if it's a legacy value
-  if (legacyMapping[width]) {
-    return legacyMapping[width]
+  if (!field.field_type) {
+    errors.push("Field type is required")
   }
 
-  // Check if it's already a valid width
-  if (isValidFieldWidth(width)) {
-    return width
+  if (field.width && !isValidFieldWidth(field.width as FieldWidthKey)) {
+    errors.push("Invalid field width")
   }
 
-  // Default to full width
-  return "full"
+  return errors
+}
+
+// Form layout helpers
+export const calculateFormLayout = (fields: FormField[]) => {
+  const rows = groupFieldsByRows(fields)
+  const totalFields = fields.length
+  const totalRows = rows.length
+  const averageFieldsPerRow = totalFields / totalRows
+
+  return {
+    rows,
+    totalFields,
+    totalRows,
+    averageFieldsPerRow,
+    isCompact: averageFieldsPerRow > 2,
+  }
 }
 
 // Helper function to calculate how many fields can fit in a row
@@ -71,7 +97,7 @@ export const calculateFieldsPerRow = (fields: FormField[]): number => {
   let fieldsInCurrentRow = 0
 
   for (const field of fields) {
-    const width = normalizeFieldWidth(field.width)
+    const width = (field.width as FieldWidthKey) || "full"
     const widthPercentage = Number.parseFloat(FIELD_WIDTH_CONFIG[width].percentage)
 
     if (totalWidth + widthPercentage > 100) {
@@ -92,7 +118,7 @@ export const groupFieldsByRows = (fields: FormField[]): FormField[][] => {
   let currentRowWidth = 0
 
   for (const field of fields) {
-    const width = normalizeFieldWidth(field.width)
+    const width = (field.width as FieldWidthKey) || "full"
     const widthPercentage = Number.parseFloat(FIELD_WIDTH_CONFIG[width].percentage)
 
     // If adding this field would exceed 100% width, start a new row

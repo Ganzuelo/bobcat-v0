@@ -13,6 +13,7 @@ import type {
   LogicCondition,
   XmlMappingState,
   PrefillConfig,
+  CarryforwardState,
 } from "@/lib/field-editor-types"
 import { BasicTab } from "./field-editor/basic-tab"
 import { ValidationTab } from "./field-editor/validation-tab"
@@ -122,11 +123,22 @@ export function FieldEditor({
     }
   }
 
+  // Extract carryforward state from field
+  const getCarryforwardState = (): CarryforwardState => {
+    const carryforward = field.carryforward_config || {}
+    return {
+      enabled: carryforward.enabled || false,
+      source: carryforward.source || "",
+      mode: carryforward.mode || "default",
+    }
+  }
+
   const [validationState, setValidationState] = useState<ValidationState>(getValidationState())
   const [metadataState, setMetadataState] = useState<MetadataState>(getMetadataState())
   const [logicState, setLogicState] = useState<LogicState>(getLogicState())
   const [advancedState, setAdvancedState] = useState<AdvancedState>(getAdvancedState())
   const [prefillState, setPrefillState] = useState<PrefillConfig>(getPrefillState())
+  const [carryforwardState, setCarryforwardState] = useState<CarryforwardState>(getCarryforwardState())
   const [allowedValuesInput, setAllowedValuesInput] = useState("")
   const [tagInput, setTagInput] = useState("")
   const [validationErrors, setValidationErrors] = useState<string[]>([])
@@ -141,6 +153,7 @@ export function FieldEditor({
     setLogicState(getLogicState())
     setAdvancedState(getAdvancedState())
     setPrefillState(getPrefillState())
+    setCarryforwardState(getCarryforwardState())
   }, [field])
 
   // Validate validation rules
@@ -272,6 +285,11 @@ export function FieldEditor({
     setPrefillState((prev) => ({ ...prev, ...updates }))
   }
 
+  // Update carryforward state
+  const updateCarryforwardState = (updates: Partial<CarryforwardState>) => {
+    setCarryforwardState((prev) => ({ ...prev, ...updates }))
+  }
+
   // Test prefill configuration
   const testPrefillConfiguration = async () => {
     try {
@@ -385,6 +403,13 @@ export function FieldEditor({
     })
   }
 
+  // Apply carryforward changes to field
+  const applyCarryforwardChanges = () => {
+    onUpdateField(field.id, {
+      carryforward_config: carryforwardState,
+    })
+  }
+
   // Add allowed value
   const addAllowedValue = () => {
     if (allowedValuesInput.trim()) {
@@ -421,6 +446,7 @@ export function FieldEditor({
     applyLogicChanges()
     applyAdvancedChanges()
     applyPrefillChanges()
+    applyCarryforwardChanges()
     onSave()
   }
 
@@ -451,7 +477,7 @@ export function FieldEditor({
                 <TabsTrigger value="validation">Validation</TabsTrigger>
                 <TabsTrigger value="metadata">Metadata</TabsTrigger>
                 <TabsTrigger value="conditional">Logic</TabsTrigger>
-                <TabsTrigger value="prefill">Prefill</TabsTrigger>
+                <TabsTrigger value="sources">Sources</TabsTrigger>
                 <TabsTrigger value="advanced">Advanced</TabsTrigger>
               </TabsList>
             </div>
@@ -503,12 +529,15 @@ export function FieldEditor({
                 />
               </TabsContent>
 
-              {/* Prefill Tab */}
-              <TabsContent value="prefill">
+              {/* Sources Tab */}
+              <TabsContent value="sources">
                 <PrefillTab
                   prefillConfig={prefillState}
                   updatePrefillConfig={updatePrefillState}
                   onTestPrefill={testPrefillConfiguration}
+                  carryforwardConfig={carryforwardState}
+                  updateCarryforwardConfig={updateCarryforwardState}
+                  availableFields={otherFields}
                 />
               </TabsContent>
 

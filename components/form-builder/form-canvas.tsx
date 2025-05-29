@@ -1,30 +1,48 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, ChevronUp, ChevronDown, Settings } from "lucide-react"
+import { Edit, Trash2, ChevronUp, ChevronDown, Settings, SquarePen } from "lucide-react"
 import type { FormStructure, FormField } from "@/lib/form-types"
 import { getGridColClass, getWidthLabel } from "@/lib/form-builder-utils"
 import { FieldRenderer } from "./field-renderer"
+import { EditPageModal } from "./edit-page-modal"
+import { EditSectionModal } from "./edit-section-modal"
 
 interface FormCanvasProps {
   formStructure: FormStructure
+  currentPageIndex: number
   onEditField: (field: FormField) => void
   onDeleteField: (fieldId: string) => void
   onMoveFieldUp: (fieldId: string) => void
   onMoveFieldDown: (fieldId: string) => void
   onEditSection?: (sectionId: string) => void
+  onUpdatePage?: (pageId: string, updates: { title: string; description?: string }) => void
+  onUpdateSection?: (sectionId: string, updates: { title: string; description?: string }) => void
 }
 
 export function FormCanvas({
   formStructure,
+  currentPageIndex,
   onEditField,
   onDeleteField,
   onMoveFieldUp,
   onMoveFieldDown,
   onEditSection,
+  onUpdatePage,
+  onUpdateSection,
 }: FormCanvasProps) {
+  const [editPageModal, setEditPageModal] = useState<{ open: boolean; page: any }>({
+    open: false,
+    page: null,
+  })
+  const [editSectionModal, setEditSectionModal] = useState<{ open: boolean; section: any }>({
+    open: false,
+    section: null,
+  })
+
   // Add defensive checks to prevent undefined errors
   if (!formStructure) {
     return (
@@ -54,7 +72,9 @@ export function FormCanvas({
     )
   }
 
-  const currentPage = formStructure.pages[0]
+  // Ensure currentPageIndex is valid
+  const safePageIndex = Math.min(Math.max(0, currentPageIndex), formStructure.pages.length - 1)
+  const currentPage = formStructure.pages[safePageIndex]
 
   if (!currentPage) {
     return (
@@ -70,9 +90,33 @@ export function FormCanvas({
     )
   }
 
-  if (!currentPage.sections || currentPage.sections.length === 0) {
+  const handleEditPage = () => {
+    setEditPageModal({ open: true, page: currentPage })
+  }
+
+  const handleSavePage = (pageData: { title: string; description?: string }) => {
+    if (onUpdatePage && currentPage.id) {
+      onUpdatePage(currentPage.id, pageData)
+    }
+  }
+
+  const handleEditSection = (section: any) => {
+    setEditSectionModal({ open: true, section })
+  }
+
+  const handleSaveSection = (sectionData: { title: string; description?: string }) => {
+    if (onUpdateSection && editSectionModal.section?.id) {
+      onUpdateSection(editSectionModal.section.id, sectionData)
+    }
+  }
+
+  // Ensure sections is an array
+  const sections = Array.isArray(currentPage.sections) ? currentPage.sections : []
+
+  if (sections.length === 0) {
     return (
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Page Header */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -82,6 +126,9 @@ export function FormCanvas({
                   <p className="text-sm text-muted-foreground mt-1">{currentPage.description}</p>
                 )}
               </div>
+              <Button variant="ghost" size="sm" onClick={handleEditPage} title="Edit page">
+                <SquarePen className="h-4 w-4" />
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-8">
@@ -90,6 +137,14 @@ export function FormCanvas({
             </div>
           </CardContent>
         </Card>
+
+        {/* Edit Page Modal */}
+        <EditPageModal
+          open={editPageModal.open}
+          onOpenChange={(open) => setEditPageModal({ open, page: editPageModal.page })}
+          page={editPageModal.page || currentPage}
+          onSave={handleSavePage}
+        />
       </div>
     )
   }
@@ -106,13 +161,19 @@ export function FormCanvas({
                 <p className="text-sm text-muted-foreground mt-1">{currentPage.description}</p>
               )}
             </div>
+            <Button variant="ghost" size="sm" onClick={handleEditPage} title="Edit page">
+              <SquarePen className="h-4 w-4" />
+            </Button>
           </CardTitle>
         </CardHeader>
       </Card>
 
       {/* Sections */}
-      {currentPage.sections.map((section) => {
+      {sections.map((section) => {
         if (!section) return null
+
+        // Ensure fields is an array
+        const fields = Array.isArray(section.fields) ? section.fields : []
 
         return (
           <Card key={section.id} className="overflow-hidden">
@@ -135,25 +196,30 @@ export function FormCanvas({
                   </div>
                   {section.description && <p className="text-sm text-muted-foreground mt-1">{section.description}</p>}
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {section.fields?.length || 0} fields
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {fields.length || 0} fields
+                  </Badge>
+                  <Button variant="ghost" size="sm" onClick={() => handleEditSection(section)} title="Edit section">
+                    <SquarePen className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardTitle>
             </CardHeader>
 
             <CardContent className="p-6">
-              {!section.fields || section.fields.length === 0 ? (
+              {fields.length === 0 ? (
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
                   <p>No fields in this section. Add fields from the Builder Palette.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 auto-rows-min">
-                  {section.fields.map((field, index) => {
+                  {fields.map((field, index) => {
                     if (!field) return null
 
                     const gridColClass = getGridColClass(field.width || "full")
                     const isFirst = index === 0
-                    const isLast = index === section.fields.length - 1
+                    const isLast = index === fields.length - 1
 
                     return (
                       <div key={field.id || `field-${index}`} className={`${gridColClass} min-w-0`}>
@@ -236,6 +302,21 @@ export function FormCanvas({
           </Card>
         )
       })}
+
+      {/* Edit Modals */}
+      <EditPageModal
+        open={editPageModal.open}
+        onOpenChange={(open) => setEditPageModal({ open, page: editPageModal.page })}
+        page={editPageModal.page || currentPage}
+        onSave={handleSavePage}
+      />
+
+      <EditSectionModal
+        open={editSectionModal.open}
+        onOpenChange={(open) => setEditSectionModal({ open, section: editSectionModal.section })}
+        section={editSectionModal.section || { title: "", description: "" }}
+        onSave={handleSaveSection}
+      />
     </div>
   )
 }

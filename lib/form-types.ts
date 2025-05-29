@@ -474,6 +474,22 @@ export const URAR_OUTPUT_FORMAT = {
 
 export type UrarOutputFormat = (typeof URAR_OUTPUT_FORMAT)[keyof typeof URAR_OUTPUT_FORMAT]
 
+// Carryforward configuration
+export const CARRYFORWARD_MODES = {
+  DEFAULT: "default",
+  MIRROR: "mirror",
+} as const
+
+export type CarryforwardMode = (typeof CARRYFORWARD_MODES)[keyof typeof CARRYFORWARD_MODES]
+
+export const CarryforwardConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  source: z.string().optional(), // Field ID to copy from
+  mode: z.nativeEnum(CARRYFORWARD_MODES).default(CARRYFORWARD_MODES.DEFAULT),
+})
+
+export interface CarryforwardConfig extends z.infer<typeof CarryforwardConfigSchema> {}
+
 // Validation patterns
 export const VALIDATION_PATTERNS = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -561,17 +577,33 @@ export const PrefillConfigSchema = z.object({
 })
 
 export const FormFieldMetadataSchema = z.object({
+  // UAD 3.6 compliance field
+  uad_field_id: z.string().optional(),
+
   // URAR/MISMO compliance fields
   reportFieldId: z.string().optional(),
   mismoFieldId: z.string().optional(),
+  mismo_path: z.string().optional(),
   cardinality: z.nativeEnum(URAR_CARDINALITY).optional(),
   conditionality: z.nativeEnum(URAR_CONDITIONALITY).optional(),
   outputFormat: z.nativeEnum(URAR_OUTPUT_FORMAT).optional(),
+
+  // XML configuration
+  xml: z
+    .object({
+      fieldId: z.string().optional(),
+      path: z.string().optional(),
+      required: z.boolean().optional(),
+      format: z.string().optional(),
+    })
+    .optional(),
 
   // Field categorization
   category: z.string().optional(),
   subcategory: z.string().optional(),
   tags: z.array(z.string()).optional(),
+  dataType: z.string().optional(),
+  unit: z.string().optional(),
 
   // Documentation
   documentation: z.string().optional(),
@@ -595,6 +627,7 @@ export const FormFieldSchema = z.object({
   label: z.string().min(1, "Field label is required"),
   placeholder: z.string().optional(),
   help_text: z.string().optional(),
+  guidance: z.string().optional(),
   required: z.boolean().default(false),
   width: z.nativeEnum(FIELD_WIDTHS).default(FIELD_WIDTHS.FULL),
   field_order: z.number().min(0),
@@ -606,6 +639,7 @@ export const FormFieldSchema = z.object({
   calculated_config: CalculatedConfigSchema.optional(),
   lookup_config: LookupConfigSchema.optional(),
   prefill_config: PrefillConfigSchema.optional(),
+  carryforward_config: CarryforwardConfigSchema.optional(),
   metadata: FormFieldMetadataSchema.optional(),
 
   // Timestamps
@@ -742,23 +776,31 @@ export const createDefaultField = (
     calculated_config: config.supportsCalculation ? { enabled: false } : undefined,
     lookup_config: config.supportsLookup ? { enabled: false, dataSource: "static" } : undefined,
     prefill_config: { enabled: false, source: "internal" },
+    carryforward_config: { enabled: false, mode: CARRYFORWARD_MODES.DEFAULT },
     metadata: {},
   }
 }
 
-// URAR-specific field templates
+// URAR-specific field templates with UAD Field IDs
 export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
   property_address: {
     field_type: FIELD_TYPES.ADDRESS,
     label: "Property Address",
     required: true,
     metadata: {
+      uad_field_id: "3.001",
       reportFieldId: "1004",
       mismoFieldId: "SubjectPropertyAddress",
+      mismo_path: "COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/ADDRESS",
       cardinality: URAR_CARDINALITY.REQUIRED,
       conditionality: URAR_CONDITIONALITY.ALWAYS,
       outputFormat: URAR_OUTPUT_FORMAT.TEXT,
       category: "Property Information",
+      xml: {
+        fieldId: "SubjectPropertyAddress",
+        required: true,
+        format: "text",
+      },
     },
   },
   property_value: {
@@ -766,12 +808,19 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     label: "Property Value",
     required: true,
     metadata: {
+      uad_field_id: "3.002",
       reportFieldId: "1008",
       mismoFieldId: "PropertyValue",
+      mismo_path: "COLLATERALS/COLLATERAL/VALUATION/PropertyValue",
       cardinality: URAR_CARDINALITY.REQUIRED,
       conditionality: URAR_CONDITIONALITY.ALWAYS,
       outputFormat: URAR_OUTPUT_FORMAT.CURRENCY,
       category: "Valuation",
+      xml: {
+        fieldId: "PropertyValue",
+        required: true,
+        format: "currency",
+      },
     },
   },
   loan_amount: {
@@ -779,12 +828,19 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     label: "Loan Amount",
     required: true,
     metadata: {
+      uad_field_id: "3.003",
       reportFieldId: "1009",
       mismoFieldId: "LoanAmount",
+      mismo_path: "LOAN/LoanAmount",
       cardinality: URAR_CARDINALITY.REQUIRED,
       conditionality: URAR_CONDITIONALITY.ALWAYS,
       outputFormat: URAR_OUTPUT_FORMAT.CURRENCY,
       category: "Loan Information",
+      xml: {
+        fieldId: "LoanAmount",
+        required: true,
+        format: "currency",
+      },
     },
   },
   borrower_name: {
@@ -792,12 +848,19 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     label: "Borrower Name",
     required: true,
     metadata: {
+      uad_field_id: "3.004",
       reportFieldId: "1010",
       mismoFieldId: "BorrowerName",
+      mismo_path: "BORROWER/Name",
       cardinality: URAR_CARDINALITY.REQUIRED,
       conditionality: URAR_CONDITIONALITY.ALWAYS,
       outputFormat: URAR_OUTPUT_FORMAT.TEXT,
       category: "Borrower Information",
+      xml: {
+        fieldId: "BorrowerName",
+        required: true,
+        format: "text",
+      },
     },
   },
   appraiser_name: {
@@ -805,12 +868,19 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     label: "Appraiser Name",
     required: true,
     metadata: {
+      uad_field_id: "3.005",
       reportFieldId: "1011",
       mismoFieldId: "AppraiserName",
+      mismo_path: "APPRAISER/Name",
       cardinality: URAR_CARDINALITY.REQUIRED,
       conditionality: URAR_CONDITIONALITY.ALWAYS,
       outputFormat: URAR_OUTPUT_FORMAT.TEXT,
       category: "Appraiser Information",
+      xml: {
+        fieldId: "AppraiserName",
+        required: true,
+        format: "text",
+      },
     },
   },
   appraisal_date: {
@@ -818,12 +888,19 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     label: "Appraisal Date",
     required: true,
     metadata: {
+      uad_field_id: "3.006",
       reportFieldId: "1012",
       mismoFieldId: "AppraisalDate",
+      mismo_path: "APPRAISAL/AppraisalDate",
       cardinality: URAR_CARDINALITY.REQUIRED,
       conditionality: URAR_CONDITIONALITY.ALWAYS,
       outputFormat: URAR_OUTPUT_FORMAT.DATE,
       category: "Appraisal Information",
+      xml: {
+        fieldId: "AppraisalDate",
+        required: true,
+        format: "date",
+      },
     },
   },
 }

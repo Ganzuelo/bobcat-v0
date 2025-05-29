@@ -5,16 +5,20 @@ import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { EnhancedImportModal } from "./enhanced-import-modal"
-import {
-  formStructureToExportFormat,
-  importFormatToFormStructure,
-  downloadJson,
-  generateExportFilename,
-} from "@/lib/form-import-export"
-import { validateImportForm, formatValidationErrors, type ValidatedImportForm } from "@/lib/form-import-validation"
+import { formStructureToExportFormat, downloadJson, generateExportFilename } from "@/lib/form-import-export"
 import type { FormStructure } from "@/lib/database-types"
 import { Download, Upload, Undo2 } from "lucide-react"
 import { showErrorToast } from "@/lib/error-toast-utils"
+import {
+  validateModularImport,
+  analyzeModularImport,
+  mergeModularImport,
+  formatModularValidationErrors,
+  type ModularImportData,
+  type ModularImportAnalysis,
+  ImportMode,
+} from "@/lib/modular-form-import"
+import { ModularImportModal } from "./modular-import-modal"
 
 interface EnhancedFormImportExportProps {
   formStructure: FormStructure
@@ -26,9 +30,12 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [importData, setImportData] = useState<FormStructure | null>(null)
-  const [importFormData, setImportFormData] = useState<ValidatedImportForm | null>(null)
   const [previousFormState, setPreviousFormState] = useState<FormStructure | null>(null)
   const [canRestore, setCanRestore] = useState(false)
+
+  const [showModularImportModal, setShowModularImportModal] = useState(false)
+  const [modularImportData, setModularImportData] = useState<ModularImportData | null>(null)
+  const [modularImportAnalysis, setModularImportAnalysis] = useState<ModularImportAnalysis | null>(null)
 
   const handleExport = () => {
     try {
@@ -90,30 +97,33 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
           return
         }
 
-        console.log("🔍 Validating form structure...")
+        console.log("🔍 Validating modular import structure...")
 
-        // Validate the form structure
-        const validationResult = validateImportForm(jsonData)
+        // Validate using the new modular import system
+        const validationResult = validateModularImport(jsonData)
 
         if (!validationResult.success) {
           console.error("❌ Validation failed:", validationResult.errors)
-          showErrorToast(toast, "Import Failed", formatValidationErrors(validationResult.errors))
+          showErrorToast(toast, "Import Failed", formatModularValidationErrors(validationResult.errors))
           return
         }
 
-        console.log("✅ Validation successful, preparing import...")
+        console.log("✅ Validation successful, analyzing import...")
 
         // Store current form state for potential recovery
         if (formStructure) {
           setPreviousFormState(formStructure)
         }
 
-        // Convert to internal format
-        const newFormStructure = importFormatToFormStructure(validationResult.data!)
-        setImportData(newFormStructure)
-        setImportFormData(validationResult.data!)
+        // Analyze the import
+        const analysis = analyzeModularImport(validationResult.data!, formStructure, ImportMode.APPEND_SECTIONS)
 
-        setShowConfirmation(true)
+        // Store the validated import data and analysis
+        setModularImportData(validationResult.data!)
+        setModularImportAnalysis(analysis)
+
+        // Show the modular import modal
+        setShowModularImportModal(true)
       } catch (error) {
         console.error("❌ Import error:", error)
         showErrorToast(
@@ -135,40 +145,13 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
     e.target.value = ""
   }
 
-  const handleConfirmImport = () => {
-    if (importData && importFormData) {
-      try {
-        console.log("🔄 Importing form...")
-        onImport(importData)
-        setCanRestore(true)
-
-        toast({
-          title: "✅ Form Imported Successfully",
-          description: `"${importFormData.name}" has been imported with ${importFormData.pages.length} pages.`,
-        })
-
-        console.log("✅ Import successful")
-      } catch (error) {
-        console.error("❌ Import application error:", error)
-        showErrorToast(
-          toast,
-          "Import Failed",
-          "Failed to apply the imported form. You can restore your previous form if needed.",
-        )
-      }
-    }
-
-    // Clean up
-    setImportData(null)
-    setImportFormData(null)
-    setShowConfirmation(false)
-  }
-
   const handleCancelImport = () => {
     console.log("❌ Import cancelled by user")
     setImportData(null)
-    setImportFormData(null)
     setShowConfirmation(false)
+    setShowModularImportModal(false)
+    setModularImportData(null)
+    setModularImportAnalysis(null)
   }
 
   const handleRestore = () => {
@@ -185,26 +168,40 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
     }
   }
 
-  // Calculate form statistics for display
-  const getFormStats = () => {
-    if (!importFormData) return { name: "", formType: "", pageCount: 0, sectionCount: 0, fieldCount: 0 }
+  const handleModularImportConfirm = (mode: ImportMode, targetPageId?: string) => {
+    if (!modularImportData) return
 
-    const pageCount = importFormData.pages?.length || 0
-    const sectionCount = importFormData.pages?.reduce((acc, page) => acc + (page.sections?.length || 0), 0) || 0
-    const fieldCount =
-      importFormData.pages?.reduce(
-        (acc, page) =>
-          acc + (page.sections?.reduce((secAcc, section) => secAcc + (section.fields?.length || 0), 0) || 0),
-        0,
-      ) || 0
+    try {
+      console.log("🔄 Applying modular import...")
 
-    return {
-      name: importFormData.name || "",
-      formType: importFormData.formType || "",
-      pageCount,
-      sectionCount,
-      fieldCount,
+      // Merge the import with the existing form
+      const mergedForm = mergeModularImport(modularImportData, formStructure, mode, targetPageId)
+
+      // Apply the merged form
+      onImport(mergedForm)
+      setCanRestore(true)
+
+      // Show success message
+      const importTypeLabel = modularImportData.type.replace("_", " ")
+      toast({
+        title: "✅ Import Successful",
+        description: `Successfully imported ${importTypeLabel} using ${mode.replace("_", " ")} mode.`,
+      })
+
+      console.log("✅ Modular import successful")
+    } catch (error) {
+      console.error("❌ Import application error:", error)
+      showErrorToast(
+        toast,
+        "Import Failed",
+        "Failed to apply the imported content. You can restore your previous form if needed.",
+      )
     }
+
+    // Clean up
+    setShowModularImportModal(false)
+    setModularImportData(null)
+    setModularImportAnalysis(null)
   }
 
   // Safe check for existing form with proper null/undefined handling
@@ -247,14 +244,28 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
         />
       </div>
 
+      {/* Legacy import modal for backward compatibility */}
       <EnhancedImportModal
         open={showConfirmation}
         onOpenChange={setShowConfirmation}
-        onConfirm={handleConfirmImport}
+        onConfirm={() => {}}
         onCancel={handleCancelImport}
-        formData={getFormStats()}
+        formData={{ name: "", formType: "", pageCount: 0, sectionCount: 0, fieldCount: 0 }}
         hasExistingForm={hasExistingForm}
       />
+
+      {/* New modular import modal */}
+      {modularImportData && modularImportAnalysis && (
+        <ModularImportModal
+          open={showModularImportModal}
+          onOpenChange={setShowModularImportModal}
+          onConfirm={handleModularImportConfirm}
+          onCancel={handleCancelImport}
+          importData={modularImportData}
+          analysis={modularImportAnalysis}
+          existingForm={formStructure}
+        />
+      )}
     </>
   )
 }

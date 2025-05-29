@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -12,7 +12,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/components/auth/auth-provider"
-import { Eye, EyeOff, Cat, FileText, Zap, BarChart3, Shield, Grid3X3, ChevronLeft, ChevronRight, Settings } from 'lucide-react'
+import { Cat, FileText, Zap, BarChart3, Shield, Grid3X3, Settings, Eye, EyeOff } from "lucide-react"
+import * as LucideIcons from "lucide-react"
 
 const features = [
   {
@@ -63,6 +64,8 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [currentFeature, setCurrentFeature] = useState(0)
+  const [appName, setAppName] = useState("Project Bobcat")
+  const [logoIconName, setLogoIconName] = useState("Cat")
 
   const { signIn, user, loading: authLoading } = useAuth()
   const router = useRouter()
@@ -73,6 +76,18 @@ export default function LoginPage() {
 
     // Load saved credentials on mount
     loadSavedCredentials()
+
+    // Load app settings
+    const savedAppName = localStorage.getItem("appName")
+    const savedLogoIcon = localStorage.getItem("logoIcon")
+
+    if (savedAppName) {
+      setAppName(savedAppName)
+    }
+
+    if (savedLogoIcon) {
+      setLogoIconName(savedLogoIcon)
+    }
   }, [])
 
   // Load saved credentials from localStorage
@@ -194,6 +209,14 @@ export default function LoginPage() {
     setCurrentFeature((prev) => (prev - 1 + features.length) % features.length)
   }
 
+  // Get the icon component dynamically
+  const getLogoIcon = () => {
+    const IconComponent = (LucideIcons as any)[logoIconName]
+    return IconComponent || Cat // Fallback to Cat if icon not found
+  }
+
+  const LogoIcon = getLogoIcon()
+
   // Show loading spinner while checking auth
   if (authLoading) {
     return (
@@ -225,10 +248,10 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <div className="flex justify-center">
-              <Cat className="h-12 w-12 text-primary" />
+              <LogoIcon className="h-12 w-12 text-primary" />
             </div>
             <h2 className="mt-6 text-3xl font-bold text-gray-900">Welcome back</h2>
-            <p className="mt-2 text-sm text-gray-600">Sign in to your Project Bobcat account</p>
+            <p className="mt-2 text-sm text-gray-600">Sign in to your {appName} account</p>
           </div>
 
           <Card className="shadow-lg">
@@ -308,20 +331,7 @@ export default function LoginPage() {
                     </Label>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="remember-password"
-                      checked={rememberPassword}
-                      onCheckedChange={(checked) => setRememberPassword(checked as boolean)}
-                      disabled={loading}
-                      aria-label="Remember my password (less secure)"
-                    />
-                    <Label htmlFor="remember-password" className="text-sm font-normal cursor-pointer">
-                      Remember my password <span className="text-xs text-gray-500">(less secure)</span>
-                    </Label>
-                  </div>
-
-                  {(rememberMe || rememberPassword) && (
+                  {rememberMe && (
                     <div className="text-xs text-gray-500">
                       <Button
                         type="button"
@@ -360,73 +370,8 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col justify-center items-center h-full p-12 text-white">
           {/* Logo and Title */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">Project Bobcat</h1>
-            <p className="text-xl text-gray-200 max-w-md">The Intelligent Form Builder for Real Estate Professionals</p>
-          </div>
-
-          {/* Feature Carousel */}
-          <div className="w-full max-w-2xl">
-            <div className="relative bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-              {/* Feature Content */}
-              <div className="text-center min-h-[240px] flex flex-col justify-center" aria-live="polite">
-                <div className="flex justify-center mb-6">
-                  {React.createElement(features[currentFeature].icon, {
-                    className: "h-16 w-16 text-white",
-                  })}
-                </div>
-                <h3 className="text-2xl font-semibold mb-4 text-white">{features[currentFeature].title}</h3>
-                <p className="text-gray-200 leading-relaxed text-lg">{features[currentFeature].description}</p>
-              </div>
-
-              {/* Navigation Arrows */}
-              <div className="absolute top-1/2 -translate-y-1/2 left-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={prevFeature}
-                  className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white border-0"
-                  aria-label="Previous feature"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
-              </div>
-              <div className="absolute top-1/2 -translate-y-1/2 right-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={nextFeature}
-                  className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white border-0"
-                  aria-label="Next feature"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </Button>
-              </div>
-
-              {/* Dots Indicator */}
-              <div className="flex justify-center space-x-2 mt-8">
-                {features.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentFeature(index)}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      index === currentFeature ? "bg-white scale-110" : "bg-white/40 hover:bg-white/60"
-                    }`}
-                    aria-label={`Go to feature ${index + 1}: ${features[index].title}`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Text */}
-          <div className="text-center mt-12">
-            <p className="text-gray-300 text-sm">Trusted by appraisers, inspectors, and real estate professionals</p>
-            <div className="flex items-center justify-center gap-6 mt-4 text-xs text-gray-400">
-              <span>✓ URAR Compliant</span>
-              <span>✓ MISMO Standards</span>
-              <span>✓ UAD 3.6 Ready</span>
-              <span>✓ Enterprise Security</span>
-            </div>
+            <h1 className="text-4xl font-bold mb-4">{appName}</h1>
+            <p className="text-xl text-gray-200 max-w-md">Modular. Compliant. Appraisal-ready.</p>
           </div>
         </div>
       </div>

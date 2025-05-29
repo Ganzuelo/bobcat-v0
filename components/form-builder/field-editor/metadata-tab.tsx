@@ -34,6 +34,16 @@ export function MetadataTab({
 }: MetadataTabProps) {
   return (
     <div className="space-y-4 mt-0">
+      {/* UAD Field ID Display - Read Only */}
+      {metadataState.uad_field_id && (
+        <div className="pb-2 border-b border-gray-100">
+          <Label className="text-sm text-muted-foreground">UAD Field ID</Label>
+          <div className="mt-1 px-3 py-2 bg-gray-50 rounded-md border">
+            <span className="text-sm font-mono text-gray-700">{metadataState.uad_field_id}</span>
+          </div>
+        </div>
+      )}
+
       <div>
         <Label htmlFor="field-key">Field Key / ID</Label>
         <Input

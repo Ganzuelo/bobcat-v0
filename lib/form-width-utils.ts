@@ -35,10 +35,57 @@ export const FIELD_WIDTH_CONFIG: Record<FieldWidthKey, { label: string; gridCols
   },
 }
 
-// Helper function to get the grid column class based on width
+// Helper function to validate field width - NOW EXPORTED
+export function isValidFieldWidth(width: string): width is FieldWidthKey {
+  return width in FIELD_WIDTH_CONFIG
+}
+
+// Helper function to normalize width keys (handle legacy values)
+function normalizeWidthKey(width: string): FieldWidthKey {
+  // Handle legacy width values
+  const legacyMapping: Record<string, FieldWidthKey> = {
+    quarter: "one_quarter",
+    third: "one_third",
+    half: "one_half",
+    three_quarters: "three_quarters",
+    full: "full",
+  }
+
+  // Check if it's a legacy value
+  if (legacyMapping[width]) {
+    return legacyMapping[width]
+  }
+
+  // Check if it's already a valid width
+  if (isValidFieldWidth(width)) {
+    return width as FieldWidthKey
+  }
+
+  // Default to full width
+  return "full"
+}
+
+// Helper function to get the grid column class based on width (for FormCanvas - 12 column grid)
 export function getGridColClass(width: string): string {
   const normalizedWidth = normalizeWidthKey(width)
   return FIELD_WIDTH_CONFIG[normalizedWidth]?.gridCols || FIELD_WIDTH_CONFIG.full.gridCols
+}
+
+// Helper function to get the grid column class for preview mode (4 column grid)
+export function getPreviewGridColClass(width: string): string {
+  const normalizedWidth = normalizeWidthKey(width)
+
+  // Map field widths to 4-column grid spans
+  const previewGridMapping: Record<FieldWidthKey, string> = {
+    one_quarter: "col-span-1", // 25% = 1/4 columns
+    one_third: "col-span-1", // 33% ≈ 1/4 columns (closest fit)
+    one_half: "col-span-2", // 50% = 2/4 columns
+    two_thirds: "col-span-3", // 67% ≈ 3/4 columns
+    three_quarters: "col-span-3", // 75% = 3/4 columns
+    full: "col-span-4", // 100% = 4/4 columns
+  }
+
+  return previewGridMapping[normalizedWidth] || "col-span-4"
 }
 
 // Helper function to get a human-readable width label
@@ -80,36 +127,6 @@ export function getResponsiveWidthClasses(width?: string): string {
 
   const normalizedWidth = normalizeWidthKey(width)
   return responsiveWidthMap[normalizedWidth] || "w-full"
-}
-
-// Helper function to normalize width keys (handle legacy values)
-function normalizeWidthKey(width: string): FieldWidthKey {
-  // Handle legacy width values
-  const legacyMapping: Record<string, FieldWidthKey> = {
-    quarter: "one_quarter",
-    third: "one_third",
-    half: "one_half",
-    three_quarters: "three_quarters",
-    full: "full",
-  }
-
-  // Check if it's a legacy value
-  if (legacyMapping[width]) {
-    return legacyMapping[width]
-  }
-
-  // Check if it's already a valid width
-  if (isValidFieldWidth(width)) {
-    return width as FieldWidthKey
-  }
-
-  // Default to full width
-  return "full"
-}
-
-// Helper function to validate field width
-function isValidFieldWidth(width: string): width is FieldWidthKey {
-  return width in FIELD_WIDTH_CONFIG
 }
 
 // Width options for field editor dropdown

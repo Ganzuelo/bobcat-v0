@@ -1,3 +1,8 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase-client"
+import type { UserProfile } from "@/lib/auth-types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,10 +14,75 @@ import { Badge } from "@/components/ui/badge"
 import { Settings, Users, Shield, Database, Bell } from "lucide-react"
 
 export default function SettingsPage() {
+  const [users, setUsers] = useState<UserProfile[]>([])
+  const [loading, setLoading] = useState(true)
+  const [appName, setAppName] = useState("Project Bobcat")
+  const [tempAppName, setTempAppName] = useState("Project Bobcat")
+  const [companyName, setCompanyName] = useState("Your Company")
+  const [tempCompanyName, setTempCompanyName] = useState("Your Company")
+  const [logoIcon, setLogoIcon] = useState("Cat")
+  const [tempLogoIcon, setTempLogoIcon] = useState("Cat")
+
+  // Add useEffect to load saved settings from localStorage
+  useEffect(() => {
+    const savedAppName = localStorage.getItem("appName")
+    const savedCompanyName = localStorage.getItem("companyName")
+    const savedLogoIcon = localStorage.getItem("logoIcon")
+
+    if (savedAppName) {
+      setAppName(savedAppName)
+      setTempAppName(savedAppName)
+    }
+
+    if (savedCompanyName) {
+      setCompanyName(savedCompanyName)
+      setTempCompanyName(savedCompanyName)
+    }
+
+    if (savedLogoIcon) {
+      setLogoIcon(savedLogoIcon)
+      setTempLogoIcon(savedLogoIcon)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase.from("users").select("*").order("created_at", { ascending: false })
+
+      if (error) throw error
+      setUsers(data || [])
+    } catch (error) {
+      console.error("Error fetching users:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSaveGeneralSettings = () => {
+    // Save app name
+    setAppName(tempAppName)
+    localStorage.setItem("appName", tempAppName)
+    window.dispatchEvent(new CustomEvent("appNameChanged", { detail: tempAppName }))
+
+    // Save company name
+    setCompanyName(tempCompanyName)
+    localStorage.setItem("companyName", tempCompanyName)
+    window.dispatchEvent(new CustomEvent("companyNameChanged", { detail: tempCompanyName }))
+
+    // Save logo icon
+    setLogoIcon(tempLogoIcon)
+    localStorage.setItem("logoIcon", tempLogoIcon)
+    window.dispatchEvent(new CustomEvent("logoIconChanged", { detail: tempLogoIcon }))
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{appName} Settings</h1>
         <p className="text-muted-foreground">Manage your Project Bobcat configuration and preferences</p>
       </div>
 
@@ -35,14 +105,39 @@ export default function SettingsPage() {
               <CardDescription>Configure basic application settings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="app-name">Application Name</Label>
-                  <Input id="app-name" defaultValue="Project Bobcat" />
+                  <Input id="app-name" value={tempAppName} onChange={(e) => setTempAppName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="company-name">Company Name</Label>
-                  <Input id="company-name" placeholder="Your Company" />
+                  <Input
+                    id="company-name"
+                    value={tempCompanyName}
+                    onChange={(e) => setTempCompanyName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="logo-icon">Logo Icon</Label>
+                  <Input
+                    id="logo-icon"
+                    value={tempLogoIcon}
+                    onChange={(e) => setTempLogoIcon(e.target.value)}
+                    placeholder="Enter Lucide icon name (e.g., Cat, Home, Star)"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Enter a Lucide icon name. See{" "}
+                    <a
+                      href="https://lucide.dev/icons/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      lucide.dev
+                    </a>{" "}
+                    for available icons.
+                  </p>
                 </div>
               </div>
 
@@ -75,7 +170,7 @@ export default function SettingsPage() {
               <Separator />
 
               <div className="flex justify-end">
-                <Button>Save Changes</Button>
+                <Button onClick={handleSaveGeneralSettings}>Save Changes</Button>
               </div>
             </CardContent>
           </Card>
@@ -98,25 +193,31 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {[
-                    { name: "John Appraiser", email: "john@example.com", role: "admin", status: "active" },
-                    { name: "Sarah Inspector", email: "sarah@example.com", role: "user", status: "active" },
-                    { name: "Mike Reviewer", email: "mike@example.com", role: "viewer", status: "pending" },
-                  ].map((user, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded">
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                  {loading ? (
+                    <div className="text-center py-4">Loading users...</div>
+                  ) : users.length === 0 ? (
+                    <div className="text-center py-4 text-muted-foreground">No users found</div>
+                  ) : (
+                    users.map((user) => (
+                      <div key={user.id} className="flex items-center justify-between p-3 border rounded">
+                        <div>
+                          <p className="font-medium">
+                            {user.first_name} {user.last_name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
+                          <Badge variant={user.email_verified ? "default" : "secondary"}>
+                            {user.email_verified ? "verified" : "pending"}
+                          </Badge>
+                          <Button variant="ghost" size="sm">
+                            Edit
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
-                        <Badge variant={user.status === "active" ? "default" : "secondary"}>{user.status}</Badge>
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </CardContent>

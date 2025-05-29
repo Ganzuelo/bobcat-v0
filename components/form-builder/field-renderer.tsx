@@ -9,7 +9,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import type { FormField } from "@/lib/form-types"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Database } from "lucide-react"
-import { getResponsiveWidthClasses } from "@/lib/form-width-utils"
 
 interface FieldRendererProps {
   field: FormField
@@ -56,7 +55,7 @@ export function FieldRenderer({
   }
 
   return (
-    <div className={`${getResponsiveWidthClasses(field.width || "full")}`}>
+    <div className="w-full">
       {/* Prefill indicator - only show if there's prefill info */}
       {(isPrefilling || isPrefilled) && (
         <div className="flex justify-end mb-1">
@@ -83,7 +82,7 @@ export function FieldRenderer({
               <Input
                 placeholder={field.placeholder || field.label}
                 disabled={!isPreviewMode}
-                className={isPreviewMode ? baseClasses : "bg-gray-50"}
+                className={isPreviewMode ? baseClasses : "bg-gray-50 w-full"}
               />
             )
           case "textarea":
@@ -92,7 +91,7 @@ export function FieldRenderer({
                 placeholder={field.placeholder || field.label}
                 rows={3}
                 disabled={!isPreviewMode}
-                className={isPreviewMode ? baseClasses : "bg-gray-50"}
+                className={isPreviewMode ? baseClasses : "bg-gray-50 w-full"}
               />
             )
           case "email":
@@ -101,13 +100,13 @@ export function FieldRenderer({
                 type="email"
                 placeholder={field.placeholder || field.label}
                 disabled={!isPreviewMode}
-                className={isPreviewMode ? baseClasses : "bg-gray-50"}
+                className={isPreviewMode ? baseClasses : "bg-gray-50 w-full"}
               />
             )
           case "select":
             return (
               <Select disabled={!isPreviewMode}>
-                <SelectTrigger className={isPreviewMode ? "w-full" : "bg-gray-50"}>
+                <SelectTrigger className={isPreviewMode ? "w-full" : "bg-gray-50 w-full"}>
                   <SelectValue placeholder={field.placeholder || "Select an option"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -122,11 +121,11 @@ export function FieldRenderer({
           case "checkbox":
             if (field.options && field.options.length > 0) {
               return (
-                <div className="space-y-3">
+                <div className="space-y-3 w-full">
                   {field.options.map((option, index) => (
-                    <div key={index} className="flex items-center space-x-2">
+                    <div key={index} className="flex items-center space-x-2 w-full">
                       <Checkbox disabled={!isPreviewMode} id={`${field.id}_${index}`} />
-                      <Label htmlFor={`${field.id}_${index}`} className="text-sm font-normal cursor-pointer">
+                      <Label htmlFor={`${field.id}_${index}`} className="text-sm font-normal cursor-pointer w-full">
                         {option.label}
                       </Label>
                     </div>
@@ -135,9 +134,9 @@ export function FieldRenderer({
               )
             } else {
               return (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 w-full">
                   <Checkbox disabled={!isPreviewMode} id={field.id} />
-                  <Label htmlFor={field.id} className="text-sm font-normal cursor-pointer">
+                  <Label htmlFor={field.id} className="text-sm font-normal cursor-pointer w-full">
                     {field.label}
                   </Label>
                 </div>
@@ -145,11 +144,11 @@ export function FieldRenderer({
             }
           case "radio":
             return (
-              <RadioGroup disabled={!isPreviewMode} className="space-y-3">
+              <RadioGroup disabled={!isPreviewMode} className="space-y-3 w-full">
                 {field.options?.map((option, index) => (
-                  <div key={index} className="flex items-center space-x-2">
+                  <div key={index} className="flex items-center space-x-2 w-full">
                     <RadioGroupItem value={option.value} id={`${field.id}_${index}`} disabled={!isPreviewMode} />
-                    <Label htmlFor={`${field.id}_${index}`} className="text-sm font-normal cursor-pointer">
+                    <Label htmlFor={`${field.id}_${index}`} className="text-sm font-normal cursor-pointer w-full">
                       {option.label}
                     </Label>
                   </div>
@@ -157,7 +156,7 @@ export function FieldRenderer({
               </RadioGroup>
             )
           default:
-            return <div className="p-2 bg-gray-100 rounded text-sm text-gray-600">{field.field_type}</div>
+            return <div className="p-2 bg-gray-100 rounded text-sm text-gray-600 w-full">{field.field_type}</div>
         }
       })()}
     </div>
