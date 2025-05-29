@@ -1,3 +1,8 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase-client"
+import type { UserProfile } from "@/lib/auth-types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,6 +14,26 @@ import { Badge } from "@/components/ui/badge"
 import { Settings, Users, Shield, Database, Bell } from "lucide-react"
 
 export default function SettingsPage() {
+  const [users, setUsers] = useState<UserProfile[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase.from("users").select("*").order("created_at", { ascending: false })
+
+      if (error) throw error
+      setUsers(data || [])
+    } catch (error) {
+      console.error("Error fetching users:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -98,25 +123,31 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {[
-                    { name: "John Appraiser", email: "john@example.com", role: "admin", status: "active" },
-                    { name: "Sarah Inspector", email: "sarah@example.com", role: "user", status: "active" },
-                    { name: "Mike Reviewer", email: "mike@example.com", role: "viewer", status: "pending" },
-                  ].map((user, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded">
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                  {loading ? (
+                    <div className="text-center py-4">Loading users...</div>
+                  ) : users.length === 0 ? (
+                    <div className="text-center py-4 text-muted-foreground">No users found</div>
+                  ) : (
+                    users.map((user) => (
+                      <div key={user.id} className="flex items-center justify-between p-3 border rounded">
+                        <div>
+                          <p className="font-medium">
+                            {user.first_name} {user.last_name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
+                          <Badge variant={user.email_verified ? "default" : "secondary"}>
+                            {user.email_verified ? "verified" : "pending"}
+                          </Badge>
+                          <Button variant="ghost" size="sm">
+                            Edit
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
-                        <Badge variant={user.status === "active" ? "default" : "secondary"}>{user.status}</Badge>
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </CardContent>
