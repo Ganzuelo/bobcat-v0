@@ -150,15 +150,15 @@ export function useFormBuilder(formId?: string) {
           const sections = Array.isArray(page.sections) ? page.sections : []
           return {
             ...page,
-            page_order: pageIndex + 1, // Ensure sequential page ordering
+            page_order: pageIndex + 1, // Ensure sequential page ordering based on array position
             sections: sections.map((section, sectionIndex) => {
               const fields = Array.isArray(section.fields) ? section.fields : []
               return {
                 ...section,
-                section_order: sectionIndex + 1, // Ensure sequential section ordering
+                section_order: sectionIndex + 1,
                 fields: fields.map((field, fieldIndex) => ({
                   ...field,
-                  field_order: fieldIndex + 1, // Ensure sequential field ordering
+                  field_order: fieldIndex + 1,
                 })),
               }
             }),
