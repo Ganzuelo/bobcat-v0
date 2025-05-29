@@ -11,6 +11,8 @@ import {
   validateArray,
   validateObject,
 } from "@/lib/error-handling"
+import { validateCompleteForm } from "@/lib/form-builder-warnings"
+import { warnPerformance, measureAsyncPerformance } from "@/lib/dev-warnings"
 
 interface UseFormBuilderOptions {
   autoSave?: boolean
@@ -133,7 +135,7 @@ export function useFormBuilder(initialFormData?: FormData | null, options: UseFo
     const safeData = safeObject(data) as FormData
     const initialPages = safeArray<FormPage>(safeData.pages, [])
 
-    return {
+    const formData = {
       id: safeString(safeData.id, `form_${Date.now()}`),
       title: safeString(safeData.title, "Untitled Form"),
       description: safeString(safeData.description, ""),
@@ -149,6 +151,12 @@ export function useFormBuilder(initialFormData?: FormData | null, options: UseFo
               },
             ],
     }
+
+    if (process.env.NODE_ENV === "development") {
+      validateCompleteForm(formData, "useFormBuilder")
+    }
+
+    return formData
   }
 
   // Auto-save functionality
@@ -214,12 +222,18 @@ export function useFormBuilder(initialFormData?: FormData | null, options: UseFo
 
     setIsSaving(true)
 
-    const result = await safeAsyncWithRetry(
-      async () => {
-        await onSave(formData)
-      },
-      { maxRetries: 2 },
-      "save-form",
+    const result = await measureAsyncPerformance(
+      () =>
+        safeAsyncWithRetry(
+          async () => {
+            await onSave(formData)
+          },
+          { maxRetries: 2 },
+          "save-form",
+        ),
+      "form-save",
+      2000,
+      "useFormBuilder",
     )
 
     setIsSaving(false)
@@ -254,6 +268,20 @@ export function useFormBuilder(initialFormData?: FormData | null, options: UseFo
 
   const handleReorderPages = useCallback(
     (fromIndex: number, toIndex: number) => {
+      if (process.env.NODE_ENV === "development") {
+        if (Math.abs(fromIndex - toIndex) > 5) {
+          warnPerformance(
+            "large-page-reorder",
+            `Reordering pages across large distance (${Math.abs(fromIndex - toIndex)} positions)`,
+            {
+              details: { fromIndex, toIndex, distance: Math.abs(fromIndex - toIndex) },
+              suggestion: "Large page reorders may be confusing for users",
+              component: "useFormBuilder",
+            },
+          )
+        }
+      }
+
       const result = safeSync(() => {
         const safeFromIndex = safeNumber(fromIndex, 0)
         const safeToIndex = safeNumber(toIndex, 0)

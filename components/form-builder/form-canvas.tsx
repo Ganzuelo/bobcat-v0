@@ -15,6 +15,9 @@ import {
   devWarn,
   devAssert,
 } from "@/lib/null-safety"
+import { validateCompleteForm, warnLargeFormData } from "@/lib/form-builder-warnings"
+import { measurePerformance, warnPerformance } from "@/lib/dev-warnings"
+import React from "react"
 
 interface FormCanvasProps {
   formData: FormData | null | undefined
@@ -51,6 +54,34 @@ export function FormCanvas({
     safeCurrentPageIndex >= 0 && safeCurrentPageIndex < pages.length,
     `FormCanvas: currentPageIndex (${safeCurrentPageIndex}) is out of bounds for ${pages.length} pages`,
   )
+
+  const renderCount = React.useRef(0)
+
+  // Add after the existing devWarn calls
+  if (process.env.NODE_ENV === "development") {
+    // Validate complete form structure
+    validateCompleteForm(safeFormData, "FormCanvas")
+
+    // Performance warning for large forms
+    measurePerformance(
+      () => {
+        warnLargeFormData(safeFormData, "FormCanvas")
+      },
+      "form-validation",
+      50,
+      "FormCanvas",
+    )
+
+    // Warn about excessive re-renders
+    renderCount.current++
+    if (renderCount.current > 10) {
+      warnPerformance("excessive-rerenders", `FormCanvas has re-rendered ${renderCount.current} times`, {
+        details: { renderCount: renderCount.current },
+        suggestion: "Check for unnecessary prop changes or state updates",
+        component: "FormCanvas",
+      })
+    }
+  }
 
   // Safe event handlers
   const handleFieldEdit = safeEventHandler(onFieldEdit, "FormCanvas.onFieldEdit")

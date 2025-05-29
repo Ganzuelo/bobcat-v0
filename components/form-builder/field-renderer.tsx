@@ -20,6 +20,9 @@ import {
   devWarn,
   devAssert,
 } from "@/lib/null-safety"
+import { validateFieldStructure } from "@/lib/form-builder-warnings"
+import { warnAccessibility, warnBestPractices, checkAccessibility } from "@/lib/dev-warnings"
+import React from "react"
 
 interface FieldRendererProps {
   field: FormField | null | undefined
@@ -62,6 +65,57 @@ export function FieldRenderer({ field, onEdit, onDelete }: FieldRendererProps) {
 
   devWarn(fieldId.length > 0, "FieldRenderer: Field missing valid ID")
   devWarn(label.length > 0, "FieldRenderer: Field missing label")
+
+  // Add after the existing devWarn calls
+  const element = React.useRef<HTMLElement>(null)
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      if (element.current) {
+        checkAccessibility(element.current, ["aria-label", "keyboard-navigation"], "FieldRenderer")
+      }
+    }
+  }, [fieldId])
+
+  if (process.env.NODE_ENV === "development") {
+    // Validate field structure
+    validateFieldStructure(field, 0, 0, 0, "FieldRenderer")
+
+    // Accessibility warnings
+    if (!label || label === "Untitled Field") {
+      warnAccessibility("generic-field-label", "Field has generic or missing label", {
+        details: { label, fieldId },
+        suggestion: "Provide descriptive, unique labels for all fields",
+        component: "FieldRenderer",
+      })
+    }
+
+    if (isRequired && !label.includes("*") && !helpText.includes("required")) {
+      warnAccessibility("missing-required-indicator", "Required field missing visual indicator", {
+        details: { label, fieldId },
+        suggestion: "Add visual indicators (like *) or help text for required fields",
+        component: "FieldRenderer",
+      })
+    }
+
+    // Best practices warnings
+    if (fieldType === "password" && !isRequired) {
+      warnBestPractices("optional-password", "Password field is not required", {
+        details: { fieldId },
+        suggestion: "Password fields should typically be required",
+        component: "FieldRenderer",
+      })
+    }
+
+    if (["select", "radio"].includes(fieldType) && safeOptions.length > 10) {
+      warnBestPractices("too-many-options", `${fieldType} field has ${safeOptions.length} options`, {
+        details: { fieldType, optionCount: safeOptions.length, fieldId },
+        suggestion: "Consider using a different field type or grouping options for better UX",
+        component: "FieldRenderer",
+      })
+    }
+
+    // Check for accessibility after render
+  }
 
   // Render field based on type
   const renderFieldInput = () => {
@@ -154,7 +208,7 @@ export function FieldRenderer({ field, onEdit, onDelete }: FieldRendererProps) {
   }
 
   return (
-    <Card className="relative group">
+    <Card className="relative group" ref={element}>
       <CardContent className="p-4">
         {/* Field Actions */}
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">

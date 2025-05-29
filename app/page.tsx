@@ -1,7 +1,7 @@
 "use client"
 
-import { FormCanvas } from "../components/form-builder/form-canvas"
+import { useErrorBoundary } from "../components/error-boundary"
 
 export default function SyntheticV0PageForDeployment() {
-  return <FormCanvas />
+  return <useErrorBoundary />
 }
