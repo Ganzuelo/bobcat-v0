@@ -131,7 +131,8 @@ function UserProfile() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-sidebar-accent/50 transition-colors duration-200 text-left"
+          className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-sidebar-accent/50 transition-colors duration-200 text-left data-[state=collapsed]:justify-center"
+          data-state={state}
         >
           <CustomAvatar
             src={profile.avatar_url}
