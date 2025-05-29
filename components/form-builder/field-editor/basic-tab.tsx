@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from "lucide-react"
 import type { FormField } from "@/lib/form-types"
 import { FIELD_WIDTH_OPTIONS } from "@/lib/form-width-utils"
 
@@ -43,6 +43,17 @@ export function BasicTab({ field, onUpdateField }: BasicTabProps) {
           value={field.help_text || ""}
           onChange={(e) => onUpdateField(field.id, { help_text: e.target.value })}
           placeholder="Provide additional guidance"
+          rows={3}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="field-guidance">Field Guidance (optional)</Label>
+        <Textarea
+          id="field-guidance"
+          value={field.guidance || ""}
+          onChange={(e) => onUpdateField(field.id, { guidance: e.target.value })}
+          placeholder="Additional context shown via info icon tooltip"
           rows={3}
         />
       </div>
