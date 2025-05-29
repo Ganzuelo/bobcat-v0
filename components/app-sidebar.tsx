@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { Cat, FileText, Settings, Zap, BarChart3, Home, User, LogOut, Shield } from "lucide-react"
+import { Cat, FileText, Settings, Zap, BarChart3, Home, User, LogOut, Shield, ChevronsUpDown } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -146,6 +146,7 @@ function UserProfile() {
                 <span className="truncate font-semibold">{getDisplayName()}</span>
                 <span className="truncate text-xs text-muted-foreground">{user.email}</span>
               </div>
+              <ChevronsUpDown className="ml-auto h-4 w-4 text-muted-foreground flex-shrink-0" />
             </>
           )}
         </button>
