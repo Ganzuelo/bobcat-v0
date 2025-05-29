@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, ChevronUp, ChevronDown, Settings, Edit2 } from "lucide-react"
+import { Edit, Trash2, ChevronUp, ChevronDown, Settings, SquarePen } from "lucide-react"
 import type { FormStructure, FormField } from "@/lib/form-types"
 import { getGridColClass, getWidthLabel } from "@/lib/form-builder-utils"
 import { FieldRenderer } from "./field-renderer"
@@ -122,7 +122,7 @@ export function FormCanvas({
                 )}
               </div>
               <Button variant="ghost" size="sm" onClick={handleEditPage} title="Edit page">
-                <Edit2 className="h-4 w-4" />
+                <SquarePen className="h-4 w-4" />
               </Button>
             </CardTitle>
           </CardHeader>
@@ -157,7 +157,7 @@ export function FormCanvas({
               )}
             </div>
             <Button variant="ghost" size="sm" onClick={handleEditPage} title="Edit page">
-              <Edit2 className="h-4 w-4" />
+              <SquarePen className="h-4 w-4" />
             </Button>
           </CardTitle>
         </CardHeader>
@@ -193,7 +193,7 @@ export function FormCanvas({
                     {section.fields?.length || 0} fields
                   </Badge>
                   <Button variant="ghost" size="sm" onClick={() => handleEditSection(section)} title="Edit section">
-                    <Edit2 className="h-4 w-4" />
+                    <SquarePen className="h-4 w-4" />
                   </Button>
                 </div>
               </CardTitle>
