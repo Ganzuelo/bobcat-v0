@@ -5,32 +5,32 @@ export type FieldWidthKey = "one_quarter" | "one_third" | "one_half" | "two_thir
 export const FIELD_WIDTH_CONFIG: Record<FieldWidthKey, { label: string; gridCols: string; percentage: string }> = {
   one_quarter: {
     label: "25%",
-    gridCols: "col-span-3",
+    gridCols: "col-span-1", // 1/4 of 4 columns
     percentage: "25",
   },
   one_third: {
     label: "33%",
-    gridCols: "col-span-4",
+    gridCols: "col-span-1", // Closest to 1/3 in 4-column grid
     percentage: "33.33",
   },
   one_half: {
     label: "50%",
-    gridCols: "col-span-6",
+    gridCols: "col-span-2", // 2/4 of 4 columns
     percentage: "50",
   },
   two_thirds: {
     label: "66%",
-    gridCols: "col-span-8",
+    gridCols: "col-span-3", // 3/4 of 4 columns (closest to 2/3)
     percentage: "66.67",
   },
   three_quarters: {
     label: "75%",
-    gridCols: "col-span-9",
+    gridCols: "col-span-3", // 3/4 of 4 columns
     percentage: "75",
   },
   full: {
     label: "100%",
-    gridCols: "col-span-12",
+    gridCols: "col-span-4", // All 4 columns
     percentage: "100",
   },
 }

@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label"
 import type { FormStructure } from "@/lib/form-types"
 import { getGridColClass } from "@/lib/form-builder-utils"
 import { FieldRenderer } from "./field-renderer"
-import { getResponsiveWidthClasses } from "@/lib/form-width-utils"
 
 interface FormPreviewProps {
   formStructure: FormStructure
@@ -38,12 +37,12 @@ export function FormPreview({ formStructure }: FormPreviewProps) {
               </div>
             ) : (
               <form className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   {currentSection.fields.map((field) => {
                     const gridColClass = getGridColClass(field.width || "full")
                     return (
                       <div key={field.id} className={`${gridColClass} min-w-0`}>
-                        <div className="space-y-2">
+                        <div className="space-y-2 min-w-[120px]">
                           {field.field_type !== "checkbox" && (
                             <Label htmlFor={field.id} className="text-sm font-medium text-gray-700">
                               {field.label}
@@ -51,7 +50,7 @@ export function FormPreview({ formStructure }: FormPreviewProps) {
                             </Label>
                           )}
                           {field.help_text && <p className="text-xs text-gray-500 mb-1">{field.help_text}</p>}
-                          <div className="w-full">
+                          <div className="w-full min-w-[100px]">
                             <FieldRenderer field={field} isPreviewMode={true} />
                           </div>
                         </div>
