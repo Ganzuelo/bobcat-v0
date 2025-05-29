@@ -15,9 +15,11 @@ import QuestionPalette from "./question-palette"
 
 import { QuestionType } from "./types"
 
-const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0
+const isTouchDevice =
+  typeof window !== "undefined" &&
+  ("ontouchstart" in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0)
 
-const FormBuilder: React.FC = () => {
+export const FormBuilder: React.FC = () => {
   const [pages, setPages] = useState([
     {
       id: uuidv4(),
