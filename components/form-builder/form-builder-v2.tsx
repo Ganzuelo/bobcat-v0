@@ -199,7 +199,6 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
           <div className="flex-1 max-w-md">
             <h1 className="text-xl font-semibold">{formStructure.form.title}</h1>
           </div>
-          <p className="text-sm text-muted-foreground">Form Builder</p>
         </div>
         <div className="flex gap-2">
           <EnhancedFormImportExport formStructure={formStructure} onImport={handleImport} />
