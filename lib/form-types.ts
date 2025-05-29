@@ -474,6 +474,22 @@ export const URAR_OUTPUT_FORMAT = {
 
 export type UrarOutputFormat = (typeof URAR_OUTPUT_FORMAT)[keyof typeof URAR_OUTPUT_FORMAT]
 
+// Carryforward configuration
+export const CARRYFORWARD_MODES = {
+  DEFAULT: "default",
+  MIRROR: "mirror",
+} as const
+
+export type CarryforwardMode = (typeof CARRYFORWARD_MODES)[keyof typeof CARRYFORWARD_MODES]
+
+export const CarryforwardConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  source: z.string().optional(), // Field ID to copy from
+  mode: z.nativeEnum(CARRYFORWARD_MODES).default(CARRYFORWARD_MODES.DEFAULT),
+})
+
+export interface CarryforwardConfig extends z.infer<typeof CarryforwardConfigSchema> {}
+
 // Validation patterns
 export const VALIDATION_PATTERNS = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -561,7 +577,7 @@ export const PrefillConfigSchema = z.object({
 })
 
 export const FormFieldMetadataSchema = z.object({
-  // UAD 3.6 compliance field - THIS IS THE KEY ADDITION
+  // UAD 3.6 compliance field
   uad_field_id: z.string().optional(),
 
   // URAR/MISMO compliance fields
@@ -623,6 +639,7 @@ export const FormFieldSchema = z.object({
   calculated_config: CalculatedConfigSchema.optional(),
   lookup_config: LookupConfigSchema.optional(),
   prefill_config: PrefillConfigSchema.optional(),
+  carryforward_config: CarryforwardConfigSchema.optional(),
   metadata: FormFieldMetadataSchema.optional(),
 
   // Timestamps
@@ -759,6 +776,7 @@ export const createDefaultField = (
     calculated_config: config.supportsCalculation ? { enabled: false } : undefined,
     lookup_config: config.supportsLookup ? { enabled: false, dataSource: "static" } : undefined,
     prefill_config: { enabled: false, source: "internal" },
+    carryforward_config: { enabled: false, mode: CARRYFORWARD_MODES.DEFAULT },
     metadata: {},
   }
 }
