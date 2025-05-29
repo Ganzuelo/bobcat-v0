@@ -18,13 +18,22 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [appName, setAppName] = useState("Project Bobcat")
   const [tempAppName, setTempAppName] = useState("Project Bobcat")
+  const [companyName, setCompanyName] = useState("Your Company")
+  const [tempCompanyName, setTempCompanyName] = useState("Your Company")
 
-  // Add useEffect to load saved app name from localStorage
+  // Add useEffect to load saved settings from localStorage
   useEffect(() => {
     const savedAppName = localStorage.getItem("appName")
+    const savedCompanyName = localStorage.getItem("companyName")
+
     if (savedAppName) {
       setAppName(savedAppName)
       setTempAppName(savedAppName)
+    }
+
+    if (savedCompanyName) {
+      setCompanyName(savedCompanyName)
+      setTempCompanyName(savedCompanyName)
     }
   }, [])
 
@@ -43,6 +52,18 @@ export default function SettingsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSaveGeneralSettings = () => {
+    // Save app name
+    setAppName(tempAppName)
+    localStorage.setItem("appName", tempAppName)
+    window.dispatchEvent(new CustomEvent("appNameChanged", { detail: tempAppName }))
+
+    // Save company name
+    setCompanyName(tempCompanyName)
+    localStorage.setItem("companyName", tempCompanyName)
+    window.dispatchEvent(new CustomEvent("companyNameChanged", { detail: tempCompanyName }))
   }
 
   return (
@@ -78,7 +99,11 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="company-name">Company Name</Label>
-                  <Input id="company-name" placeholder="Your Company" />
+                  <Input
+                    id="company-name"
+                    value={tempCompanyName}
+                    onChange={(e) => setTempCompanyName(e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -111,16 +136,7 @@ export default function SettingsPage() {
               <Separator />
 
               <div className="flex justify-end">
-                <Button
-                  onClick={() => {
-                    setAppName(tempAppName)
-                    localStorage.setItem("appName", tempAppName)
-                    // Trigger a custom event to notify the sidebar
-                    window.dispatchEvent(new CustomEvent("appNameChanged", { detail: tempAppName }))
-                  }}
-                >
-                  Save Changes
-                </Button>
+                <Button onClick={handleSaveGeneralSettings}>Save Changes</Button>
               </div>
             </CardContent>
           </Card>
