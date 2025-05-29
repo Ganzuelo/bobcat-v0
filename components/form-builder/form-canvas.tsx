@@ -1,12 +1,15 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, ChevronUp, ChevronDown, Settings } from "lucide-react"
+import { Edit, Trash2, ChevronUp, ChevronDown, Settings, Edit2 } from "lucide-react"
 import type { FormStructure, FormField } from "@/lib/form-types"
 import { getGridColClass, getWidthLabel } from "@/lib/form-builder-utils"
 import { FieldRenderer } from "./field-renderer"
+import { EditPageModal } from "./edit-page-modal"
+import { EditSectionModal } from "./edit-section-modal"
 
 interface FormCanvasProps {
   formStructure: FormStructure
@@ -16,6 +19,8 @@ interface FormCanvasProps {
   onMoveFieldUp: (fieldId: string) => void
   onMoveFieldDown: (fieldId: string) => void
   onEditSection?: (sectionId: string) => void
+  onUpdatePage?: (pageId: string, updates: { title: string; description?: string }) => void
+  onUpdateSection?: (sectionId: string, updates: { title: string; description?: string }) => void
 }
 
 export function FormCanvas({
@@ -26,7 +31,18 @@ export function FormCanvas({
   onMoveFieldUp,
   onMoveFieldDown,
   onEditSection,
+  onUpdatePage,
+  onUpdateSection,
 }: FormCanvasProps) {
+  const [editPageModal, setEditPageModal] = useState<{ open: boolean; page: any }>({
+    open: false,
+    page: null,
+  })
+  const [editSectionModal, setEditSectionModal] = useState<{ open: boolean; section: any }>({
+    open: false,
+    section: null,
+  })
+
   // Add defensive checks to prevent undefined errors
   if (!formStructure) {
     return (
@@ -72,9 +88,30 @@ export function FormCanvas({
     )
   }
 
+  const handleEditPage = () => {
+    setEditPageModal({ open: true, page: currentPage })
+  }
+
+  const handleSavePage = (pageData: { title: string; description?: string }) => {
+    if (onUpdatePage && currentPage.id) {
+      onUpdatePage(currentPage.id, pageData)
+    }
+  }
+
+  const handleEditSection = (section: any) => {
+    setEditSectionModal({ open: true, section })
+  }
+
+  const handleSaveSection = (sectionData: { title: string; description?: string }) => {
+    if (onUpdateSection && editSectionModal.section?.id) {
+      onUpdateSection(editSectionModal.section.id, sectionData)
+    }
+  }
+
   if (!currentPage.sections || currentPage.sections.length === 0) {
     return (
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Page Header */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -84,6 +121,9 @@ export function FormCanvas({
                   <p className="text-sm text-muted-foreground mt-1">{currentPage.description}</p>
                 )}
               </div>
+              <Button variant="ghost" size="sm" onClick={handleEditPage} title="Edit page">
+                <Edit2 className="h-4 w-4" />
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-8">
@@ -92,6 +132,14 @@ export function FormCanvas({
             </div>
           </CardContent>
         </Card>
+
+        {/* Edit Page Modal */}
+        <EditPageModal
+          open={editPageModal.open}
+          onOpenChange={(open) => setEditPageModal({ open, page: editPageModal.page })}
+          page={editPageModal.page || currentPage}
+          onSave={handleSavePage}
+        />
       </div>
     )
   }
@@ -108,6 +156,9 @@ export function FormCanvas({
                 <p className="text-sm text-muted-foreground mt-1">{currentPage.description}</p>
               )}
             </div>
+            <Button variant="ghost" size="sm" onClick={handleEditPage} title="Edit page">
+              <Edit2 className="h-4 w-4" />
+            </Button>
           </CardTitle>
         </CardHeader>
       </Card>
@@ -137,9 +188,14 @@ export function FormCanvas({
                   </div>
                   {section.description && <p className="text-sm text-muted-foreground mt-1">{section.description}</p>}
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {section.fields?.length || 0} fields
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {section.fields?.length || 0} fields
+                  </Badge>
+                  <Button variant="ghost" size="sm" onClick={() => handleEditSection(section)} title="Edit section">
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardTitle>
             </CardHeader>
 
@@ -238,6 +294,21 @@ export function FormCanvas({
           </Card>
         )
       })}
+
+      {/* Edit Modals */}
+      <EditPageModal
+        open={editPageModal.open}
+        onOpenChange={(open) => setEditPageModal({ open, page: editPageModal.page })}
+        page={editPageModal.page || currentPage}
+        onSave={handleSavePage}
+      />
+
+      <EditSectionModal
+        open={editSectionModal.open}
+        onOpenChange={(open) => setEditSectionModal({ open, section: editSectionModal.section })}
+        section={editSectionModal.section || { title: "", description: "" }}
+        onSave={handleSaveSection}
+      />
     </div>
   )
 }
