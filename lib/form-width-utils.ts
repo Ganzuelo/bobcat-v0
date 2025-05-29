@@ -75,13 +75,14 @@ export function getGridColClass(width: string): string {
 export function getPreviewGridColClass(width: string): string {
   const normalizedWidth = normalizeWidthKey(width)
 
+  // Map field widths to 4-column grid spans
   const previewGridMapping: Record<FieldWidthKey, string> = {
-    one_quarter: "col-span-1",
-    one_third: "col-span-1",
-    one_half: "col-span-2",
-    two_thirds: "col-span-3",
-    three_quarters: "col-span-3",
-    full: "col-span-4",
+    one_quarter: "col-span-1", // 25% = 1/4 columns
+    one_third: "col-span-1", // 33% ≈ 1/4 columns (closest fit)
+    one_half: "col-span-2", // 50% = 2/4 columns
+    two_thirds: "col-span-3", // 67% ≈ 3/4 columns
+    three_quarters: "col-span-3", // 75% = 3/4 columns
+    full: "col-span-4", // 100% = 4/4 columns
   }
 
   return previewGridMapping[normalizedWidth] || "col-span-4"
