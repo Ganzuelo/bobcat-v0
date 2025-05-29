@@ -1,338 +1,307 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase-client"
-import type { FormStructure } from "@/lib/database-types"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useCallback } from "react"
+import type { FormData, FormField, FormPage, FormSection } from "@/lib/types"
+import { safeArray, safeObject, safeNumber, safeString, safeId, devWarn } from "@/lib/null-safety"
 
-export function useFormBuilder(formId?: string) {
-  const [formStructure, setFormStructure] = useState<FormStructure | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const { toast } = useToast()
+export function useFormBuilder(initialFormData?: FormData | null) {
+  // Safely initialize form data
+  const safeInitialData = safeObject(initialFormData) as FormData
+  const initialPages = safeArray<FormPage>(safeInitialData.pages, [])
 
-  useEffect(() => {
-    if (formId && formId !== "new") {
-      loadForm()
-    } else {
-      initializeNewForm()
-    }
-  }, [formId])
-
-  const initializeNewForm = (structure?: FormStructure) => {
-    if (structure) {
-      setFormStructure(structure)
-      return
-    }
-    const newFormStructure: FormStructure = {
-      form: {
-        id: crypto.randomUUID(),
-        title: "New Form",
-        description: "",
-        form_type: "custom",
-        version: 1,
-        status: "draft",
-        created_by: "",
-        tags: [],
-        settings: {},
-        metadata: {},
-        created_at: "",
-        updated_at: "",
-      },
-      pages: [
-        {
-          id: crypto.randomUUID(),
-          form_id: "",
-          title: "Page 1",
-          description: "",
-          page_order: 1,
-          settings: {},
-          created_at: "",
-          updated_at: "",
-          sections: [
+  const [formData, setFormData] = useState<FormData>({
+    id: safeString(safeInitialData.id, `form_${Date.now()}`),
+    title: safeString(safeInitialData.title, "Untitled Form"),
+    description: safeString(safeInitialData.description, ""),
+    pages:
+      initialPages.length > 0
+        ? initialPages
+        : [
             {
-              id: crypto.randomUUID(),
-              page_id: "",
-              title: "Section 1",
+              id: `page_${Date.now()}`,
+              title: "Page 1",
               description: "",
-              section_order: 1,
-              settings: {},
-              created_at: "",
-              updated_at: "",
-              fields: [],
+              sections: [],
             },
           ],
-        },
-      ],
-      rules: [],
-    }
-    setFormStructure(newFormStructure)
-  }
+  })
 
-  const setInitialFormStructure = (structure: FormStructure) => {
-    setFormStructure(structure)
-  }
+  const [currentPageIndex, setCurrentPageIndex] = useState(0)
 
-  const loadForm = async () => {
-    if (!formId || formId === "new") return
+  // Development warnings
+  devWarn(!!formData, "useFormBuilder: formData is null")
+  devWarn(formData.pages.length > 0, "useFormBuilder: No pages in form data")
 
-    setLoading(true)
-    try {
-      const { data: form, error: formError } = await supabase.from("forms").select("*").eq("id", formId).single()
-      if (formError) throw formError
+  // Safe page navigation
+  const handlePageChange = useCallback(
+    (pageIndex: number) => {
+      const safePageIndex = safeNumber(pageIndex, 0)
+      const maxIndex = Math.max(0, formData.pages.length - 1)
+      const clampedIndex = Math.min(Math.max(0, safePageIndex), maxIndex)
 
-      const { data: pages, error: pagesError } = await supabase
-        .from("form_pages")
-        .select(`
-          *,
-          form_sections (
-            *,
-            form_fields (*)
-          )
-        `)
-        .eq("form_id", formId)
-        .order("page_order")
+      devWarn(
+        safePageIndex >= 0 && safePageIndex < formData.pages.length,
+        `useFormBuilder.handlePageChange: Invalid page index ${safePageIndex}`,
+      )
 
-      if (pagesError) throw pagesError
+      setCurrentPageIndex(clampedIndex)
+    },
+    [formData.pages.length],
+  )
 
-      // Ensure proper structure and ordering
-      const structuredPages = (pages || []).map((page, pageIndex) => ({
-        ...page,
-        page_order: pageIndex + 1,
-        sections: (page.form_sections || [])
-          .sort((a, b) => a.section_order - b.section_order)
-          .map((section, sectionIndex) => ({
-            ...section,
-            section_order: sectionIndex + 1,
-            fields: (section.form_fields || [])
-              .sort((a, b) => a.field_order - b.field_order)
-              .map((field, fieldIndex) => ({
-                ...field,
-                field_order: fieldIndex + 1,
-              })),
-          })),
-      }))
+  // Safe page reordering
+  const handleReorderPages = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      const safeFromIndex = safeNumber(fromIndex, 0)
+      const safeToIndex = safeNumber(toIndex, 0)
+      const pagesLength = formData.pages.length
 
-      setFormStructure({
-        form,
-        pages: structuredPages,
-        rules: [],
+      // Validate indices
+      if (
+        safeFromIndex < 0 ||
+        safeFromIndex >= pagesLength ||
+        safeToIndex < 0 ||
+        safeToIndex >= pagesLength ||
+        safeFromIndex === safeToIndex
+      ) {
+        devWarn(false, `useFormBuilder.handleReorderPages: Invalid indices from=${safeFromIndex}, to=${safeToIndex}`)
+        return
+      }
+
+      setFormData((prevData) => {
+        const newPages = [...safeArray(prevData.pages, [])]
+        const [movedPage] = newPages.splice(safeFromIndex, 1)
+
+        if (!movedPage) {
+          devWarn(false, "useFormBuilder.handleReorderPages: Failed to extract page for reordering")
+          return prevData
+        }
+
+        newPages.splice(safeToIndex, 0, movedPage)
+
+        return {
+          ...prevData,
+          pages: newPages,
+        }
       })
-    } catch (error) {
-      console.error("Error loading form:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load form",
-        variant: "destructive",
+
+      // Update current page index if necessary
+      if (currentPageIndex === safeFromIndex) {
+        setCurrentPageIndex(safeToIndex)
+      } else if (currentPageIndex > safeFromIndex && currentPageIndex <= safeToIndex) {
+        setCurrentPageIndex(currentPageIndex - 1)
+      } else if (currentPageIndex < safeFromIndex && currentPageIndex >= safeToIndex) {
+        setCurrentPageIndex(currentPageIndex + 1)
+      }
+    },
+    [formData.pages.length, currentPageIndex],
+  )
+
+  // Safe section operations
+  const handleSectionAdd = useCallback(
+    (pageIndex: number) => {
+      const safePageIndex = safeNumber(pageIndex, 0)
+
+      if (safePageIndex < 0 || safePageIndex >= formData.pages.length) {
+        devWarn(false, `useFormBuilder.handleSectionAdd: Invalid page index ${safePageIndex}`)
+        return
+      }
+
+      setFormData((prevData) => {
+        const newPages = [...safeArray(prevData.pages, [])]
+        const targetPage = safeObject(newPages[safePageIndex]) as FormPage
+
+        if (!targetPage) {
+          devWarn(false, `useFormBuilder.handleSectionAdd: Page at index ${safePageIndex} is null`)
+          return prevData
+        }
+
+        const newSection: FormSection = {
+          id: `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          title: `Section ${safeArray(targetPage.sections, []).length + 1}`,
+          description: "",
+          fields: [],
+        }
+
+        newPages[safePageIndex] = {
+          ...targetPage,
+          sections: [...safeArray(targetPage.sections, []), newSection],
+        }
+
+        return {
+          ...prevData,
+          pages: newPages,
+        }
       })
-    } finally {
-      setLoading(false)
+    },
+    [formData.pages.length],
+  )
+
+  const handleSectionDelete = useCallback(
+    (pageIndex: number, sectionIndex: number) => {
+      const safePageIndex = safeNumber(pageIndex, 0)
+      const safeSectionIndex = safeNumber(sectionIndex, 0)
+
+      if (safePageIndex < 0 || safePageIndex >= formData.pages.length) {
+        devWarn(false, `useFormBuilder.handleSectionDelete: Invalid page index ${safePageIndex}`)
+        return
+      }
+
+      setFormData((prevData) => {
+        const newPages = [...safeArray(prevData.pages, [])]
+        const targetPage = safeObject(newPages[safePageIndex]) as FormPage
+
+        if (!targetPage) {
+          devWarn(false, `useFormBuilder.handleSectionDelete: Page at index ${safePageIndex} is null`)
+          return prevData
+        }
+
+        const sections = safeArray(targetPage.sections, [])
+
+        if (safeSectionIndex < 0 || safeSectionIndex >= sections.length) {
+          devWarn(false, `useFormBuilder.handleSectionDelete: Invalid section index ${safeSectionIndex}`)
+          return prevData
+        }
+
+        const newSections = sections.filter((_, index) => index !== safeSectionIndex)
+
+        newPages[safePageIndex] = {
+          ...targetPage,
+          sections: newSections,
+        }
+
+        return {
+          ...prevData,
+          pages: newPages,
+        }
+      })
+    },
+    [formData.pages.length],
+  )
+
+  // Safe field operations
+  const handleFieldAdd = useCallback(
+    (pageIndex: number, sectionIndex: number) => {
+      const safePageIndex = safeNumber(pageIndex, 0)
+      const safeSectionIndex = safeNumber(sectionIndex, 0)
+
+      if (safePageIndex < 0 || safePageIndex >= formData.pages.length) {
+        devWarn(false, `useFormBuilder.handleFieldAdd: Invalid page index ${safePageIndex}`)
+        return
+      }
+
+      setFormData((prevData) => {
+        const newPages = [...safeArray(prevData.pages, [])]
+        const targetPage = safeObject(newPages[safePageIndex]) as FormPage
+
+        if (!targetPage) {
+          devWarn(false, `useFormBuilder.handleFieldAdd: Page at index ${safePageIndex} is null`)
+          return prevData
+        }
+
+        const sections = safeArray(targetPage.sections, [])
+
+        if (safeSectionIndex < 0 || safeSectionIndex >= sections.length) {
+          devWarn(false, `useFormBuilder.handleFieldAdd: Invalid section index ${safeSectionIndex}`)
+          return prevData
+        }
+
+        const targetSection = safeObject(sections[safeSectionIndex]) as FormSection
+
+        if (!targetSection) {
+          devWarn(false, `useFormBuilder.handleFieldAdd: Section at index ${safeSectionIndex} is null`)
+          return prevData
+        }
+
+        const newField: FormField = {
+          id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          field_type: "text",
+          label: `Field ${safeArray(targetSection.fields, []).length + 1}`,
+          placeholder: "",
+          help_text: "",
+          required: false,
+          readonly: false,
+          default_value: "",
+          uad_field_id: "",
+        }
+
+        const newSections = [...sections]
+        newSections[safeSectionIndex] = {
+          ...targetSection,
+          fields: [...safeArray(targetSection.fields, []), newField],
+        }
+
+        newPages[safePageIndex] = {
+          ...targetPage,
+          sections: newSections,
+        }
+
+        return {
+          ...prevData,
+          pages: newPages,
+        }
+      })
+    },
+    [formData.pages.length],
+  )
+
+  const handleFieldEdit = useCallback((field: FormField) => {
+    const safeField = safeObject(field) as FormField
+    const fieldId = safeId(safeField.id, "unknown")
+
+    devWarn(!!safeField.id, "useFormBuilder.handleFieldEdit: Field missing ID")
+
+    // TODO: Implement field editing modal/panel
+    console.log("Edit field:", fieldId, safeField)
+  }, [])
+
+  const handleFieldDelete = useCallback((fieldId: string) => {
+    const safeFieldId = safeString(fieldId, "")
+
+    if (!safeFieldId) {
+      devWarn(false, "useFormBuilder.handleFieldDelete: Invalid field ID")
+      return
     }
-  }
 
-  const saveForm = async (onSave?: (form: any) => void) => {
-    if (!formStructure) return
+    setFormData((prevData) => {
+      const newPages = safeArray(prevData.pages, []).map((page) => {
+        const pageObj = safeObject(page) as FormPage
+        const sections = safeArray(pageObj.sections, []).map((section) => {
+          const sectionObj = safeObject(section) as FormSection
+          const fields = safeArray(sectionObj.fields, []).filter((field) => {
+            const fieldObj = safeObject(field) as FormField
+            return safeString(fieldObj.id, "") !== safeFieldId
+          })
 
-    setSaving(true)
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) throw new Error("Not authenticated")
-
-      // Ensure pages is an array before processing
-      const pages = Array.isArray(formStructure.pages) ? formStructure.pages : []
-
-      // Normalize and validate the form structure before saving
-      const normalizedFormStructure = {
-        ...formStructure,
-        pages: pages.map((page, pageIndex) => {
-          const sections = Array.isArray(page.sections) ? page.sections : []
           return {
-            ...page,
-            page_order: pageIndex + 1, // Ensure sequential page ordering based on array position
-            sections: sections.map((section, sectionIndex) => {
-              const fields = Array.isArray(section.fields) ? section.fields : []
-              return {
-                ...section,
-                section_order: sectionIndex + 1,
-                fields: fields.map((field, fieldIndex) => ({
-                  ...field,
-                  field_order: fieldIndex + 1,
-                })),
-              }
-            }),
+            ...sectionObj,
+            fields,
           }
-        }),
-      }
+        })
 
-      // Prepare form data with proper constraint handling
-      const currentTime = new Date().toISOString()
-      const formData = {
-        id: normalizedFormStructure.form.id,
-        title: normalizedFormStructure.form.title,
-        description: normalizedFormStructure.form.description,
-        form_type: normalizedFormStructure.form.form_type,
-        version: normalizedFormStructure.form.version,
-        status: normalizedFormStructure.form.status,
-        created_by: user.id,
-        tags: Array.isArray(normalizedFormStructure.form.tags) ? normalizedFormStructure.form.tags : [],
-        settings: normalizedFormStructure.form.settings || {},
-        metadata: normalizedFormStructure.form.metadata || {},
-        updated_at: currentTime,
-        // Handle published_at based on status to satisfy database constraints
-        ...(normalizedFormStructure.form.status === "published"
-          ? { published_at: normalizedFormStructure.form.published_at || currentTime }
-          : { published_at: null }),
-        // Handle archived_at based on status
-        ...(normalizedFormStructure.form.status === "archived"
-          ? { archived_at: normalizedFormStructure.form.archived_at || currentTime }
-          : { archived_at: null }),
-        ...(normalizedFormStructure.form.created_at ? {} : { created_at: currentTime }),
-      }
-
-      const { data: savedForm, error: formError } = await supabase.from("forms").upsert(formData).select().single()
-      if (formError) throw formError
-
-      // Delete existing pages, sections, and fields to avoid constraint violations
-      if (formId && formId !== "new") {
-        try {
-          // Get existing page IDs first
-          const { data: existingPages } = await supabase.from("form_pages").select("id").eq("form_id", savedForm.id)
-
-          if (existingPages && existingPages.length > 0) {
-            const pageIds = existingPages.map((p) => p.id)
-
-            // Get existing section IDs
-            const { data: existingSections } = await supabase.from("form_sections").select("id").in("page_id", pageIds)
-
-            if (existingSections && existingSections.length > 0) {
-              const sectionIds = existingSections.map((s) => s.id)
-
-              // Delete fields first
-              await supabase.from("form_fields").delete().in("section_id", sectionIds)
-            }
-
-            // Delete sections
-            await supabase.from("form_sections").delete().in("page_id", pageIds)
-
-            // Delete pages
-            await supabase.from("form_pages").delete().eq("form_id", savedForm.id)
-          }
-        } catch (deleteError) {
-          console.warn("Error during cleanup, continuing with save:", deleteError)
+        return {
+          ...pageObj,
+          sections,
         }
-      }
-
-      // Save pages, sections, and fields with proper ordering
-      for (let pageIndex = 0; pageIndex < normalizedFormStructure.pages.length; pageIndex++) {
-        const page = normalizedFormStructure.pages[pageIndex]
-
-        const pageData = {
-          id: page.id,
-          form_id: savedForm.id,
-          title: page.title || `Page ${pageIndex + 1}`,
-          description: page.description || "",
-          page_order: pageIndex + 1,
-          settings: page.settings || {},
-          created_at: currentTime,
-          updated_at: currentTime,
-        }
-
-        const { data: savedPage, error: pageError } = await supabase
-          .from("form_pages")
-          .insert(pageData)
-          .select()
-          .single()
-
-        if (pageError) throw pageError
-
-        // Ensure sections is an array
-        const sections = Array.isArray(page.sections) ? page.sections : []
-
-        // Save sections for this page
-        for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
-          const section = sections[sectionIndex]
-
-          const sectionData = {
-            id: section.id,
-            page_id: savedPage.id,
-            title: section.title || `Section ${sectionIndex + 1}`,
-            description: section.description || "",
-            section_order: sectionIndex + 1,
-            settings: section.settings || {},
-            created_at: currentTime,
-            updated_at: currentTime,
-          }
-
-          const { data: savedSection, error: sectionError } = await supabase
-            .from("form_sections")
-            .insert(sectionData)
-            .select()
-            .single()
-
-          if (sectionError) throw sectionError
-
-          // Ensure fields is an array
-          const fields = Array.isArray(section.fields) ? section.fields : []
-
-          // Save fields for this section
-          for (let fieldIndex = 0; fieldIndex < fields.length; fieldIndex++) {
-            const field = fields[fieldIndex]
-
-            const fieldData = {
-              id: field.id,
-              section_id: savedSection.id,
-              field_type: field.field_type,
-              label: field.label || "Untitled Field",
-              placeholder: field.placeholder || "",
-              help_text: field.help_text || "",
-              required: field.required || false,
-              width: field.width || "full",
-              field_order: fieldIndex + 1,
-              options: Array.isArray(field.options) ? field.options : [],
-              validation: field.validation || {},
-              conditional_visibility: field.conditional_visibility || {},
-              calculated_config: field.calculated_config || {},
-              lookup_config: field.lookup_config || {},
-              metadata: field.metadata || {},
-              created_at: currentTime,
-              updated_at: currentTime,
-            }
-
-            const { error: fieldError } = await supabase.from("form_fields").insert(fieldData)
-            if (fieldError) throw fieldError
-          }
-        }
-      }
-
-      // Update the form structure with the saved form
-      setFormStructure((prev) => (prev ? { ...prev, form: savedForm } : null))
-
-      toast({
-        title: "Success",
-        description: "Form saved successfully",
       })
 
-      onSave?.(savedForm)
-    } catch (error) {
-      console.error("Error saving form:", error)
-      toast({
-        title: "Save Failed",
-        description: error instanceof Error ? error.message : "Failed to save form",
-        variant: "destructive",
-      })
-    } finally {
-      setSaving(false)
-    }
-  }
+      return {
+        ...prevData,
+        pages: newPages,
+      }
+    })
+  }, [])
 
   return {
-    formStructure,
-    setFormStructure,
-    setInitialFormStructure,
-    loading,
-    saving,
-    saveForm,
+    formData,
+    currentPageIndex,
+    setFormData,
+    handlePageChange,
+    handleReorderPages,
+    handleSectionAdd,
+    handleSectionDelete,
+    handleFieldAdd,
+    handleFieldEdit,
+    handleFieldDelete,
   }
 }

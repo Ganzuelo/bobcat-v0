@@ -1,209 +1,119 @@
 "use client"
-
-import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-
-interface Page {
-  id: string
-  title: string
-  page_order?: number
-  sections?: any[]
-}
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import type { FormPage } from "@/lib/types"
+import { safeArray, safeNumber, safeString, safeEventHandler, devWarn, devAssert } from "@/lib/null-safety"
 
 interface PageNavigationProps {
-  pages: Page[]
+  pages: FormPage[] | null | undefined
   currentPageIndex: number
-  onPageChange: (index: number) => void
-  onAddPage: () => void
-  onReorderPages?: (pages: Page[]) => void
+  onPageChange: ((pageIndex: number) => void) | null | undefined
+  onReorderPages: ((fromIndex: number, toIndex: number) => void) | null | undefined
 }
 
-export function PageNavigation({
-  pages,
-  currentPageIndex,
-  onPageChange,
-  onAddPage,
-  onReorderPages,
-}: PageNavigationProps) {
-  // Ensure currentPageIndex is valid
-  const [safeCurrentPageIndex, setSafeCurrentPageIndex] = useState(0)
+export function PageNavigation({ pages, currentPageIndex, onPageChange, onReorderPages }: PageNavigationProps) {
+  // Validate and sanitize props
+  const safePages = safeArray<FormPage>(pages, [])
+  const safeCurrentPageIndex = safeNumber(currentPageIndex, 0)
 
-  // Update safe index when props change
-  useEffect(() => {
-    if (pages && pages.length > 0) {
-      const safeIndex = Math.min(Math.max(0, currentPageIndex), pages.length - 1)
-      setSafeCurrentPageIndex(safeIndex)
-    } else {
-      setSafeCurrentPageIndex(0)
-    }
-  }, [currentPageIndex, pages])
+  // Development warnings
+  devWarn(!!pages, "PageNavigation: pages is null or undefined")
+  devWarn(safePages.length > 0, "PageNavigation: No pages provided")
+  devWarn(
+    safeCurrentPageIndex >= 0 && safeCurrentPageIndex < safePages.length,
+    `PageNavigation: currentPageIndex (${safeCurrentPageIndex}) is out of bounds for ${safePages.length} pages`,
+  )
 
-  // Ensure pages is an array
-  const safePages = Array.isArray(pages) ? pages : []
+  // Safe event handlers
+  const handlePageChange = safeEventHandler(onPageChange, "PageNavigation.onPageChange")
+  const handleReorderPages = safeEventHandler(onReorderPages, "PageNavigation.onReorderPages")
 
-  const handlePrevPage = () => {
-    if (safeCurrentPageIndex > 0) {
-      onPageChange(safeCurrentPageIndex - 1)
-    }
-  }
+  devAssert(Array.isArray(safePages), "PageNavigation: pages should be an array")
 
-  const handleNextPage = () => {
-    if (safeCurrentPageIndex < safePages.length - 1) {
-      onPageChange(safeCurrentPageIndex + 1)
-    }
-  }
-
-  const handleMoveLeft = (pageIndex: number) => {
-    console.log("Moving page left:", pageIndex)
-    if (!onReorderPages || pageIndex <= 0) return
-    console.log("handleMoveLeft called:", pageIndex, "onReorderPages:", !!onReorderPages)
-
-    const newPages = [...safePages]
-    const temp = newPages[pageIndex]
-    newPages[pageIndex] = newPages[pageIndex - 1]
-    newPages[pageIndex - 1] = temp
-
-    // Update page_order properties
-    const updatedPages = newPages.map((page, idx) => ({
-      ...page,
-      page_order: idx + 1,
-    }))
-
-    onReorderPages(updatedPages)
-
-    // If we moved the current page, update the current page index
-    if (pageIndex === safeCurrentPageIndex) {
-      onPageChange(safeCurrentPageIndex - 1)
-    }
-  }
-
-  const handleMoveRight = (pageIndex: number) => {
-    console.log("Moving page right:", pageIndex)
-    if (!onReorderPages || pageIndex >= safePages.length - 1) return
-    console.log("handleMoveRight called:", pageIndex, "onReorderPages:", !!onReorderPages)
-
-    const newPages = [...safePages]
-    const temp = newPages[pageIndex]
-    newPages[pageIndex] = newPages[pageIndex + 1]
-    newPages[pageIndex + 1] = temp
-
-    // Update page_order properties
-    const updatedPages = newPages.map((page, idx) => ({
-      ...page,
-      page_order: idx + 1,
-    }))
-
-    onReorderPages(updatedPages)
-
-    // If we moved the current page, update the current page index
-    if (pageIndex === safeCurrentPageIndex) {
-      onPageChange(safeCurrentPageIndex + 1)
-    }
-  }
-
-  // If no pages, show just the add button
   if (safePages.length === 0) {
     return (
-      <div className="flex items-center justify-between p-2 border-b bg-gray-50">
-        <div className="flex-1"></div>
-        <Button size="sm" onClick={onAddPage} className="flex items-center gap-1">
-          <Plus className="h-4 w-4" />
-          Add Page
-        </Button>
+      <div className="flex items-center justify-center p-4 bg-gray-100 rounded-lg">
+        <p className="text-gray-500 text-sm">No pages available</p>
       </div>
     )
   }
 
+  if (safePages.length === 1) {
+    const page = safePages[0]
+    const pageTitle = safeString(page?.title, "Page 1")
+
+    return (
+      <div className="flex items-center justify-center p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+        <span className="text-blue-800 font-medium">{pageTitle}</span>
+      </div>
+    )
+  }
+
+  const canMoveLeft = safeCurrentPageIndex > 0
+  const canMoveRight = safeCurrentPageIndex < safePages.length - 1
+
+  const handleMoveLeft = () => {
+    if (canMoveLeft) {
+      handleReorderPages(safeCurrentPageIndex, safeCurrentPageIndex - 1)
+    }
+  }
+
+  const handleMoveRight = () => {
+    if (canMoveRight) {
+      handleReorderPages(safeCurrentPageIndex, safeCurrentPageIndex + 1)
+    }
+  }
+
   return (
-    <div className="flex items-center justify-between p-2 border-b bg-gray-50">
+    <div className="flex items-center justify-between p-4 bg-white rounded-lg border shadow-sm">
+      {/* Left Arrow */}
       <Button
-        variant="ghost"
-        size="icon"
-        onClick={handlePrevPage}
-        disabled={safeCurrentPageIndex <= 0}
-        className="shrink-0"
+        variant="outline"
+        size="sm"
+        onClick={handleMoveLeft}
+        disabled={!canMoveLeft}
+        className="flex items-center gap-2"
       >
         <ChevronLeft className="h-4 w-4" />
+        Move Left
       </Button>
 
-      <div className="flex items-center overflow-x-auto flex-1 mx-1 no-scrollbar">
+      {/* Page Tabs */}
+      <div className="flex items-center gap-2 flex-1 justify-center">
         {safePages.map((page, index) => {
+          const pageObj = page || {}
+          const pageTitle = safeString(pageObj.title, `Page ${index + 1}`)
           const isActive = index === safeCurrentPageIndex
-          const fieldCount = page.sections?.reduce((acc, section) => acc + (section.fields?.length || 0), 0) || 0
 
           return (
-            <div key={page.id} className="relative group mx-0.5">
-              <Button
-                variant={isActive ? "default" : "outline"}
-                size="sm"
-                onClick={() => onPageChange(index)}
-                className="px-2 py-1 h-auto flex items-center gap-1.5"
-              >
-                <span className="truncate max-w-[120px]">{page.title || `Page ${index + 1}`}</span>
-                <Badge variant={isActive ? "secondary" : "outline"} className="ml-1 text-xs">
-                  {fieldCount}
-                </Badge>
-              </Button>
-
-              {/* Move buttons - show on hover */}
-              {onReorderPages && (
-                <div
-                  className={cn(
-                    "absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity",
-                    "flex -mr-1 bg-background shadow-sm rounded-sm",
-                  )}
-                >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleMoveLeft(index)
-                    }}
-                    disabled={index === 0}
-                    title="Move left"
-                  >
-                    <ChevronLeft className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleMoveRight(index)
-                    }}
-                    disabled={index === safePages.length - 1}
-                    title="Move right"
-                  >
-                    <ChevronRight className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-            </div>
+            <Button
+              key={`page_${index}`}
+              variant={isActive ? "default" : "outline"}
+              size="sm"
+              onClick={() => handlePageChange(index)}
+              className={`min-w-[100px] ${
+                isActive
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              {pageTitle}
+            </Button>
           )
         })}
       </div>
 
-      <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleNextPage}
-          disabled={safeCurrentPageIndex >= safePages.length - 1}
-          className="shrink-0"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <Button size="sm" onClick={onAddPage} className="flex items-center gap-1 shrink-0">
-          <Plus className="h-4 w-4" />
-          Add Page
-        </Button>
-      </div>
+      {/* Right Arrow */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleMoveRight}
+        disabled={!canMoveRight}
+        className="flex items-center gap-2"
+      >
+        Move Right
+        <ChevronRight className="h-4 w-4" />
+      </Button>
     </div>
   )
 }
