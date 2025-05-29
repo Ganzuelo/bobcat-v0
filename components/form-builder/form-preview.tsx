@@ -73,8 +73,14 @@ export function FormPreview({ formStructure, currentPageIndex }: FormPreviewProp
                                       <Info className="h-4 w-4" />
                                     </button>
                                   </PopoverTrigger>
-                                  <PopoverContent className="w-80 p-3">
-                                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{field.guidance}</div>
+                                  <PopoverContent className="w-80 p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Info className="h-4 w-4 text-primary" />
+                                      <h4 className="font-semibold text-sm">Field Guidance</h4>
+                                    </div>
+                                    <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                      {field.guidance}
+                                    </div>
                                   </PopoverContent>
                                 </Popover>
                               )}
