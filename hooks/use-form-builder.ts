@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react"
 import type { FormData, FormField, FormPage, FormSection } from "@/lib/types"
-import { useErrorHandler } from "./use-error-handler"
+import { useErrorHandler } from "./error-handler" // Updated import path
 import { safeArray, safeObject, safeNumber, safeString, safeId, devWarn } from "@/lib/null-safety"
 import {
   createFormError,
