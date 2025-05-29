@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { CustomAvatar } from "@/components/ui/custom-avatar"
 import { useAuth } from "@/components/auth/auth-provider"
+import { useSidebar } from "@/components/ui/sidebar"
 
 const navigation = [
   {
@@ -84,6 +85,7 @@ const avatarColors = [
 
 function UserProfile() {
   const { user, profile, signOut } = useAuth()
+  const { state } = useSidebar()
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
@@ -138,11 +140,15 @@ function UserProfile() {
             backgroundColor={getAvatarColor()}
             size="md"
           />
-          <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-            <span className="truncate font-semibold">{getDisplayName()}</span>
-            <span className="truncate text-xs text-muted-foreground">{user.email}</span>
-          </div>
-          <ChevronsUpDown className="ml-auto h-4 w-4 text-muted-foreground flex-shrink-0" />
+          {state !== "collapsed" && (
+            <>
+              <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+                <span className="truncate font-semibold">{getDisplayName()}</span>
+                <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+              </div>
+              <ChevronsUpDown className="ml-auto h-4 w-4 text-muted-foreground flex-shrink-0" />
+            </>
+          )}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -204,12 +210,14 @@ function UserProfile() {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { state } = useSidebar()
+
   return (
-    <Sidebar {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="flex h-16 shrink-0 items-center justify-start border-b border-sidebar-border">
         <div className="flex h-full items-center gap-2 px-4">
           <Cat className="h-6 w-6" />
-          <span className="font-semibold text-lg">Project Bobcat</span>
+          {state !== "collapsed" && <span className="font-semibold text-lg">Project Bobcat</span>}
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -220,7 +228,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenu>
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild tooltip={item.title}>
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
