@@ -15,9 +15,8 @@ interface FormPreviewProps {
 }
 
 export function FormPreview({ formStructure, currentPageIndex }: FormPreviewProps) {
-  // Use the passed currentPageIndex instead of hardcoding to index 0
+  // Use the passed currentPageIndex to get the current page
   const currentPage = formStructure.pages[currentPageIndex]
-  const currentSection = currentPage?.sections[0]
 
   return (
     <div className="max-w-4xl mx-auto bg-white">
@@ -35,84 +34,92 @@ export function FormPreview({ formStructure, currentPageIndex }: FormPreviewProp
         </div>
       )}
 
-      {/* Form Content */}
-      {currentSection ? (
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl">{currentSection.title}</CardTitle>
-            {currentSection.description && <p className="text-gray-600">{currentSection.description}</p>}
-          </CardHeader>
-          <CardContent>
-            {currentSection.fields.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <p>No fields in this section yet.</p>
-              </div>
-            ) : (
-              <form className="space-y-6">
-                <div className="grid grid-cols-12 gap-4">
-                  {currentSection.fields.map((field) => {
-                    const gridColClass = getGridColClass(field.width || "full")
-                    return (
-                      <div key={field.id} className={`${gridColClass} min-w-[120px] w-full`}>
-                        <div className="space-y-2 w-full">
-                          {field.field_type !== "checkbox" && (
-                            <Label
-                              htmlFor={field.id}
-                              className="text-sm font-medium text-gray-700 w-full flex items-center gap-1"
-                            >
-                              {field.label}
-                              {field.required && <span className="text-red-500 ml-1">*</span>}
-                              {field.guidance && (
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <button
-                                      type="button"
-                                      className="text-gray-400 hover:text-gray-600 transition-colors ml-1"
-                                      aria-label="Field guidance"
+      {/* Form Content - Render All Sections */}
+      {currentPage && currentPage.sections && currentPage.sections.length > 0 ? (
+        <div className="space-y-8">
+          {currentPage.sections
+            .sort((a, b) => a.section_order - b.section_order)
+            .map((section) => (
+              <Card key={section.id} className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-xl">{section.title}</CardTitle>
+                  {section.description && <p className="text-gray-600">{section.description}</p>}
+                </CardHeader>
+                <CardContent>
+                  {section.fields && section.fields.length > 0 ? (
+                    <form className="space-y-6">
+                      <div className="grid grid-cols-12 gap-4">
+                        {section.fields
+                          .sort((a, b) => a.field_order - b.field_order)
+                          .map((field) => {
+                            const gridColClass = getGridColClass(field.width || "full")
+                            return (
+                              <div key={field.id} className={`${gridColClass} min-w-[120px] w-full`}>
+                                <div className="space-y-2 w-full">
+                                  {field.field_type !== "checkbox" && (
+                                    <Label
+                                      htmlFor={field.id}
+                                      className="text-sm font-medium text-gray-700 w-full flex items-center gap-1"
                                     >
-                                      <Info className="h-4 w-4" />
-                                    </button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-80 p-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <Info className="h-4 w-4 text-primary" />
-                                      <h4 className="font-semibold text-sm">Field Guidance</h4>
-                                    </div>
-                                    <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                      {field.guidance}
-                                    </div>
-                                  </PopoverContent>
-                                </Popover>
-                              )}
-                            </Label>
-                          )}
-                          {field.help_text && <p className="text-xs text-gray-500 mb-1 w-full">{field.help_text}</p>}
-                          <div className="w-full">
-                            <FieldRenderer field={field} isPreviewMode={true} />
-                          </div>
-                        </div>
+                                      {field.label}
+                                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                                      {field.guidance && (
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <button
+                                              type="button"
+                                              className="text-gray-400 hover:text-gray-600 transition-colors ml-1"
+                                              aria-label="Field guidance"
+                                            >
+                                              <Info className="h-4 w-4" />
+                                            </button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-80 p-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <Info className="h-4 w-4 text-primary" />
+                                              <h4 className="font-semibold text-sm">Field Guidance</h4>
+                                            </div>
+                                            <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                              {field.guidance}
+                                            </div>
+                                          </PopoverContent>
+                                        </Popover>
+                                      )}
+                                    </Label>
+                                  )}
+                                  {field.help_text && (
+                                    <p className="text-xs text-gray-500 mb-1 w-full">{field.help_text}</p>
+                                  )}
+                                  <div className="w-full">
+                                    <FieldRenderer field={field} isPreviewMode={true} />
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
                       </div>
-                    )
-                  })}
-                </div>
-
-                {/* Form Actions */}
-                {currentSection.fields.length > 0 && (
-                  <div className="flex justify-end mt-8 pt-6 border-t">
-                    <div className="flex gap-3">
-                      <Button type="button" variant="outline" size="lg">
-                        Cancel
-                      </Button>
-                      <Button type="submit" size="lg">
-                        Submit Form
-                      </Button>
+                    </form>
+                  ) : (
+                    <div className="text-center py-12 text-gray-500">
+                      <p>No fields in this section yet.</p>
                     </div>
-                  </div>
-                )}
-              </form>
-            )}
-          </CardContent>
-        </Card>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+
+          {/* Form Actions - Only show at the bottom of the last section */}
+          <div className="flex justify-end mt-8 pt-6 border-t">
+            <div className="flex gap-3">
+              <Button type="button" variant="outline" size="lg">
+                Cancel
+              </Button>
+              <Button type="submit" size="lg">
+                Submit Form
+              </Button>
+            </div>
+          </div>
+        </div>
       ) : (
         <Card className="shadow-lg">
           <CardContent className="p-8">
