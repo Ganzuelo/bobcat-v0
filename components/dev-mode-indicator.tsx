@@ -7,12 +7,17 @@ import { AlertTriangle } from "lucide-react"
 import { DevWarningsDashboard, useDevWarningsDashboard } from "./dev-warnings-dashboard"
 import { devWarnings } from "@/lib/dev-warnings"
 
+const isDevelopment =
+  typeof window !== "undefined"
+    ? window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    : false
+
 export function DevModeIndicator() {
   const { isOpen, open, close } = useDevWarningsDashboard()
   const [warningCount, setWarningCount] = React.useState(0)
 
   React.useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
+    if (isDevelopment) {
       const updateCount = () => setWarningCount(devWarnings.getWarnings().length)
       updateCount()
 
@@ -21,7 +26,7 @@ export function DevModeIndicator() {
     }
   }, [])
 
-  if (process.env.NODE_ENV !== "development") {
+  if (!isDevelopment) {
     return null
   }
 

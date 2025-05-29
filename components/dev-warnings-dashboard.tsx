@@ -27,7 +27,12 @@ export function DevWarningsDashboard({ isOpen, onClose }: DevWarningsDashboardPr
     }
   }, [isOpen])
 
-  if (!isOpen || process.env.NODE_ENV !== "development") {
+  const isDevelopment =
+    typeof window !== "undefined"
+      ? window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      : false
+
+  if (!isOpen || !isDevelopment) {
     return null
   }
 
@@ -232,13 +237,24 @@ export function DevWarningsDashboard({ isOpen, onClose }: DevWarningsDashboardPr
 export function useDevWarningsDashboard() {
   const [isOpen, setIsOpen] = useState(false)
 
+  const SIDEBAR_KEYBOARD_SHORTCUT = "W"
+
+  const toggleSidebar = () => {
+    setIsOpen((prevState) => !prevState)
+  }
+
   useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
+    const isDevelopment =
+      typeof window !== "undefined"
+        ? window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        : false
+
+    if (isDevelopment) {
       const handleKeyDown = (event: KeyboardEvent) => {
         // Ctrl/Cmd + Shift + W to toggle dashboard
-        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "W") {
+        if (event.key === SIDEBAR_KEYBOARD_SHORTCUT && (event.metaKey || event.ctrlKey)) {
           event.preventDefault()
-          setIsOpen((prev) => !prev)
+          toggleSidebar()
         }
       }
 

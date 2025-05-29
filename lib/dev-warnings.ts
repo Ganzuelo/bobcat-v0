@@ -46,9 +46,15 @@ interface WarningConfig {
   maxWarnings: number
 }
 
+// Client-safe check for development environment
+const isDevelopment =
+  typeof window !== "undefined"
+    ? window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    : false
+
 // Default configuration
 const DEFAULT_CONFIG: WarningConfig = {
-  enabled: process.env.NODE_ENV === "development",
+  enabled: isDevelopment,
   level: WarningLevel.INFO,
   categories: Object.values(WarningCategory),
   suppressedWarnings: [],
@@ -298,7 +304,7 @@ export function measurePerformance<T>(
   warningThreshold = 100,
   component?: string,
 ): T {
-  if (process.env.NODE_ENV !== "development") {
+  if (!isDevelopment) {
     return operation()
   }
 
@@ -327,7 +333,7 @@ export async function measureAsyncPerformance<T>(
   warningThreshold = 1000,
   component?: string,
 ): Promise<T> {
-  if (process.env.NODE_ENV !== "development") {
+  if (!isDevelopment) {
     return operation()
   }
 
@@ -352,7 +358,7 @@ export async function measureAsyncPerformance<T>(
 
 // Data validation warnings
 export function checkDataStructure(data: unknown, expectedStructure: string, component?: string) {
-  if (process.env.NODE_ENV !== "development") return
+  if (!isDevelopment) return
 
   if (data === null || data === undefined) {
     warnDataIntegrity("null-data", `Received null/undefined data where ${expectedStructure} was expected`, {
@@ -375,7 +381,7 @@ export function checkDataStructure(data: unknown, expectedStructure: string, com
 
 // Accessibility warnings
 export function checkAccessibility(element: HTMLElement | null, requirements: string[], component?: string) {
-  if (process.env.NODE_ENV !== "development" || !element) return
+  if (!isDevelopment || !element) return
 
   requirements.forEach((requirement) => {
     switch (requirement) {
