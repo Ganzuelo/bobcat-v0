@@ -20,17 +20,10 @@
         "required": true,
         "width": "full",
         "field_order": 1,
-        "validation": [
-          {
-            "type": "required",
-            "message": "Property address is required"
-          },
-          {
-            "type": "minLength",
-            "value": 5,
-            "message": "Address must be at least 5 characters"
-          }
-        ],
+        "validation": {
+          "required": { "message": "Property address is required" },
+          "minLength": { "value": 5, "message": "Address must be at least 5 characters" }
+        },
         "metadata": {
           "uad_field_id": "3.001",
           "dataType": "text",
@@ -52,12 +45,9 @@
         "required": true,
         "width": "half",
         "field_order": 2,
-        "validation": [
-          {
-            "type": "required",
-            "message": "City is required"
-          }
-        ],
+        "validation": {
+          "required": { "message": "City is required" }
+        },
         "metadata": {
           "uad_field_id": "3.002",
           "dataType": "text",
@@ -132,12 +122,9 @@
           { "label": "Wyoming", "value": "WY" },
           { "label": "District of Columbia", "value": "DC" }
         ],
-        "validation": [
-          {
-            "type": "required",
-            "message": "State is required"
-          }
-        ],
+        "validation": {
+          "required": { "message": "State is required" }
+        },
         "metadata": {
           "uad_field_id": "3.003",
           "dataType": "enumeration",
@@ -159,17 +146,10 @@
         "required": true,
         "width": "quarter",
         "field_order": 4,
-        "validation": [
-          {
-            "type": "required",
-            "message": "ZIP code is required"
-          },
-          {
-            "type": "pattern",
-            "pattern": "^[0-9]{5}(-[0-9]{4})?$",
-            "message": "Enter a valid ZIP code (12345 or 12345-6789)"
-          }
-        ],
+        "validation": {
+          "required": { "message": "ZIP code is required" },
+          "pattern": { "pattern": "^[0-9]{5}(-[0-9]{4})?$", "message": "Enter a valid ZIP code (12345 or 12345-6789)" }
+        },
         "metadata": {
           "uad_field_id": "3.004",
           "dataType": "text",
@@ -191,12 +171,9 @@
         "required": true,
         "width": "half",
         "field_order": 5,
-        "validation": [
-          {
-            "type": "required",
-            "message": "County is required"
-          }
-        ],
+        "validation": {
+          "required": { "message": "County is required" }
+        },
         "metadata": {
           "uad_field_id": "3.005",
           "dataType": "text",
@@ -219,12 +196,9 @@
         "required": true,
         "width": "full",
         "field_order": 6,
-        "validation": [
-          {
-            "type": "required",
-            "message": "Legal description is required"
-          }
-        ],
+        "validation": {
+          "required": { "message": "Legal description is required" }
+        },
         "metadata": {
           "uad_field_id": "3.006",
           "dataType": "text",
@@ -268,13 +242,9 @@
         "required": false,
         "width": "quarter",
         "field_order": 8,
-        "validation": [
-          {
-            "type": "pattern",
-            "pattern": "^[0-9]{4}$",
-            "message": "Enter a valid 4-digit year"
-          }
-        ],
+        "validation": {
+          "pattern": { "pattern": "^[0-9]{4}$", "message": "Enter a valid 4-digit year" }
+        },
         "metadata": {
           "uad_field_id": "3.008",
           "dataType": "text",
@@ -297,13 +267,9 @@
         "required": false,
         "width": "quarter",
         "field_order": 9,
-        "validation": [
-          {
-            "type": "min",
-            "value": 0,
-            "message": "Tax amount cannot be negative"
-          }
-        ],
+        "validation": {
+          "min": { "value": 0, "message": "Tax amount cannot be negative" }
+        },
         "metadata": {
           "uad_field_id": "3.009",
           "dataType": "currency",
@@ -332,12 +298,9 @@
           { "label": "Life Estate", "value": "LifeEstate" },
           { "label": "Other", "value": "Other" }
         ],
-        "validation": [
-          {
-            "type": "required",
-            "message": "Property rights appraised is required"
-          }
-        ],
+        "validation": {
+          "required": { "message": "Property rights appraised is required" }
+        },
         "metadata": {
           "uad_field_id": "3.010",
           "dataType": "enumeration",
@@ -370,13 +333,12 @@
             }
           ]
         },
-        "validation": [
-          {
-            "type": "custom",
+        "validation": {
+          "custom": {
             "customFunction": "validatePropertyRightsOther",
             "message": "Description required when Property Rights is 'Other'"
           }
-        ],
+        },
         "metadata": {
           "uad_field_id": "3.011",
           "dataType": "text",
@@ -403,12 +365,9 @@
           { "label": "Refinance Transaction", "value": "RefinanceTransaction" },
           { "label": "Other", "value": "Other" }
         ],
-        "validation": [
-          {
-            "type": "required",
-            "message": "Assignment type is required"
-          }
-        ],
+        "validation": {
+          "required": { "message": "Assignment type is required" }
+        },
         "metadata": {
           "uad_field_id": "3.012",
           "dataType": "enumeration",
@@ -441,13 +400,12 @@
             }
           ]
         },
-        "validation": [
-          {
-            "type": "custom",
+        "validation": {
+          "custom": {
             "customFunction": "validateAssignmentTypeOther",
             "message": "Description required when Assignment Type is 'Other'"
           }
-        ],
+        },
         "metadata": {
           "uad_field_id": "3.013",
           "dataType": "text",
@@ -474,12 +432,9 @@
           { "label": "Mortgage Insurance", "value": "MortgageInsurance" },
           { "label": "Other", "value": "Other" }
         ],
-        "validation": [
-          {
-            "type": "required",
-            "message": "Intended use is required"
-          }
-        ],
+        "validation": {
+          "required": { "message": "Intended use is required" }
+        },
         "metadata": {
           "uad_field_id": "3.014",
           "dataType": "enumeration",
@@ -512,13 +467,12 @@
             }
           ]
         },
-        "validation": [
-          {
-            "type": "custom",
+        "validation": {
+          "custom": {
             "customFunction": "validateIntendedUseOther",
             "message": "Description required when Intended Use is 'Other'"
           }
-        ],
+        },
         "metadata": {
           "uad_field_id": "3.015",
           "dataType": "text",
@@ -550,12 +504,9 @@
           { "label": "USDA", "value": "USDA" },
           { "label": "Other", "value": "Other" }
         ],
-        "validation": [
-          {
-            "type": "required",
-            "message": "At least one intended user is required"
-          }
-        ],
+        "validation": {
+          "required": { "message": "At least one intended user is required" }
+        },
         "metadata": {
           "uad_field_id": "3.016",
           "dataType": "enumeration",
@@ -588,13 +539,12 @@
             }
           ]
         },
-        "validation": [
-          {
-            "type": "custom",
+        "validation": {
+          "custom": {
             "customFunction": "validateIntendedUsersOther",
             "message": "Description required when 'Other' is selected in Intended Users"
           }
-        ],
+        },
         "metadata": {
           "uad_field_id": "3.017",
           "dataType": "text",
@@ -624,12 +574,9 @@
           { "label": "Manufactured Home", "value": "ManufacturedHome" },
           { "label": "Other", "value": "Other" }
         ],
-        "validation": [
-          {
-            "type": "required",
-            "message": "Property type is required"
-          }
-        ],
+        "validation": {
+          "required": { "message": "Property type is required" }
+        },
         "metadata": {
           "uad_field_id": "3.018",
           "dataType": "enumeration",
@@ -662,13 +609,12 @@
             }
           ]
         },
-        "validation": [
-          {
-            "type": "custom",
+        "validation": {
+          "custom": {
             "customFunction": "validatePropertyTypeOther",
             "message": "Description required when Property Type is 'Other'"
           }
-        ],
+        },
         "metadata": {
           "uad_field_id": "3.019",
           "dataType": "text",
@@ -698,12 +644,9 @@
           { "label": "Occupant", "value": "Occupant" },
           { "label": "Other", "value": "Other" }
         ],
-        "validation": [
-          {
-            "type": "required",
-            "message": "Data source is required"
-          }
-        ],
+        "validation": {
+          "required": { "message": "Data source is required" }
+        },
         "metadata": {
           "uad_field_id": "3.020",
           "dataType": "enumeration",
@@ -736,13 +679,12 @@
             }
           ]
         },
-        "validation": [
-          {
-            "type": "custom",
+        "validation": {
+          "custom": {
             "customFunction": "validateDataSourceOther",
             "message": "Description required when Data Source is 'Other'"
           }
-        ],
+        },
         "metadata": {
           "uad_field_id": "3.021",
           "dataType": "text",
