@@ -20,11 +20,14 @@ export default function SettingsPage() {
   const [tempAppName, setTempAppName] = useState("Project Bobcat")
   const [companyName, setCompanyName] = useState("Your Company")
   const [tempCompanyName, setTempCompanyName] = useState("Your Company")
+  const [logoIcon, setLogoIcon] = useState("Cat")
+  const [tempLogoIcon, setTempLogoIcon] = useState("Cat")
 
   // Add useEffect to load saved settings from localStorage
   useEffect(() => {
     const savedAppName = localStorage.getItem("appName")
     const savedCompanyName = localStorage.getItem("companyName")
+    const savedLogoIcon = localStorage.getItem("logoIcon")
 
     if (savedAppName) {
       setAppName(savedAppName)
@@ -34,6 +37,11 @@ export default function SettingsPage() {
     if (savedCompanyName) {
       setCompanyName(savedCompanyName)
       setTempCompanyName(savedCompanyName)
+    }
+
+    if (savedLogoIcon) {
+      setLogoIcon(savedLogoIcon)
+      setTempLogoIcon(savedLogoIcon)
     }
   }, [])
 
@@ -64,6 +72,11 @@ export default function SettingsPage() {
     setCompanyName(tempCompanyName)
     localStorage.setItem("companyName", tempCompanyName)
     window.dispatchEvent(new CustomEvent("companyNameChanged", { detail: tempCompanyName }))
+
+    // Save logo icon
+    setLogoIcon(tempLogoIcon)
+    localStorage.setItem("logoIcon", tempLogoIcon)
+    window.dispatchEvent(new CustomEvent("logoIconChanged", { detail: tempLogoIcon }))
   }
 
   return (
@@ -92,7 +105,7 @@ export default function SettingsPage() {
               <CardDescription>Configure basic application settings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="app-name">Application Name</Label>
                   <Input id="app-name" value={tempAppName} onChange={(e) => setTempAppName(e.target.value)} />
@@ -104,6 +117,27 @@ export default function SettingsPage() {
                     value={tempCompanyName}
                     onChange={(e) => setTempCompanyName(e.target.value)}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="logo-icon">Logo Icon</Label>
+                  <Input
+                    id="logo-icon"
+                    value={tempLogoIcon}
+                    onChange={(e) => setTempLogoIcon(e.target.value)}
+                    placeholder="Enter Lucide icon name (e.g., Cat, Home, Star)"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Enter a Lucide icon name. See{" "}
+                    <a
+                      href="https://lucide.dev/icons/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      lucide.dev
+                    </a>{" "}
+                    for available icons.
+                  </p>
                 </div>
               </div>
 

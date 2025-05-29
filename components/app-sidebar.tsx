@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { Cat, FileText, Settings, Zap, BarChart3, Home, User, LogOut, Shield, ChevronsUpDown } from "lucide-react"
+import * as LucideIcons from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
@@ -212,31 +213,52 @@ function UserProfile() {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar()
   const [appName, setAppName] = useState("Project Bobcat")
+  const [logoIconName, setLogoIconName] = useState("Cat")
 
   useEffect(() => {
-    // Load saved app name from localStorage
+    // Load saved app name and logo icon from localStorage
     const savedAppName = localStorage.getItem("appName")
+    const savedLogoIcon = localStorage.getItem("logoIcon")
+
     if (savedAppName) {
       setAppName(savedAppName)
     }
 
-    // Listen for app name changes
+    if (savedLogoIcon) {
+      setLogoIconName(savedLogoIcon)
+    }
+
+    // Listen for app name and logo icon changes
     const handleAppNameChange = (event: CustomEvent) => {
       setAppName(event.detail)
     }
 
+    const handleLogoIconChange = (event: CustomEvent) => {
+      setLogoIconName(event.detail)
+    }
+
     window.addEventListener("appNameChanged", handleAppNameChange as EventListener)
+    window.addEventListener("logoIconChanged", handleLogoIconChange as EventListener)
 
     return () => {
       window.removeEventListener("appNameChanged", handleAppNameChange as EventListener)
+      window.removeEventListener("logoIconChanged", handleLogoIconChange as EventListener)
     }
   }, [])
+
+  // Get the icon component dynamically
+  const getLogoIcon = () => {
+    const IconComponent = (LucideIcons as any)[logoIconName]
+    return IconComponent || Cat // Fallback to Cat if icon not found
+  }
+
+  const LogoIcon = getLogoIcon()
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="flex h-16 shrink-0 items-center justify-start border-b border-sidebar-border">
         <div className="flex h-full items-center gap-2 px-4">
-          <Cat className="h-6 w-6" />
+          <LogoIcon className="h-6 w-6" />
           {state !== "collapsed" && <span className="font-semibold text-lg">{appName}</span>}
         </div>
       </SidebarHeader>
