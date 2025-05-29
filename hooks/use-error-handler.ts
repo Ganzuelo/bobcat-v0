@@ -31,7 +31,6 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
 
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
 
-  // Clear any pending retry timeout
   const clearRetryTimeout = useCallback(() => {
     if (retryTimeoutRef.current) {
       clearTimeout(retryTimeoutRef.current)
@@ -39,7 +38,6 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
     }
   }, [])
 
-  // Handle error
   const handleError = useCallback(
     (error: unknown, context?: string) => {
       const appError =
@@ -63,7 +61,6 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
     [logErrors, onError],
   )
 
-  // Clear error
   const clearError = useCallback(() => {
     clearRetryTimeout()
     setErrorState({
@@ -74,7 +71,6 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
     })
   }, [clearRetryTimeout])
 
-  // Retry operation
   const retry = useCallback(
     async (operation: () => Promise<void> | void) => {
       if (errorState.retryCount >= maxRetries) {
@@ -101,7 +97,6 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
     [errorState.retryCount, maxRetries, handleError, clearError],
   )
 
-  // Auto retry with delay
   const autoRetry = useCallback(
     (operation: () => Promise<void> | void) => {
       if (!isRetryableError(errorState.error) || errorState.retryCount >= maxRetries) {
@@ -117,12 +112,8 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
     [errorState.error, errorState.retryCount, maxRetries, retryDelay, retry],
   )
 
-  // Safe async wrapper
-  const safeAsync = useCallback(
-    async <T>(\
-      operation: () => Promise<T>,
-      context?: string
-    ): Promise<T | null> => {
+  const safeAsync = useCallback(\
+    async <T>(operation: () => Promise<T>, context?: string): Promise<T | null> => {
   try {
     clearError()
     return await operation()
@@ -135,7 +126,6 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
     [handleError, clearError]
   )
 
-// Safe async with retry
 const safeAsyncWithRetry = useCallback(
     async <T>(
       operation: () => Promise<T>,
@@ -158,7 +148,6 @@ try {
     [handleError, clearError, maxRetries, retryDelay]
   )
 
-// Safe sync wrapper
 const safeSync = useCallback(
     <T>(operation: () => T, context?: string): T | null => {
       try {
@@ -172,25 +161,18 @@ const safeSync = useCallback(
     [handleError, clearError]
   )
 
-  const canRetry = errorState.error ? isRetryableError(errorState.error) : false;
-  const hasMaxRetries = errorState.retryCount >= maxRetries;
+  const canRetry = errorState.error ? isRetryableError(errorState.error) : false
+  const hasMaxRetries = errorState.retryCount >= maxRetries
 
   return {
-    // Error state
     ...errorState,
-
-    // Error management
     handleError,
     clearError,
     retry,
     autoRetry,
-
-    // Safe operation wrappers
     safeAsync,
     safeAsyncWithRetry,
     safeSync,
-
-    // Utilities
     canRetry,
     hasMaxRetries,
   }
