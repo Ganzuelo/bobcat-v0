@@ -6,16 +6,18 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { EnhancedImportModal } from "./enhanced-import-modal"
 import { formStructureToExportFormat, downloadJson, generateExportFilename } from "@/lib/form-import-export"
-import { formatValidationErrors, type ValidatedImportForm } from "@/lib/form-import-validation"
 import type { FormStructure } from "@/lib/database-types"
 import { Download, Upload, Undo2 } from "lucide-react"
 import { showErrorToast } from "@/lib/error-toast-utils"
 import {
   analyzeImport,
+  mergeFormStructures,
   convertImportToFormStructure,
   type ImportAnalysis,
   ImportMode,
   validateEnhancedImportForm,
+  formatValidationErrors,
+  type ValidatedImportForm,
 } from "@/lib/enhanced-form-import"
 import { ImportModeModal } from "./import-mode-modal"
 import { ConflictResolutionModal } from "./conflict-resolution-modal"
@@ -256,19 +258,23 @@ export function EnhancedFormImportExport({ formStructure, onImport }: EnhancedFo
   }
 
   const applyImport = (mode: ImportMode, resolvedData?: any) => {
-    if (!importAnalysis) return
+    if (!importFormData) return
 
-    let finalImportData = importAnalysis.importData
+    let finalImportData = importFormData
 
     if (resolvedData) {
       // Apply conflict resolutions
       finalImportData = {
-        ...importAnalysis.importData,
+        ...importFormData,
         pages: resolvedData.pages,
       }
     }
 
-    const newFormStructure = convertImportToFormStructure(finalImportData)
+    // Use mergeFormStructures for proper merging logic
+    const newFormStructure =
+      mode === ImportMode.OVERWRITE
+        ? convertImportToFormStructure(finalImportData)
+        : mergeFormStructures(finalImportData, formStructure, mode, resolvedData?.conflictResolutions || {})
 
     onImport(newFormStructure)
     setCanRestore(true)

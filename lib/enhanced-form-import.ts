@@ -503,3 +503,6 @@ export function formatValidationErrors(errors: string[]): string {
 
   return `Multiple validation errors:\n${errors.map((error, index) => `${index + 1}. ${error}`).join("\n")}`
 }
+
+// Export all the functions that are used by other modules
+export { convertImportToFormStructure }
