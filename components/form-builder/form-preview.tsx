@@ -56,17 +56,18 @@ export function FormPreview({ formStructure, currentPageIndex }: FormPreviewProp
                       <div key={field.id} className={`${gridColClass} min-w-[120px] w-full`}>
                         <div className="space-y-2 w-full">
                           {field.field_type !== "checkbox" && (
-                            <div className="flex items-center gap-2 w-full">
-                              <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 flex-1">
-                                {field.label}
-                                {field.required && <span className="text-red-500 ml-1">*</span>}
-                              </Label>
+                            <Label
+                              htmlFor={field.id}
+                              className="text-sm font-medium text-gray-700 w-full flex items-center gap-1"
+                            >
+                              {field.label}
+                              {field.required && <span className="text-red-500 ml-1">*</span>}
                               {field.guidance && (
                                 <Popover>
                                   <PopoverTrigger asChild>
                                     <button
                                       type="button"
-                                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                                      className="text-gray-400 hover:text-gray-600 transition-colors ml-1"
                                       aria-label="Field guidance"
                                     >
                                       <Info className="h-4 w-4" />
@@ -77,7 +78,7 @@ export function FormPreview({ formStructure, currentPageIndex }: FormPreviewProp
                                   </PopoverContent>
                                 </Popover>
                               )}
-                            </div>
+                            </Label>
                           )}
                           {field.help_text && <p className="text-xs text-gray-500 mb-1 w-full">{field.help_text}</p>}
                           <div className="w-full">
