@@ -1,0 +1,760 @@
+{
+  "section": {
+    "id": "03-subject-property",
+    "page_id": "page-1",
+    "title": "03: Subject Property",
+    "description": "Subject property identification, legal description, and basic characteristics",
+    "section_order": 1,
+    "settings": {
+      "collapsible": false,
+      "columns": 12
+    },
+    "fields": [
+      {
+        "id": "field-3-001",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "Property Address",
+        "placeholder": "Enter complete street address",
+        "help_text": "Complete street address of the subject property",
+        "required": true,
+        "width": "full",
+        "field_order": 1,
+        "validation": [
+          {
+            "type": "required",
+            "message": "Property address is required"
+          },
+          {
+            "type": "minLength",
+            "value": 5,
+            "message": "Address must be at least 5 characters"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.001",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/ADDRESS/AddressLineText",
+            "fieldId": "SubjectPropertyAddress",
+            "required": true,
+            "format": "text"
+          },
+          "tags": ["address", "identification", "required"]
+        }
+      },
+      {
+        "id": "field-3-002",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "City",
+        "placeholder": "Enter city name",
+        "required": true,
+        "width": "half",
+        "field_order": 2,
+        "validation": [
+          {
+            "type": "required",
+            "message": "City is required"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.002",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/ADDRESS/CityName",
+            "fieldId": "SubjectPropertyCity",
+            "required": true,
+            "format": "text"
+          },
+          "tags": ["address", "identification", "required"]
+        }
+      },
+      {
+        "id": "field-3-003",
+        "section_id": "03-subject-property",
+        "field_type": "select",
+        "label": "State",
+        "placeholder": "Select state",
+        "required": true,
+        "width": "quarter",
+        "field_order": 3,
+        "options": [
+          { "label": "Alabama", "value": "AL" },
+          { "label": "Alaska", "value": "AK" },
+          { "label": "Arizona", "value": "AZ" },
+          { "label": "Arkansas", "value": "AR" },
+          { "label": "California", "value": "CA" },
+          { "label": "Colorado", "value": "CO" },
+          { "label": "Connecticut", "value": "CT" },
+          { "label": "Delaware", "value": "DE" },
+          { "label": "Florida", "value": "FL" },
+          { "label": "Georgia", "value": "GA" },
+          { "label": "Hawaii", "value": "HI" },
+          { "label": "Idaho", "value": "ID" },
+          { "label": "Illinois", "value": "IL" },
+          { "label": "Indiana", "value": "IN" },
+          { "label": "Iowa", "value": "IA" },
+          { "label": "Kansas", "value": "KS" },
+          { "label": "Kentucky", "value": "KY" },
+          { "label": "Louisiana", "value": "LA" },
+          { "label": "Maine", "value": "ME" },
+          { "label": "Maryland", "value": "MD" },
+          { "label": "Massachusetts", "value": "MA" },
+          { "label": "Michigan", "value": "MI" },
+          { "label": "Minnesota", "value": "MN" },
+          { "label": "Mississippi", "value": "MS" },
+          { "label": "Missouri", "value": "MO" },
+          { "label": "Montana", "value": "MT" },
+          { "label": "Nebraska", "value": "NE" },
+          { "label": "Nevada", "value": "NV" },
+          { "label": "New Hampshire", "value": "NH" },
+          { "label": "New Jersey", "value": "NJ" },
+          { "label": "New Mexico", "value": "NM" },
+          { "label": "New York", "value": "NY" },
+          { "label": "North Carolina", "value": "NC" },
+          { "label": "North Dakota", "value": "ND" },
+          { "label": "Ohio", "value": "OH" },
+          { "label": "Oklahoma", "value": "OK" },
+          { "label": "Oregon", "value": "OR" },
+          { "label": "Pennsylvania", "value": "PA" },
+          { "label": "Rhode Island", "value": "RI" },
+          { "label": "South Carolina", "value": "SC" },
+          { "label": "South Dakota", "value": "SD" },
+          { "label": "Tennessee", "value": "TN" },
+          { "label": "Texas", "value": "TX" },
+          { "label": "Utah", "value": "UT" },
+          { "label": "Vermont", "value": "VT" },
+          { "label": "Virginia", "value": "VA" },
+          { "label": "Washington", "value": "WA" },
+          { "label": "West Virginia", "value": "WV" },
+          { "label": "Wisconsin", "value": "WI" },
+          { "label": "Wyoming", "value": "WY" },
+          { "label": "District of Columbia", "value": "DC" }
+        ],
+        "validation": [
+          {
+            "type": "required",
+            "message": "State is required"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.003",
+          "dataType": "enumeration",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/ADDRESS/StateCode",
+            "fieldId": "SubjectPropertyState",
+            "required": true,
+            "format": "enumeration"
+          },
+          "tags": ["address", "identification", "required", "enumeration"]
+        }
+      },
+      {
+        "id": "field-3-004",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "ZIP Code",
+        "placeholder": "Enter ZIP code",
+        "required": true,
+        "width": "quarter",
+        "field_order": 4,
+        "validation": [
+          {
+            "type": "required",
+            "message": "ZIP code is required"
+          },
+          {
+            "type": "pattern",
+            "pattern": "^[0-9]{5}(-[0-9]{4})?$",
+            "message": "Enter a valid ZIP code (12345 or 12345-6789)"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.004",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/ADDRESS/PostalCode",
+            "fieldId": "SubjectPropertyZIP",
+            "required": true,
+            "format": "text"
+          },
+          "tags": ["address", "identification", "required"]
+        }
+      },
+      {
+        "id": "field-3-005",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "County",
+        "placeholder": "Enter county name",
+        "required": true,
+        "width": "half",
+        "field_order": 5,
+        "validation": [
+          {
+            "type": "required",
+            "message": "County is required"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.005",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/ADDRESS/CountyName",
+            "fieldId": "SubjectPropertyCounty",
+            "required": true,
+            "format": "text"
+          },
+          "tags": ["address", "identification", "required"]
+        }
+      },
+      {
+        "id": "field-3-006",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "Legal Description",
+        "placeholder": "Enter legal description",
+        "help_text": "Complete legal description of the property",
+        "required": true,
+        "width": "full",
+        "field_order": 6,
+        "validation": [
+          {
+            "type": "required",
+            "message": "Legal description is required"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.006",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/LEGAL_DESCRIPTION/LegalDescriptionText",
+            "fieldId": "LegalDescription",
+            "required": true,
+            "format": "text"
+          },
+          "tags": ["legal", "identification", "required"]
+        }
+      },
+      {
+        "id": "field-3-007",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "Assessor's Parcel Number",
+        "placeholder": "Enter APN/Tax ID",
+        "help_text": "Assessor's Parcel Number or Tax ID",
+        "required": false,
+        "width": "half",
+        "field_order": 7,
+        "metadata": {
+          "uad_field_id": "3.007",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/ASSESSOR_PARCEL/AssessorParcelIdentifier",
+            "fieldId": "AssessorParcelNumber",
+            "required": false,
+            "format": "text"
+          },
+          "tags": ["identification", "tax"]
+        }
+      },
+      {
+        "id": "field-3-008",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "Tax Year",
+        "placeholder": "Enter tax year (YYYY)",
+        "required": false,
+        "width": "quarter",
+        "field_order": 8,
+        "validation": [
+          {
+            "type": "pattern",
+            "pattern": "^[0-9]{4}$",
+            "message": "Enter a valid 4-digit year"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.008",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/TAX_ASSESSMENT/TaxAssessmentYear",
+            "fieldId": "TaxYear",
+            "required": false,
+            "format": "text"
+          },
+          "tags": ["tax", "year"]
+        }
+      },
+      {
+        "id": "field-3-009",
+        "section_id": "03-subject-property",
+        "field_type": "currency",
+        "label": "Real Estate Taxes",
+        "placeholder": "Enter annual tax amount",
+        "help_text": "Annual real estate taxes",
+        "required": false,
+        "width": "quarter",
+        "field_order": 9,
+        "validation": [
+          {
+            "type": "min",
+            "value": 0,
+            "message": "Tax amount cannot be negative"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.009",
+          "dataType": "currency",
+          "unit": "USD",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/TAX_ASSESSMENT/RealEstateTaxAmount",
+            "fieldId": "RealEstateTaxes",
+            "required": false,
+            "format": "currency"
+          },
+          "tags": ["tax", "currency"]
+        }
+      },
+      {
+        "id": "field-3-010",
+        "section_id": "03-subject-property",
+        "field_type": "select",
+        "label": "Property Rights Appraised",
+        "placeholder": "Select property rights",
+        "required": true,
+        "width": "half",
+        "field_order": 10,
+        "options": [
+          { "label": "Fee Simple", "value": "FeeSimple" },
+          { "label": "Leasehold", "value": "Leasehold" },
+          { "label": "Life Estate", "value": "LifeEstate" },
+          { "label": "Other", "value": "Other" }
+        ],
+        "validation": [
+          {
+            "type": "required",
+            "message": "Property rights appraised is required"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.010",
+          "dataType": "enumeration",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/PROPERTY_RIGHTS_APPRAISED/PropertyRightsAppraisedType",
+            "fieldId": "PropertyRightsAppraised",
+            "required": true,
+            "format": "enumeration"
+          },
+          "tags": ["property-rights", "required", "enumeration"]
+        }
+      },
+      {
+        "id": "field-3-011",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "Property Rights Other Description",
+        "placeholder": "Describe other property rights",
+        "help_text": "Required if Property Rights Appraised is 'Other'",
+        "required": false,
+        "width": "half",
+        "field_order": 11,
+        "conditional_visibility": {
+          "enabled": true,
+          "conditions": [
+            {
+              "fieldId": "field-3-010",
+              "operator": "equals",
+              "value": "Other"
+            }
+          ]
+        },
+        "validation": [
+          {
+            "type": "custom",
+            "customFunction": "validatePropertyRightsOther",
+            "message": "Description required when Property Rights is 'Other'"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.011",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/PROPERTY_RIGHTS_APPRAISED/PropertyRightsAppraisedOtherDescription",
+            "fieldId": "PropertyRightsOtherDescription",
+            "required": false,
+            "format": "text"
+          },
+          "tags": ["property-rights", "conditional"]
+        }
+      },
+      {
+        "id": "field-3-012",
+        "section_id": "03-subject-property",
+        "field_type": "select",
+        "label": "Assignment Type",
+        "placeholder": "Select assignment type",
+        "required": true,
+        "width": "half",
+        "field_order": 12,
+        "options": [
+          { "label": "Purchase Transaction", "value": "PurchaseTransaction" },
+          { "label": "Refinance Transaction", "value": "RefinanceTransaction" },
+          { "label": "Other", "value": "Other" }
+        ],
+        "validation": [
+          {
+            "type": "required",
+            "message": "Assignment type is required"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.012",
+          "dataType": "enumeration",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/ASSIGNMENT_TYPE/AssignmentType",
+            "fieldId": "AssignmentType",
+            "required": true,
+            "format": "enumeration"
+          },
+          "tags": ["assignment", "required", "enumeration"]
+        }
+      },
+      {
+        "id": "field-3-013",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "Assignment Type Other Description",
+        "placeholder": "Describe other assignment type",
+        "help_text": "Required if Assignment Type is 'Other'",
+        "required": false,
+        "width": "half",
+        "field_order": 13,
+        "conditional_visibility": {
+          "enabled": true,
+          "conditions": [
+            {
+              "fieldId": "field-3-012",
+              "operator": "equals",
+              "value": "Other"
+            }
+          ]
+        },
+        "validation": [
+          {
+            "type": "custom",
+            "customFunction": "validateAssignmentTypeOther",
+            "message": "Description required when Assignment Type is 'Other'"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.013",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/ASSIGNMENT_TYPE/AssignmentTypeOtherDescription",
+            "fieldId": "AssignmentTypeOtherDescription",
+            "required": false,
+            "format": "text"
+          },
+          "tags": ["assignment", "conditional"]
+        }
+      },
+      {
+        "id": "field-3-014",
+        "section_id": "03-subject-property",
+        "field_type": "select",
+        "label": "Intended Use",
+        "placeholder": "Select intended use",
+        "required": true,
+        "width": "half",
+        "field_order": 14,
+        "options": [
+          { "label": "Mortgage Finance", "value": "MortgageFinance" },
+          { "label": "Mortgage Insurance", "value": "MortgageInsurance" },
+          { "label": "Other", "value": "Other" }
+        ],
+        "validation": [
+          {
+            "type": "required",
+            "message": "Intended use is required"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.014",
+          "dataType": "enumeration",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/INTENDED_USE/IntendedUseType",
+            "fieldId": "IntendedUse",
+            "required": true,
+            "format": "enumeration"
+          },
+          "tags": ["intended-use", "required", "enumeration"]
+        }
+      },
+      {
+        "id": "field-3-015",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "Intended Use Other Description",
+        "placeholder": "Describe other intended use",
+        "help_text": "Required if Intended Use is 'Other'",
+        "required": false,
+        "width": "half",
+        "field_order": 15,
+        "conditional_visibility": {
+          "enabled": true,
+          "conditions": [
+            {
+              "fieldId": "field-3-014",
+              "operator": "equals",
+              "value": "Other"
+            }
+          ]
+        },
+        "validation": [
+          {
+            "type": "custom",
+            "customFunction": "validateIntendedUseOther",
+            "message": "Description required when Intended Use is 'Other'"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.015",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/INTENDED_USE/IntendedUseOtherDescription",
+            "fieldId": "IntendedUseOtherDescription",
+            "required": false,
+            "format": "text"
+          },
+          "tags": ["intended-use", "conditional"]
+        }
+      },
+      {
+        "id": "field-3-016",
+        "section_id": "03-subject-property",
+        "field_type": "multiselect",
+        "label": "Intended Users",
+        "placeholder": "Select intended users",
+        "help_text": "Select all applicable intended users",
+        "required": true,
+        "width": "full",
+        "field_order": 16,
+        "options": [
+          { "label": "Lender/Client", "value": "LenderClient" },
+          { "label": "Mortgage Insurer", "value": "MortgageInsurer" },
+          { "label": "Government Sponsored Enterprise", "value": "GovernmentSponsoredEnterprise" },
+          { "label": "FHA", "value": "FHA" },
+          { "label": "VA", "value": "VA" },
+          { "label": "USDA", "value": "USDA" },
+          { "label": "Other", "value": "Other" }
+        ],
+        "validation": [
+          {
+            "type": "required",
+            "message": "At least one intended user is required"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.016",
+          "dataType": "enumeration",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/INTENDED_USERS/IntendedUserType",
+            "fieldId": "IntendedUsers",
+            "required": true,
+            "format": "enumeration"
+          },
+          "tags": ["intended-users", "required", "enumeration", "multiple"]
+        }
+      },
+      {
+        "id": "field-3-017",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "Intended Users Other Description",
+        "placeholder": "Describe other intended users",
+        "help_text": "Required if 'Other' is selected in Intended Users",
+        "required": false,
+        "width": "full",
+        "field_order": 17,
+        "conditional_visibility": {
+          "enabled": true,
+          "conditions": [
+            {
+              "fieldId": "field-3-016",
+              "operator": "contains",
+              "value": "Other"
+            }
+          ]
+        },
+        "validation": [
+          {
+            "type": "custom",
+            "customFunction": "validateIntendedUsersOther",
+            "message": "Description required when 'Other' is selected in Intended Users"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.017",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/INTENDED_USERS/IntendedUsersOtherDescription",
+            "fieldId": "IntendedUsersOtherDescription",
+            "required": false,
+            "format": "text"
+          },
+          "tags": ["intended-users", "conditional"]
+        }
+      },
+      {
+        "id": "field-3-018",
+        "section_id": "03-subject-property",
+        "field_type": "select",
+        "label": "Property Type",
+        "placeholder": "Select property type",
+        "required": true,
+        "width": "half",
+        "field_order": 18,
+        "options": [
+          { "label": "Single Family Detached", "value": "SingleFamilyDetached" },
+          { "label": "Single Family Attached", "value": "SingleFamilyAttached" },
+          { "label": "Condominium", "value": "Condominium" },
+          { "label": "Cooperative", "value": "Cooperative" },
+          { "label": "Manufactured Home", "value": "ManufacturedHome" },
+          { "label": "Other", "value": "Other" }
+        ],
+        "validation": [
+          {
+            "type": "required",
+            "message": "Property type is required"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.018",
+          "dataType": "enumeration",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/PROPERTY_TYPE/PropertyType",
+            "fieldId": "PropertyType",
+            "required": true,
+            "format": "enumeration"
+          },
+          "tags": ["property-type", "required", "enumeration"]
+        }
+      },
+      {
+        "id": "field-3-019",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "Property Type Other Description",
+        "placeholder": "Describe other property type",
+        "help_text": "Required if Property Type is 'Other'",
+        "required": false,
+        "width": "half",
+        "field_order": 19,
+        "conditional_visibility": {
+          "enabled": true,
+          "conditions": [
+            {
+              "fieldId": "field-3-018",
+              "operator": "equals",
+              "value": "Other"
+            }
+          ]
+        },
+        "validation": [
+          {
+            "type": "custom",
+            "customFunction": "validatePropertyTypeOther",
+            "message": "Description required when Property Type is 'Other'"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.019",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/PROPERTY_TYPE/PropertyTypeOtherDescription",
+            "fieldId": "PropertyTypeOtherDescription",
+            "required": false,
+            "format": "text"
+          },
+          "tags": ["property-type", "conditional"]
+        }
+      },
+      {
+        "id": "field-3-020",
+        "section_id": "03-subject-property",
+        "field_type": "select",
+        "label": "Data Source",
+        "placeholder": "Select primary data source",
+        "required": true,
+        "width": "half",
+        "field_order": 20,
+        "options": [
+          { "label": "Public Records", "value": "PublicRecords" },
+          { "label": "MLS", "value": "MLS" },
+          { "label": "Appraiser", "value": "Appraiser" },
+          { "label": "Owner", "value": "Owner" },
+          { "label": "Occupant", "value": "Occupant" },
+          { "label": "Other", "value": "Other" }
+        ],
+        "validation": [
+          {
+            "type": "required",
+            "message": "Data source is required"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.020",
+          "dataType": "enumeration",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/DATA_SOURCE/DataSourceType",
+            "fieldId": "DataSource",
+            "required": true,
+            "format": "enumeration"
+          },
+          "tags": ["data-source", "required", "enumeration"]
+        }
+      },
+      {
+        "id": "field-3-021",
+        "section_id": "03-subject-property",
+        "field_type": "text",
+        "label": "Data Source Other Description",
+        "placeholder": "Describe other data source",
+        "help_text": "Required if Data Source is 'Other'",
+        "required": false,
+        "width": "half",
+        "field_order": 21,
+        "conditional_visibility": {
+          "enabled": true,
+          "conditions": [
+            {
+              "fieldId": "field-3-020",
+              "operator": "equals",
+              "value": "Other"
+            }
+          ]
+        },
+        "validation": [
+          {
+            "type": "custom",
+            "customFunction": "validateDataSourceOther",
+            "message": "Description required when Data Source is 'Other'"
+          }
+        ],
+        "metadata": {
+          "uad_field_id": "3.021",
+          "dataType": "text",
+          "xml": {
+            "path": "DEAL_SETS/DEAL_SET/DEALS/DEAL/COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/DATA_SOURCE/DataSourceOtherDescription",
+            "fieldId": "DataSourceOtherDescription",
+            "required": false,
+            "format": "text"
+          },
+          "tags": ["data-source", "conditional"]
+        }
+      }
+    ]
+  }
+}
