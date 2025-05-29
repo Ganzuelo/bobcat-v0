@@ -41,7 +41,7 @@ export function FormPreview({ formStructure }: FormPreviewProps) {
                   {currentSection.fields.map((field) => {
                     const gridColClass = getGridColClass(field.width || "full")
                     return (
-                      <div key={field.id} className={`${gridColClass} min-w-[120px] w-full border border-red-500`}>
+                      <div key={field.id} className={`${gridColClass} min-w-[120px] w-full`}>
                         <div className="space-y-2 w-full">
                           {field.field_type !== "checkbox" && (
                             <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 w-full">
