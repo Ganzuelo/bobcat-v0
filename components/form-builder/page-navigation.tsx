@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
+import { Plus, ChevronLeft, ChevronRight } from "lucide-react"
 import {
   DndContext,
   closestCenter,
@@ -28,7 +28,6 @@ interface PageNavigationProps {
   onPageChange: (index: number) => void
   onAddPage: () => void
   onReorderPages?: (pages: (FormPage & { sections: (FormSection & { fields: FormField[] })[] })[]) => void
-  onDeletePage?: (index: number) => void
 }
 
 export function PageNavigation({
@@ -37,7 +36,6 @@ export function PageNavigation({
   onPageChange,
   onAddPage,
   onReorderPages,
-  onDeletePage,
 }: PageNavigationProps) {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -127,37 +125,57 @@ export function PageNavigation({
 
   return (
     <div className="flex items-center justify-between p-4 border-b bg-white">
-      {/* Page Tabs */}
-      <div className="flex items-center gap-1 flex-1 overflow-x-auto">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          modifiers={[restrictToHorizontalAxis, restrictToParentElement]}
+      {/* Navigation Arrows */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onPageChange(Math.max(0, currentPageIndex - 1))}
+          disabled={currentPageIndex === 0}
         >
-          <SortableContext items={pages.map((p) => p.id)} strategy={horizontalListSortingStrategy}>
-            <div className="flex items-center gap-1">
-              {pages.map((page, index) => (
-                <SortablePageTab
-                  key={page.id}
-                  page={page}
-                  index={index}
-                  totalPages={pages.length}
-                  isActive={index === currentPageIndex}
-                  onPageChange={onPageChange}
-                  onMoveLeft={handleMoveLeft}
-                  onMoveRight={handleMoveRight}
-                  onDeletePage={onDeletePage}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        {/* Page Tabs */}
+        <div className="flex items-center gap-2">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToHorizontalAxis, restrictToParentElement]}
+          >
+            <SortableContext items={pages.map((p) => p.id)} strategy={horizontalListSortingStrategy}>
+              <div className="flex items-center gap-2">
+                {pages.map((page, index) => (
+                  <SortablePageTab
+                    key={page.id}
+                    page={page}
+                    index={index}
+                    totalPages={pages.length}
+                    isActive={index === currentPageIndex}
+                    onPageChange={onPageChange}
+                    onMoveLeft={handleMoveLeft}
+                    onMoveRight={handleMoveRight}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onPageChange(Math.min(pages.length - 1, currentPageIndex + 1))}
+          disabled={currentPageIndex === pages.length - 1}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Add Page Button */}
-      <Button variant="outline" size="sm" onClick={onAddPage} className="ml-4 shrink-0">
+      <Button variant="outline" size="sm" onClick={onAddPage}>
         <Plus className="h-4 w-4 mr-2" />
         Add Page
       </Button>
