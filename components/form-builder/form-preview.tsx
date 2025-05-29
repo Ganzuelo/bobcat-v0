@@ -1,134 +1,197 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Info } from "lucide-react"
-import type { FormStructure } from "@/lib/form-types"
-import { getGridColClass } from "@/lib/form-builder-utils"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { FieldRenderer } from "./field-renderer"
+import { getGridColClass } from "@/lib/form-builder-utils"
+import type { FormStructure } from "@/lib/form-types"
 
 interface FormPreviewProps {
   formStructure: FormStructure
-  currentPageIndex: number
+  currentPageIndex?: number
+  onSubmit?: (data: any) => void
 }
 
-export function FormPreview({ formStructure, currentPageIndex }: FormPreviewProps) {
-  // Use the passed currentPageIndex to get the current page
-  const currentPage = formStructure.pages[currentPageIndex]
+export function FormPreview({ formStructure, currentPageIndex = 0, onSubmit }: FormPreviewProps) {
+  const [formData, setFormData] = useState<Record<string, any>>({})
+  const [currentPage, setCurrentPage] = useState(currentPageIndex)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  return (
-    <div className="max-w-4xl mx-auto bg-white">
-      {/* Form Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{formStructure.form.title}</h1>
-        {formStructure.form.description && <p className="text-gray-600 text-lg">{formStructure.form.description}</p>}
-      </div>
-
-      {/* Page Title */}
-      {currentPage && (
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">{currentPage.title}</h2>
-          {currentPage.description && <p className="text-gray-600 mt-1">{currentPage.description}</p>}
-        </div>
-      )}
-
-      {/* Form Content - Render All Sections */}
-      {currentPage && currentPage.sections && currentPage.sections.length > 0 ? (
-        <div className="space-y-8">
-          {currentPage.sections
-            .sort((a, b) => a.section_order - b.section_order)
-            .map((section) => (
-              <Card key={section.id} className="shadow-lg">
-                <CardHeader>
-                  <CardTitle className="text-xl">{section.title}</CardTitle>
-                  {section.description && <p className="text-gray-600">{section.description}</p>}
-                </CardHeader>
-                <CardContent>
-                  {section.fields && section.fields.length > 0 ? (
-                    <form className="space-y-6">
-                      <div className="grid grid-cols-12 gap-4">
-                        {section.fields
-                          .sort((a, b) => a.field_order - b.field_order)
-                          .map((field) => {
-                            const gridColClass = getGridColClass(field.width || "full")
-                            return (
-                              <div key={field.id} className={`${gridColClass} min-w-[120px] w-full`}>
-                                <div className="space-y-2 w-full">
-                                  {field.field_type !== "checkbox" && (
-                                    <Label
-                                      htmlFor={field.id}
-                                      className="text-sm font-medium text-gray-700 w-full flex items-center gap-1"
-                                    >
-                                      {field.label}
-                                      {field.required && <span className="text-red-500 ml-1">*</span>}
-                                      {field.guidance && (
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <button
-                                              type="button"
-                                              className="text-gray-400 hover:text-gray-600 transition-colors ml-1"
-                                              aria-label="Field guidance"
-                                            >
-                                              <Info className="h-4 w-4" />
-                                            </button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-80 p-4">
-                                            <div className="flex items-center gap-2 mb-2">
-                                              <Info className="h-4 w-4 text-primary" />
-                                              <h4 className="font-semibold text-sm">Field Guidance</h4>
-                                            </div>
-                                            <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                              {field.guidance}
-                                            </div>
-                                          </PopoverContent>
-                                        </Popover>
-                                      )}
-                                    </Label>
-                                  )}
-                                  {field.help_text && (
-                                    <p className="text-xs text-gray-500 mb-1 w-full">{field.help_text}</p>
-                                  )}
-                                  <div className="w-full">
-                                    <FieldRenderer field={field} isPreviewMode={true} />
-                                  </div>
-                                </div>
-                              </div>
-                            )
-                          })}
-                      </div>
-                    </form>
-                  ) : (
-                    <div className="text-center py-12 text-gray-500">
-                      <p>No fields in this section yet.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-
-          {/* Form Actions - Only show at the bottom of the last section */}
-          <div className="flex justify-end mt-8 pt-6 border-t">
-            <div className="flex gap-3">
-              <Button type="button" variant="outline" size="lg">
-                Cancel
-              </Button>
-              <Button type="submit" size="lg">
-                Submit Form
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <Card className="shadow-lg">
+  // Ensure formStructure and pages exist
+  if (!formStructure || !formStructure.pages || formStructure.pages.length === 0) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <Card>
           <CardContent className="p-8">
-            <div className="text-center py-12 text-gray-500">
-              <p>No sections available on this page.</p>
+            <div className="text-center text-gray-500">
+              <p>No form data available to preview.</p>
             </div>
           </CardContent>
         </Card>
-      )}
+      </div>
+    )
+  }
+
+  // Ensure currentPage is valid
+  const safeCurrentPage = Math.min(Math.max(0, currentPage), formStructure.pages.length - 1)
+  const page = formStructure.pages[safeCurrentPage]
+
+  // Ensure page exists
+  if (!page) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center text-gray-500">
+              <p>Page not found.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Ensure sections exist
+  const sections = Array.isArray(page.sections) ? page.sections : []
+
+  const handlePrevPage = () => {
+    if (safeCurrentPage > 0) {
+      setCurrentPage(safeCurrentPage - 1)
+    }
+  }
+
+  const handleNextPage = () => {
+    if (safeCurrentPage < formStructure.pages.length - 1) {
+      setCurrentPage(safeCurrentPage + 1)
+    }
+  }
+
+  const handleFieldChange = (fieldId: string, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      [fieldId]: value,
+    }))
+
+    // Clear error for this field if it exists
+    if (errors[fieldId]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[fieldId]
+        return newErrors
+      })
+    }
+  }
+
+  const handleSubmit = () => {
+    // Validate required fields
+    const newErrors: Record<string, string> = {}
+    let hasErrors = false
+
+    formStructure.pages.forEach((page) => {
+      page.sections?.forEach((section) => {
+        section.fields?.forEach((field) => {
+          if (field.required && !formData[field.id]) {
+            newErrors[field.id] = "This field is required"
+            hasErrors = true
+          }
+        })
+      })
+    })
+
+    if (hasErrors) {
+      setErrors(newErrors)
+      return
+    }
+
+    // Submit the form data
+    if (onSubmit) {
+      onSubmit(formData)
+    } else {
+      console.log("Form submitted:", formData)
+    }
+  }
+
+  const isLastPage = safeCurrentPage === formStructure.pages.length - 1
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <Card>
+        {/* Form Header */}
+        <CardHeader>
+          <CardTitle>{formStructure.form.title || "Form Preview"}</CardTitle>
+          {formStructure.form.description && <CardDescription>{formStructure.form.description}</CardDescription>}
+        </CardHeader>
+
+        <CardContent className="space-y-8">
+          {/* Page Header */}
+          {page.title && (
+            <div>
+              <h2 className="text-xl font-semibold">{page.title}</h2>
+              {page.description && <p className="text-sm text-muted-foreground mt-1">{page.description}</p>}
+            </div>
+          )}
+
+          {/* Sections */}
+          {sections.map((section) => {
+            if (!section) return null
+
+            // Ensure fields is an array
+            const fields = Array.isArray(section.fields) ? section.fields : []
+
+            return (
+              <div key={section.id} className="space-y-4">
+                {/* Section Header */}
+                {(section.title || section.description) && (
+                  <div className="mb-4">
+                    {section.title && <h3 className="text-lg font-medium">{section.title}</h3>}
+                    {section.description && <p className="text-sm text-muted-foreground mt-1">{section.description}</p>}
+                  </div>
+                )}
+
+                {/* Fields */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
+                  {fields.map((field) => {
+                    if (!field) return null
+
+                    const gridColClass = getGridColClass(field.width || "full")
+
+                    return (
+                      <div key={field.id} className={gridColClass}>
+                        <FieldRenderer
+                          field={field}
+                          value={formData[field.id]}
+                          onChange={(value) => handleFieldChange(field.id, value)}
+                          error={errors[field.id]}
+                          isPreviewMode={true}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Navigation */}
+          <div className="flex justify-between pt-4">
+            <Button variant="outline" onClick={handlePrevPage} disabled={safeCurrentPage === 0}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Previous
+            </Button>
+
+            {isLastPage ? (
+              <Button onClick={handleSubmit}>Submit</Button>
+            ) : (
+              <Button onClick={handleNextPage}>
+                Next
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
