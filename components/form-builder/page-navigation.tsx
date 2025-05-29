@@ -129,7 +129,7 @@ export function PageNavigation({
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
-      <div className="flex items-center overflow-x-auto mx-1 no-scrollbar">
+      <div className="flex items-center overflow-x-auto flex-1 mx-1 no-scrollbar">
         {safePages.map((page, index) => {
           const isActive = index === safeCurrentPageIndex
           const fieldCount = page.sections?.reduce((acc, section) => acc + (section.fields?.length || 0), 0) || 0
