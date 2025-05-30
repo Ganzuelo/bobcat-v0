@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -43,7 +43,7 @@ export function EditPageModal({ open, onOpenChange, page, onSave }: EditPageModa
   })
 
   // Reset form when page changes or modal opens
-  useState(() => {
+  useEffect(() => {
     if (open) {
       form.reset({
         title: page.title || "",
@@ -83,8 +83,10 @@ export function EditPageModal({ open, onOpenChange, page, onSave }: EditPageModa
             <FileText className="h-5 w-5 text-blue-600" />
             Edit Page
           </DialogTitle>
-          <DialogDescription>
-            Update the page title and description. This will be displayed in the form navigation and preview.
+          <DialogDescription asChild>
+            <div className="text-sm text-muted-foreground">
+              Update the page title and description. This will be displayed in the form navigation and preview.
+            </div>
           </DialogDescription>
         </DialogHeader>
 

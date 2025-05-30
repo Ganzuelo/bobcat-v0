@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BarChart3, TrendingUp, AlertCircle, CheckCircle, Clock, Filter } from "lucide-react"
+import { BarChart3, TrendingUp, AlertCircle, CheckCircle, Clock } from "lucide-react"
 
 export default function DecisionManagerPage() {
   const decisions = [
@@ -68,17 +68,6 @@ export default function DecisionManagerPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Decision Manager</h1>
-          <p className="text-muted-foreground">Monitor and analyze automated decisions made by the rules engine</p>
-        </div>
-        <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter Decisions
-        </Button>
-      </div>
-
       {/* Decision Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>

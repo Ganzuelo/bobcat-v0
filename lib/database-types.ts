@@ -43,36 +43,22 @@ export type FieldWidth = "quarter" | "half" | "three_quarters" | "full"
 export type SubmissionStatus = "draft" | "submitted" | "reviewed" | "approved" | "rejected"
 export type RuleType = "validation" | "calculation" | "conditional_visibility" | "auto_populate" | "workflow"
 
-export interface User {
-  id: string
-  email: string
-  password_hash: string
-  first_name?: string
-  last_name?: string
-  role: UserRole
-  avatar_url?: string
-  is_active: boolean
-  email_verified: boolean
-  last_login_at?: string
-  created_at: string
-  updated_at: string
-}
-
+// Form-related types
 export interface Form {
   id: string
   title: string
   description?: string
-  form_type: FormType
-  version: number
-  status: FormStatus
-  created_by: string
-  tags: string[]
-  settings: Record<string, any>
-  metadata: Record<string, any>
-  published_at?: string
-  archived_at?: string
-  created_at: string
-  updated_at: string
+  form_type?: string
+  version?: number
+  status?: string
+  created_by?: string
+  tags?: string[]
+  settings?: Record<string, any>
+  metadata?: Record<string, any>
+  created_at?: string
+  updated_at?: string
+  published_at?: string | null
+  archived_at?: string | null
 }
 
 export interface FormPage {
@@ -81,9 +67,10 @@ export interface FormPage {
   title: string
   description?: string
   page_order: number
-  settings: Record<string, any>
+  settings?: Record<string, any>
   created_at: string
   updated_at: string
+  sections?: FormSection[]
 }
 
 export interface FormSection {
@@ -92,29 +79,44 @@ export interface FormSection {
   title?: string
   description?: string
   section_order: number
-  settings: Record<string, any>
+  settings?: Record<string, any>
   created_at: string
   updated_at: string
+  fields?: FormField[]
 }
 
 export interface FormField {
   id: string
   section_id: string
-  field_type: FieldType
+  field_type: string
   label: string
   placeholder?: string
   help_text?: string
-  required: boolean
-  width: FieldWidth
+  required?: boolean
+  width?: string
   field_order: number
-  options: any[]
-  validation: Record<string, any>
-  conditional_visibility: Record<string, any>
-  calculated_config: Record<string, any>
-  lookup_config: Record<string, any>
-  metadata: Record<string, any>
+  options?: any[]
+  validation?: Record<string, any>
+  conditional_visibility?: Record<string, any>
+  calculated_config?: Record<string, any>
+  lookup_config?: Record<string, any>
+  metadata?: Record<string, any>
   created_at: string
   updated_at: string
+  // Add support for Sales Grid
+  gridConfig?: {
+    columns: Array<{
+      id: string
+      header: string
+      type: "TEXT" | "NUMBER" | "SELECT" | "CHECKBOX"
+      width?: number
+      options?: { label: string; value: string }[]
+      required?: boolean
+    }>
+    minRows?: number
+    maxRows?: number
+    rowLabel?: string
+  }
 }
 
 export interface FormSubmission {
@@ -146,12 +148,21 @@ export interface FormRule {
 
 export interface FormStructure {
   form: Form
-  pages: (FormPage & {
-    sections: (FormSection & {
-      fields: FormField[]
-    })[]
-  })[]
-  rules: FormRule[]
+  pages: FormPage[]
+  rules?: any[]
 }
 
+// User-related types
+export interface User {
+  id: string
+  email: string
+  full_name?: string
+  role?: "admin" | "user" | "viewer"
+  status?: "active" | "inactive" | "pending"
+  created_at: string
+  updated_at: string
+  last_login?: string
+}
+
+// Add other database types as needed
 export type Database = {}

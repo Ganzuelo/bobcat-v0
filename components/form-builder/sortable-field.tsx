@@ -1,21 +1,16 @@
 "use client"
 
-import { useSortable } from "@dnd-kit/sortable"
-import { Card, CardContent } from "@/components/ui/card"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { GripVertical, Settings, Trash2, Copy, ChevronUp, ChevronDown } from "lucide-react"
-import { FIELD_WIDTH_CONFIG } from "@/lib/form-types"
-import type { FormField } from "@/lib/form-types"
+import { Settings, Trash2, Copy, ChevronUp, ChevronDown } from "lucide-react"
+import { FieldRenderer } from "./field-renderer"
 
 interface SortableFieldProps {
-  field: FormField
-  onSelect: (field: FormField) => void
-  onUpdate: (fieldId: string, updates: Partial<FormField>) => void
+  field: any
+  onEdit: (field: any) => void
+  onUpdate: (fieldId: string, updates: any) => void
   onDelete: (fieldId: string) => void
   onDuplicate: (fieldId: string) => void
   onMoveUp: (fieldId: string) => void
@@ -26,8 +21,7 @@ interface SortableFieldProps {
 
 export function SortableField({
   field,
-  onSelect,
-  onUpdate,
+  onEdit,
   onDelete,
   onDuplicate,
   onMoveUp,
@@ -35,118 +29,85 @@ export function SortableField({
   canMoveUp,
   canMoveDown,
 }: SortableFieldProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: field.id,
-    data: {
-      type: "field",
-      field,
-    },
-  })
+  const [isHovered, setIsHovered] = useState(false)
 
-  const style = {
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    transition,
+  const handleEdit = () => {
+    onEdit(field)
   }
 
-  const widthClass = FIELD_WIDTH_CONFIG[field.width].gridCols
-
-  const renderFieldPreview = () => {
-    switch (field.field_type) {
-      case "text":
-      case "email":
-      case "password":
-      case "phone":
-      case "url":
-        return <Input placeholder={field.placeholder || field.label} disabled />
-      case "textarea":
-        return <Textarea placeholder={field.placeholder || field.label} disabled />
-      case "select":
-        return (
-          <Select disabled>
-            <SelectTrigger>
-              <SelectValue placeholder={field.placeholder || "Select an option"} />
-            </SelectTrigger>
-          </Select>
-        )
-      case "checkbox":
-        return (
-          <div className="flex items-center space-x-2">
-            <Checkbox disabled />
-            <label className="text-sm">{field.label}</label>
-          </div>
-        )
-      default:
-        return <div className="p-2 bg-gray-100 rounded text-sm text-gray-600">{field.field_type}</div>
+  const handleDelete = () => {
+    if (confirm("Are you sure you want to delete this field?")) {
+      onDelete(field.id)
     }
   }
 
-  return (
-    <div ref={setNodeRef} style={style} className={`${widthClass} ${isDragging ? "opacity-50" : ""}`}>
-      <Card className="group hover:shadow-md transition-shadow border-2 hover:border-blue-300">
-        <CardContent className="p-4">
-          <div className="space-y-3">
-            {/* Field Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div {...attributes} {...listeners} className="cursor-grab hover:text-gray-600">
-                  <GripVertical className="h-4 w-4" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">{field.label}</div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="secondary" className="text-xs">
-                      {field.field_type}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {FIELD_WIDTH_CONFIG[field.width].label}
-                    </Badge>
-                    {field.required && (
-                      <Badge variant="destructive" className="text-xs">
-                        Required
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onMoveUp(field.id)}
-                  disabled={!canMoveUp}
-                  title="Move up"
-                >
-                  <ChevronUp className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onMoveDown(field.id)}
-                  disabled={!canMoveDown}
-                  title="Move down"
-                >
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => onSelect(field)}>
-                  <Settings className="h-3 w-3" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => onDuplicate(field.id)}>
-                  <Copy className="h-3 w-3" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => onDelete(field.id)}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
+  const handleDuplicate = () => {
+    onDuplicate(field.id)
+  }
 
-            {/* Field Preview */}
-            <div className="space-y-2">
-              {field.help_text && <p className="text-xs text-gray-600">{field.help_text}</p>}
-              {renderFieldPreview()}
-            </div>
+  const handleMoveUp = () => {
+    onMoveUp(field.id)
+  }
+
+  const handleMoveDown = () => {
+    onMoveDown(field.id)
+  }
+
+  return (
+    <Card
+      className="relative group transition-all duration-200 hover:shadow-md"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <CardContent className="p-4">
+        {/* Field Actions */}
+        {isHovered && (
+          <div className="absolute top-2 right-2 flex gap-1 bg-white shadow-lg rounded-md p-1 border z-10">
+            <Button size="sm" variant="ghost" onClick={handleEdit} className="h-8 w-8 p-0">
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={handleDuplicate} className="h-8 w-8 p-0">
+              <Copy className="h-4 w-4" />
+            </Button>
+            {canMoveUp && (
+              <Button size="sm" variant="ghost" onClick={handleMoveUp} className="h-8 w-8 p-0">
+                <ChevronUp className="h-4 w-4" />
+              </Button>
+            )}
+            {canMoveDown && (
+              <Button size="sm" variant="ghost" onClick={handleMoveDown} className="h-8 w-8 p-0">
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={handleDelete} className="h-8 w-8 p-0 text-red-600">
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        )}
+
+        {/* Field Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <h4 className="font-medium">{field.label || "Untitled Field"}</h4>
+            <Badge variant="secondary" className="text-xs">
+              {field.field_type || field.type}
+            </Badge>
+            {field.required && (
+              <Badge variant="destructive" className="text-xs">
+                Required
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Field Preview */}
+        <div className="pointer-events-none">
+          <FieldRenderer field={field} value="" onChange={() => {}} />
+        </div>
+
+        {/* Field Info */}
+        {field.help_text && <p className="text-sm text-gray-600 mt-2">{field.help_text}</p>}
+      </CardContent>
+    </Card>
   )
 }

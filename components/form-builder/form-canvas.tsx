@@ -4,12 +4,11 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, ChevronUp, ChevronDown, Settings, SquarePen } from "lucide-react"
+import { Edit, Trash2, ChevronUp, ChevronDown, SquarePen } from "lucide-react"
 import type { FormStructure, FormField } from "@/lib/form-types"
 import { getGridColClass, getWidthLabel } from "@/lib/form-builder-utils"
 import { FieldRenderer } from "./field-renderer"
-import { EditPageModal } from "./edit-page-modal"
-import { EditSectionModal } from "./edit-section-modal"
+import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
 
 interface FormCanvasProps {
   formStructure: FormStructure
@@ -18,9 +17,11 @@ interface FormCanvasProps {
   onDeleteField: (fieldId: string) => void
   onMoveFieldUp: (fieldId: string) => void
   onMoveFieldDown: (fieldId: string) => void
-  onEditSection?: (sectionId: string) => void
+  onEditPage?: (page: any) => void
+  onEditSection?: (section: any) => void
   onUpdatePage?: (pageId: string, updates: { title: string; description?: string }) => void
   onUpdateSection?: (sectionId: string, updates: { title: string; description?: string }) => void
+  onDeleteSection?: (sectionId: string) => void
 }
 
 export function FormCanvas({
@@ -30,17 +31,22 @@ export function FormCanvas({
   onDeleteField,
   onMoveFieldUp,
   onMoveFieldDown,
+  onEditPage,
   onEditSection,
   onUpdatePage,
   onUpdateSection,
+  onDeleteSection,
 }: FormCanvasProps) {
-  const [editPageModal, setEditPageModal] = useState<{ open: boolean; page: any }>({
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean
+    type: "section" | "page"
+    id: string
+    title: string
+  }>({
     open: false,
-    page: null,
-  })
-  const [editSectionModal, setEditSectionModal] = useState<{ open: boolean; section: any }>({
-    open: false,
-    section: null,
+    type: "section",
+    id: "",
+    title: "",
   })
 
   // Add defensive checks to prevent undefined errors
@@ -91,22 +97,42 @@ export function FormCanvas({
   }
 
   const handleEditPage = () => {
-    setEditPageModal({ open: true, page: currentPage })
-  }
-
-  const handleSavePage = (pageData: { title: string; description?: string }) => {
-    if (onUpdatePage && currentPage.id) {
-      onUpdatePage(currentPage.id, pageData)
+    console.log("Edit page clicked:", currentPage)
+    if (onEditPage) {
+      onEditPage(currentPage)
     }
   }
 
   const handleEditSection = (section: any) => {
-    setEditSectionModal({ open: true, section })
+    console.log("Edit section clicked:", section)
+    if (onEditSection) {
+      onEditSection(section)
+    }
   }
 
-  const handleSaveSection = (sectionData: { title: string; description?: string }) => {
-    if (onUpdateSection && editSectionModal.section?.id) {
-      onUpdateSection(editSectionModal.section.id, sectionData)
+  const handleDeleteSection = (sectionId: string, sectionTitle: string) => {
+    setDeleteDialog({
+      open: true,
+      type: "section",
+      id: sectionId,
+      title: sectionTitle || "Untitled Section",
+    })
+  }
+
+  const confirmDeleteSection = async () => {
+    if (onDeleteSection && deleteDialog.id) {
+      await onDeleteSection(deleteDialog.id)
+    }
+    setDeleteDialog({ open: false, type: "section", id: "", title: "" })
+  }
+
+  // Helper function to handle field movement
+  const handleMoveField = (fieldId: string, direction: "up" | "down") => {
+    console.log(`Moving field ${fieldId} ${direction}`)
+    if (direction === "up") {
+      onMoveFieldUp(fieldId)
+    } else {
+      onMoveFieldDown(fieldId)
     }
   }
 
@@ -137,14 +163,6 @@ export function FormCanvas({
             </div>
           </CardContent>
         </Card>
-
-        {/* Edit Page Modal */}
-        <EditPageModal
-          open={editPageModal.open}
-          onOpenChange={(open) => setEditPageModal({ open, page: editPageModal.page })}
-          page={editPageModal.page || currentPage}
-          onSave={handleSavePage}
-        />
       </div>
     )
   }
@@ -183,16 +201,6 @@ export function FormCanvas({
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
                     <h3 className="text-lg font-medium">{section.title || "Untitled Section"}</h3>
-                    {onEditSection && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onEditSection(section.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    )}
                   </div>
                   {section.description && <p className="text-sm text-muted-foreground mt-1">{section.description}</p>}
                 </div>
@@ -202,6 +210,15 @@ export function FormCanvas({
                   </Badge>
                   <Button variant="ghost" size="sm" onClick={() => handleEditSection(section)} title="Edit section">
                     <SquarePen className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteSection(section.id, section.title)}
+                    title="Delete section"
+                    className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardTitle>
@@ -250,18 +267,20 @@ export function FormCanvas({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => field.id && onMoveFieldUp(field.id)}
+                                    onClick={() => field.id && handleMoveField(field.id, "up")}
                                     disabled={isFirst || !field.id}
                                     title="Move up"
+                                    className="h-8 w-8 p-0"
                                   >
                                     <ChevronUp className="h-3 w-3" />
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => field.id && onMoveFieldDown(field.id)}
+                                    onClick={() => field.id && handleMoveField(field.id, "down")}
                                     disabled={isLast || !field.id}
                                     title="Move down"
+                                    className="h-8 w-8 p-0"
                                   >
                                     <ChevronDown className="h-3 w-3" />
                                   </Button>
@@ -271,6 +290,7 @@ export function FormCanvas({
                                     onClick={() => onEditField(field)}
                                     title="Edit field"
                                     disabled={!field}
+                                    className="h-8 w-8 p-0"
                                   >
                                     <Edit className="h-3 w-3" />
                                   </Button>
@@ -280,6 +300,7 @@ export function FormCanvas({
                                     onClick={() => field.id && onDeleteField(field.id)}
                                     title="Delete field"
                                     disabled={!field.id}
+                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive/80"
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
@@ -303,19 +324,15 @@ export function FormCanvas({
         )
       })}
 
-      {/* Edit Modals */}
-      <EditPageModal
-        open={editPageModal.open}
-        onOpenChange={(open) => setEditPageModal({ open, page: editPageModal.page })}
-        page={editPageModal.page || currentPage}
-        onSave={handleSavePage}
-      />
-
-      <EditSectionModal
-        open={editSectionModal.open}
-        onOpenChange={(open) => setEditSectionModal({ open, section: editSectionModal.section })}
-        section={editSectionModal.section || { title: "", description: "" }}
-        onSave={handleSaveSection}
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
+        title={`Delete ${deleteDialog.type}`}
+        description={`Are you sure you want to delete this ${deleteDialog.type}?`}
+        itemName={deleteDialog.title}
+        onConfirm={confirmDeleteSection}
+        variant={deleteDialog.type as "section" | "page"}
       />
     </div>
   )

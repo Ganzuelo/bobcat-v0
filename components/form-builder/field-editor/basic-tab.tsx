@@ -10,10 +10,10 @@ import { FIELD_WIDTH_OPTIONS } from "@/lib/form-width-utils"
 
 interface BasicTabProps {
   field: FormField
-  onUpdateField: (fieldId: string, updates: Partial<FormField>) => void
+  onChange: (fieldId: string, updates: Partial<FormField>) => void
 }
 
-export function BasicTab({ field, onUpdateField }: BasicTabProps) {
+export function BasicTab({ field, onChange }: BasicTabProps) {
   return (
     <div className="space-y-4 mt-0">
       <div>
@@ -21,7 +21,7 @@ export function BasicTab({ field, onUpdateField }: BasicTabProps) {
         <Input
           id="field-label"
           value={field.label || ""}
-          onChange={(e) => onUpdateField(field.id, { label: e.target.value })}
+          onChange={(e) => onChange(field.id, { label: e.target.value })}
           placeholder="Enter field label"
         />
       </div>
@@ -31,7 +31,7 @@ export function BasicTab({ field, onUpdateField }: BasicTabProps) {
         <Input
           id="field-placeholder"
           value={field.placeholder || ""}
-          onChange={(e) => onUpdateField(field.id, { placeholder: e.target.value })}
+          onChange={(e) => onChange(field.id, { placeholder: e.target.value })}
           placeholder="Enter placeholder text"
         />
       </div>
@@ -41,7 +41,7 @@ export function BasicTab({ field, onUpdateField }: BasicTabProps) {
         <Textarea
           id="field-help"
           value={field.help_text || ""}
-          onChange={(e) => onUpdateField(field.id, { help_text: e.target.value })}
+          onChange={(e) => onChange(field.id, { help_text: e.target.value })}
           placeholder="Provide additional guidance"
           rows={3}
         />
@@ -52,7 +52,7 @@ export function BasicTab({ field, onUpdateField }: BasicTabProps) {
         <Textarea
           id="field-guidance"
           value={field.guidance || ""}
-          onChange={(e) => onUpdateField(field.id, { guidance: e.target.value })}
+          onChange={(e) => onChange(field.id, { guidance: e.target.value })}
           placeholder="Additional context shown via info icon tooltip"
           rows={3}
         />
@@ -63,7 +63,7 @@ export function BasicTab({ field, onUpdateField }: BasicTabProps) {
         <select
           id="field-width"
           value={field.width || "full"}
-          onChange={(e) => onUpdateField(field.id, { width: e.target.value as any })}
+          onChange={(e) => onChange(field.id, { width: e.target.value as any })}
           className="w-full p-2 border rounded-md"
         >
           {FIELD_WIDTH_OPTIONS.map((option) => (
@@ -87,7 +87,7 @@ export function BasicTab({ field, onUpdateField }: BasicTabProps) {
                   onChange={(e) => {
                     const newOptions = [...(field.options || [])]
                     newOptions[index] = { ...option, label: e.target.value }
-                    onUpdateField(field.id, { options: newOptions })
+                    onChange(field.id, { options: newOptions })
                   }}
                 />
                 <Input
@@ -96,7 +96,7 @@ export function BasicTab({ field, onUpdateField }: BasicTabProps) {
                   onChange={(e) => {
                     const newOptions = [...(field.options || [])]
                     newOptions[index] = { ...option, value: e.target.value }
-                    onUpdateField(field.id, { options: newOptions })
+                    onChange(field.id, { options: newOptions })
                   }}
                 />
                 <Button
@@ -104,7 +104,7 @@ export function BasicTab({ field, onUpdateField }: BasicTabProps) {
                   size="sm"
                   onClick={() => {
                     const newOptions = field.options?.filter((_, i) => i !== index) || []
-                    onUpdateField(field.id, { options: newOptions })
+                    onChange(field.id, { options: newOptions })
                   }}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -116,7 +116,7 @@ export function BasicTab({ field, onUpdateField }: BasicTabProps) {
               size="sm"
               onClick={() => {
                 const newOptions = [...(field.options || []), { label: "New Option", value: `option_${Date.now()}` }]
-                onUpdateField(field.id, { options: newOptions })
+                onChange(field.id, { options: newOptions })
               }}
             >
               <Plus className="h-4 w-4 mr-1" />

@@ -1,0 +1,817 @@
+{
+  "id": "uad-3-6-complete-sample",
+  "name": "UAD 3.6 Complete Property Appraisal Form",
+  "description": "Comprehensive UAD 3.6 compliant form demonstrating all field types and advanced features",
+  "formType": "UAD_3_6",
+  "pages": [
+    {
+      "id": "page-property-info",
+      "title": "Property Information",
+      "description": "Basic property details and location information",
+      "page_order": 1,
+      "settings": {
+        "showProgressBar": true,
+        "allowNavigation": true,
+        "backgroundColor": "#ffffff"
+      },
+      "sections": [
+        {
+          "id": "section-basic-info",
+          "title": "Basic Property Details",
+          "description": "Essential property identification and location data",
+          "section_order": 1,
+          "settings": {
+            "collapsible": false,
+            "columns": 12,
+            "backgroundColor": "#f8f9fa"
+          },
+          "fields": [
+            {
+              "id": "field-property-address",
+              "section_id": "section-basic-info",
+              "field_type": "address",
+              "label": "Subject Property Address",
+              "placeholder": "Enter complete property address",
+              "help_text": "Include street number, street name, city, state, and ZIP code",
+              "required": true,
+              "width": "full",
+              "field_order": 1,
+              "validation": {
+                "required": {
+                  "message": "Property address is required for UAD compliance"
+                },
+                "pattern": {
+                  "pattern": "^.+,.+,.+\\s\\d{5}(-\\d{4})?$",
+                  "message": "Address must include city, state, and ZIP code"
+                }
+              },
+              "metadata": {
+                "uad_field_id": "3.001",
+                "reportFieldId": "1004",
+                "mismoFieldId": "SubjectPropertyAddress",
+                "mismo_path": "COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/ADDRESS",
+                "cardinality": "required",
+                "conditionality": "always",
+                "outputFormat": "text",
+                "category": "Property Information",
+                "dataType": "address",
+                "xml": {
+                  "path": "COLLATERALS/COLLATERAL/SUBJECT_PROPERTY/ADDRESS",
+                  "fieldId": "SubjectPropertyAddress",
+                  "required": true,
+                  "format": "text"
+                },
+                "tags": ["property", "address", "required", "uad"]
+              }
+            },
+            {
+              "id": "field-property-type",
+              "section_id": "section-basic-info",
+              "field_type": "select",
+              "label": "Property Type",
+              "placeholder": "Select property type",
+              "help_text": "Choose the primary property classification",
+              "required": true,
+              "width": "half",
+              "field_order": 2,
+              "options": [
+                { "label": "Single Family Residence", "value": "SFR" },
+                { "label": "Condominium", "value": "CONDO" },
+                { "label": "Townhouse", "value": "TOWNHOUSE" },
+                { "label": "Multi-Family (2-4 units)", "value": "MULTIFAMILY" },
+                { "label": "Manufactured Home", "value": "MANUFACTURED" },
+                { "label": "Other", "value": "OTHER" }
+              ],
+              "validation": {
+                "required": {
+                  "message": "Property type selection is required"
+                }
+              },
+              "metadata": {
+                "uad_field_id": "3.002",
+                "dataType": "select",
+                "category": "Property Information",
+                "tags": ["property", "type", "classification"]
+              }
+            },
+            {
+              "id": "field-property-type-other",
+              "section_id": "section-basic-info",
+              "field_type": "text",
+              "label": "Other Property Type",
+              "placeholder": "Specify other property type",
+              "help_text": "Describe the property type if 'Other' was selected",
+              "required": false,
+              "width": "half",
+              "field_order": 3,
+              "conditional_visibility": {
+                "enabled": true,
+                "conditions": [
+                  {
+                    "fieldId": "field-property-type",
+                    "operator": "equals",
+                    "value": "OTHER"
+                  }
+                ]
+              },
+              "validation": {
+                "required": {
+                  "message": "Please specify the property type"
+                },
+                "minLength": {
+                  "value": 3,
+                  "message": "Description must be at least 3 characters"
+                }
+              }
+            },
+            {
+              "id": "field-legal-description",
+              "section_id": "section-basic-info",
+              "field_type": "textarea",
+              "label": "Legal Description",
+              "placeholder": "Enter complete legal description",
+              "help_text": "Provide the full legal description as it appears on the deed",
+              "required": true,
+              "width": "full",
+              "field_order": 4,
+              "validation": {
+                "required": {
+                  "message": "Legal description is required"
+                },
+                "minLength": {
+                  "value": 10,
+                  "message": "Legal description must be at least 10 characters"
+                }
+              },
+              "metadata": {
+                "uad_field_id": "3.003",
+                "dataType": "text",
+                "category": "Property Information"
+              }
+            }
+          ]
+        },
+        {
+          "id": "section-ownership-info",
+          "title": "Ownership & Loan Information",
+          "description": "Current owner and financing details",
+          "section_order": 2,
+          "settings": {
+            "collapsible": true,
+            "columns": 12
+          },
+          "fields": [
+            {
+              "id": "field-borrower-name",
+              "section_id": "section-ownership-info",
+              "field_type": "text",
+              "label": "Borrower Name",
+              "placeholder": "Enter borrower's full name",
+              "help_text": "Primary borrower as listed on loan application",
+              "required": true,
+              "width": "half",
+              "field_order": 1,
+              "validation": {
+                "required": {
+                  "message": "Borrower name is required"
+                },
+                "pattern": {
+                  "pattern": "^[a-zA-Z\\s\\-\\.]+$",
+                  "message": "Name can only contain letters, spaces, hyphens, and periods"
+                }
+              },
+              "metadata": {
+                "uad_field_id": "3.004",
+                "dataType": "text",
+                "category": "Borrower Information"
+              }
+            },
+            {
+              "id": "field-loan-amount",
+              "section_id": "section-ownership-info",
+              "field_type": "currency",
+              "label": "Loan Amount",
+              "placeholder": "$0.00",
+              "help_text": "Total loan amount being requested",
+              "required": true,
+              "width": "half",
+              "field_order": 2,
+              "validation": {
+                "required": {
+                  "message": "Loan amount is required"
+                },
+                "min": {
+                  "value": 1000,
+                  "message": "Loan amount must be at least $1,000"
+                },
+                "max": {
+                  "value": 10000000,
+                  "message": "Loan amount cannot exceed $10,000,000"
+                }
+              },
+              "metadata": {
+                "uad_field_id": "3.005",
+                "dataType": "currency",
+                "category": "Loan Information",
+                "unit": "USD"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "page-valuation",
+      "title": "Valuation & Analysis",
+      "description": "Property value assessment and market analysis",
+      "page_order": 2,
+      "settings": {
+        "showProgressBar": true,
+        "allowNavigation": true
+      },
+      "sections": [
+        {
+          "id": "section-property-value",
+          "title": "Property Valuation",
+          "description": "Current market value and assessment details",
+          "section_order": 1,
+          "settings": {
+            "collapsible": false,
+            "columns": 12
+          },
+          "fields": [
+            {
+              "id": "field-appraised-value",
+              "section_id": "section-property-value",
+              "field_type": "currency",
+              "label": "Appraised Value",
+              "placeholder": "$0.00",
+              "help_text": "Final appraised value of the subject property",
+              "required": true,
+              "width": "quarter",
+              "field_order": 1,
+              "validation": {
+                "required": {
+                  "message": "Appraised value is required"
+                },
+                "min": {
+                  "value": 1000,
+                  "message": "Appraised value must be at least $1,000"
+                }
+              },
+              "metadata": {
+                "uad_field_id": "3.006",
+                "dataType": "currency",
+                "category": "Valuation",
+                "unit": "USD"
+              }
+            },
+            {
+              "id": "field-cost-approach",
+              "section_id": "section-property-value",
+              "field_type": "currency",
+              "label": "Cost Approach Value",
+              "placeholder": "$0.00",
+              "help_text": "Value derived from cost approach method",
+              "required": false,
+              "width": "quarter",
+              "field_order": 2,
+              "validation": {
+                "min": {
+                  "value": 0,
+                  "message": "Value cannot be negative"
+                }
+              },
+              "metadata": {
+                "dataType": "currency",
+                "category": "Valuation",
+                "unit": "USD"
+              }
+            },
+            {
+              "id": "field-sales-comparison",
+              "section_id": "section-property-value",
+              "field_type": "currency",
+              "label": "Sales Comparison Value",
+              "placeholder": "$0.00",
+              "help_text": "Value derived from sales comparison approach",
+              "required": false,
+              "width": "quarter",
+              "field_order": 3,
+              "validation": {
+                "min": {
+                  "value": 0,
+                  "message": "Value cannot be negative"
+                }
+              },
+              "metadata": {
+                "dataType": "currency",
+                "category": "Valuation",
+                "unit": "USD"
+              }
+            },
+            {
+              "id": "field-income-approach",
+              "section_id": "section-property-value",
+              "field_type": "currency",
+              "label": "Income Approach Value",
+              "placeholder": "$0.00",
+              "help_text": "Value derived from income approach method",
+              "required": false,
+              "width": "quarter",
+              "field_order": 4,
+              "validation": {
+                "min": {
+                  "value": 0,
+                  "message": "Value cannot be negative"
+                }
+              },
+              "metadata": {
+                "dataType": "currency",
+                "category": "Valuation",
+                "unit": "USD"
+              }
+            },
+            {
+              "id": "field-loan-to-value",
+              "section_id": "section-property-value",
+              "field_type": "calculated",
+              "label": "Loan-to-Value Ratio",
+              "help_text": "Automatically calculated based on loan amount and appraised value",
+              "required": false,
+              "width": "half",
+              "field_order": 5,
+              "calculated_config": {
+                "enabled": true,
+                "formula": "({field-loan-amount} / {field-appraised-value}) * 100",
+                "dependencies": ["field-loan-amount", "field-appraised-value"],
+                "outputFormat": "percentage",
+                "precision": 2
+              },
+              "metadata": {
+                "dataType": "percentage",
+                "category": "Valuation"
+              }
+            },
+            {
+              "id": "field-appraisal-date",
+              "section_id": "section-property-value",
+              "field_type": "date",
+              "label": "Appraisal Date",
+              "placeholder": "MM/DD/YYYY",
+              "help_text": "Date the appraisal was completed",
+              "required": true,
+              "width": "half",
+              "field_order": 6,
+              "validation": {
+                "required": {
+                  "message": "Appraisal date is required"
+                }
+              },
+              "metadata": {
+                "uad_field_id": "3.007",
+                "dataType": "date",
+                "category": "Appraisal Information"
+              }
+            }
+          ]
+        },
+        {
+          "id": "section-market-analysis",
+          "title": "Market Analysis",
+          "description": "Local market conditions and trends",
+          "section_order": 2,
+          "settings": {
+            "collapsible": true,
+            "columns": 12
+          },
+          "fields": [
+            {
+              "id": "field-market-conditions",
+              "section_id": "section-market-analysis",
+              "field_type": "radio",
+              "label": "Market Conditions",
+              "help_text": "Current state of the local real estate market",
+              "required": true,
+              "width": "full",
+              "field_order": 1,
+              "options": [
+                { "label": "Declining", "value": "declining" },
+                { "label": "Stable", "value": "stable" },
+                { "label": "Slow Growth", "value": "slow_growth" },
+                { "label": "Rapid Growth", "value": "rapid_growth" }
+              ],
+              "validation": {
+                "required": {
+                  "message": "Market conditions assessment is required"
+                }
+              },
+              "metadata": {
+                "dataType": "select",
+                "category": "Market Analysis"
+              }
+            },
+            {
+              "id": "field-marketing-time",
+              "section_id": "section-market-analysis",
+              "field_type": "slider",
+              "label": "Expected Marketing Time (months)",
+              "help_text": "Estimated time to sell property in current market",
+              "required": true,
+              "width": "half",
+              "field_order": 2,
+              "validation": {
+                "required": {
+                  "message": "Marketing time estimate is required"
+                },
+                "min": {
+                  "value": 1,
+                  "message": "Marketing time must be at least 1 month"
+                },
+                "max": {
+                  "value": 24,
+                  "message": "Marketing time cannot exceed 24 months"
+                }
+              },
+              "metadata": {
+                "dataType": "number",
+                "category": "Market Analysis",
+                "unit": "months"
+              }
+            },
+            {
+              "id": "field-market-rating",
+              "section_id": "section-market-analysis",
+              "field_type": "rating",
+              "label": "Market Strength Rating",
+              "help_text": "Rate the overall strength of the local market (1-5 stars)",
+              "required": true,
+              "width": "half",
+              "field_order": 3,
+              "validation": {
+                "required": {
+                  "message": "Market strength rating is required"
+                },
+                "min": {
+                  "value": 1,
+                  "message": "Rating must be at least 1 star"
+                },
+                "max": {
+                  "value": 5,
+                  "message": "Rating cannot exceed 5 stars"
+                }
+              },
+              "metadata": {
+                "dataType": "number",
+                "category": "Market Analysis"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "page-improvements",
+      "title": "Improvements & Features",
+      "description": "Property improvements, features, and condition assessment",
+      "page_order": 3,
+      "settings": {
+        "showProgressBar": true,
+        "allowNavigation": true
+      },
+      "sections": [
+        {
+          "id": "section-property-features",
+          "title": "Property Features",
+          "description": "Key features and amenities of the property",
+          "section_order": 1,
+          "settings": {
+            "collapsible": false,
+            "columns": 12
+          },
+          "fields": [
+            {
+              "id": "field-square-footage",
+              "section_id": "section-property-features",
+              "field_type": "number",
+              "label": "Total Square Footage",
+              "placeholder": "0",
+              "help_text": "Total living area in square feet",
+              "required": true,
+              "width": "quarter",
+              "field_order": 1,
+              "validation": {
+                "required": {
+                  "message": "Square footage is required"
+                },
+                "min": {
+                  "value": 100,
+                  "message": "Square footage must be at least 100"
+                },
+                "max": {
+                  "value": 50000,
+                  "message": "Square footage cannot exceed 50,000"
+                }
+              },
+              "metadata": {
+                "uad_field_id": "3.008",
+                "dataType": "number",
+                "category": "Property Description",
+                "unit": "square feet"
+              }
+            },
+            {
+              "id": "field-bedrooms",
+              "section_id": "section-property-features",
+              "field_type": "number",
+              "label": "Bedrooms",
+              "placeholder": "0",
+              "help_text": "Number of bedrooms",
+              "required": true,
+              "width": "quarter",
+              "field_order": 2,
+              "validation": {
+                "required": {
+                  "message": "Number of bedrooms is required"
+                },
+                "min": {
+                  "value": 0,
+                  "message": "Bedrooms cannot be negative"
+                },
+                "max": {
+                  "value": 20,
+                  "message": "Bedrooms cannot exceed 20"
+                }
+              },
+              "metadata": {
+                "dataType": "number",
+                "category": "Property Description"
+              }
+            },
+            {
+              "id": "field-bathrooms",
+              "section_id": "section-property-features",
+              "field_type": "number",
+              "label": "Bathrooms",
+              "placeholder": "0.0",
+              "help_text": "Number of bathrooms (use .5 for half baths)",
+              "required": true,
+              "width": "quarter",
+              "field_order": 3,
+              "validation": {
+                "required": {
+                  "message": "Number of bathrooms is required"
+                },
+                "min": {
+                  "value": 0,
+                  "message": "Bathrooms cannot be negative"
+                },
+                "max": {
+                  "value": 20,
+                  "message": "Bathrooms cannot exceed 20"
+                }
+              },
+              "metadata": {
+                "dataType": "number",
+                "category": "Property Description"
+              }
+            },
+            {
+              "id": "field-year-built",
+              "section_id": "section-property-features",
+              "field_type": "number",
+              "label": "Year Built",
+              "placeholder": "YYYY",
+              "help_text": "Year the property was originally constructed",
+              "required": true,
+              "width": "quarter",
+              "field_order": 4,
+              "validation": {
+                "required": {
+                  "message": "Year built is required"
+                },
+                "min": {
+                  "value": 1800,
+                  "message": "Year built cannot be before 1800"
+                },
+                "max": {
+                  "value": 2030,
+                  "message": "Year built cannot be in the future"
+                }
+              },
+              "metadata": {
+                "dataType": "number",
+                "category": "Property Description"
+              }
+            },
+            {
+              "id": "field-amenities",
+              "section_id": "section-property-features",
+              "field_type": "checkbox",
+              "label": "Property Amenities",
+              "help_text": "Select all amenities that apply to this property",
+              "required": false,
+              "width": "full",
+              "field_order": 5,
+              "options": [
+                { "label": "Swimming Pool", "value": "pool" },
+                { "label": "Garage", "value": "garage" },
+                { "label": "Fireplace", "value": "fireplace" },
+                { "label": "Central Air Conditioning", "value": "central_ac" },
+                { "label": "Hardwood Floors", "value": "hardwood" },
+                { "label": "Updated Kitchen", "value": "updated_kitchen" },
+                { "label": "Basement", "value": "basement" },
+                { "label": "Deck/Patio", "value": "deck_patio" }
+              ],
+              "metadata": {
+                "dataType": "array",
+                "category": "Property Features"
+              }
+            }
+          ]
+        },
+        {
+          "id": "section-condition-assessment",
+          "title": "Condition Assessment",
+          "description": "Overall condition and quality ratings",
+          "section_order": 2,
+          "settings": {
+            "collapsible": true,
+            "columns": 12
+          },
+          "fields": [
+            {
+              "id": "field-overall-condition",
+              "section_id": "section-condition-assessment",
+              "field_type": "select",
+              "label": "Overall Condition",
+              "placeholder": "Select condition rating",
+              "help_text": "Rate the overall condition of the property",
+              "required": true,
+              "width": "half",
+              "field_order": 1,
+              "options": [
+                { "label": "Poor (C6)", "value": "poor" },
+                { "label": "Fair (C5)", "value": "fair" },
+                { "label": "Average (C4)", "value": "average" },
+                { "label": "Good (C3)", "value": "good" },
+                { "label": "Very Good (C2)", "value": "very_good" },
+                { "label": "Excellent (C1)", "value": "excellent" }
+              ],
+              "validation": {
+                "required": {
+                  "message": "Overall condition rating is required"
+                }
+              },
+              "metadata": {
+                "dataType": "select",
+                "category": "Condition Assessment"
+              }
+            },
+            {
+              "id": "field-quality-rating",
+              "section_id": "section-condition-assessment",
+              "field_type": "select",
+              "label": "Quality Rating",
+              "placeholder": "Select quality rating",
+              "help_text": "Rate the overall quality of construction and materials",
+              "required": true,
+              "width": "half",
+              "field_order": 2,
+              "options": [
+                { "label": "Poor (Q6)", "value": "poor" },
+                { "label": "Fair (Q5)", "value": "fair" },
+                { "label": "Average (Q4)", "value": "average" },
+                { "label": "Good (Q3)", "value": "good" },
+                { "label": "Very Good (Q2)", "value": "very_good" },
+                { "label": "Excellent (Q1)", "value": "excellent" }
+              ],
+              "validation": {
+                "required": {
+                  "message": "Quality rating is required"
+                }
+              },
+              "metadata": {
+                "dataType": "select",
+                "category": "Condition Assessment"
+              }
+            },
+            {
+              "id": "field-condition-matrix",
+              "section_id": "section-condition-assessment",
+              "field_type": "matrix",
+              "label": "Component Condition Matrix",
+              "help_text": "Rate the condition of each major component",
+              "required": true,
+              "width": "full",
+              "field_order": 3,
+              "options": [
+                { "type": "row", "label": "Roof", "value": "roof" },
+                { "type": "row", "label": "Exterior Walls", "value": "exterior_walls" },
+                { "type": "row", "label": "Windows", "value": "windows" },
+                { "type": "row", "label": "Interior", "value": "interior" },
+                { "type": "row", "label": "Plumbing", "value": "plumbing" },
+                { "type": "row", "label": "Electrical", "value": "electrical" },
+                { "type": "row", "label": "HVAC", "value": "hvac" },
+                { "type": "column", "label": "Poor", "value": "poor" },
+                { "type": "column", "label": "Fair", "value": "fair" },
+                { "type": "column", "label": "Average", "value": "average" },
+                { "type": "column", "label": "Good", "value": "good" },
+                { "type": "column", "label": "Excellent", "value": "excellent" }
+              ],
+              "validation": {
+                "required": {
+                  "message": "Component condition ratings are required"
+                }
+              },
+              "metadata": {
+                "dataType": "matrix",
+                "category": "Condition Assessment"
+              }
+            }
+          ]
+        },
+        {
+          "id": "section-appraiser-info",
+          "title": "Appraiser Information",
+          "description": "Appraiser credentials and certification details",
+          "section_order": 3,
+          "settings": {
+            "collapsible": true,
+            "columns": 12
+          },
+          "fields": [
+            {
+              "id": "field-appraiser-name",
+              "section_id": "section-appraiser-info",
+              "field_type": "text",
+              "label": "Appraiser Name",
+              "placeholder": "Enter appraiser's full name",
+              "help_text": "Licensed appraiser performing this appraisal",
+              "required": true,
+              "width": "half",
+              "field_order": 1,
+              "validation": {
+                "required": {
+                  "message": "Appraiser name is required"
+                },
+                "pattern": {
+                  "pattern": "^[a-zA-Z\\s\\-\\.]+$",
+                  "message": "Name can only contain letters, spaces, hyphens, and periods"
+                }
+              },
+              "metadata": {
+                "uad_field_id": "3.009",
+                "dataType": "text",
+                "category": "Appraiser Information"
+              }
+            },
+            {
+              "id": "field-license-number",
+              "section_id": "section-appraiser-info",
+              "field_type": "text",
+              "label": "License Number",
+              "placeholder": "Enter license number",
+              "help_text": "State appraiser license number",
+              "required": true,
+              "width": "half",
+              "field_order": 2,
+              "validation": {
+                "required": {
+                  "message": "License number is required"
+                },
+                "pattern": {
+                  "pattern": "^[A-Z0-9\\-]+$",
+                  "message": "License number format is invalid"
+                }
+              },
+              "metadata": {
+                "dataType": "text",
+                "category": "Appraiser Information"
+              }
+            },
+            {
+              "id": "field-signature",
+              "section_id": "section-appraiser-info",
+              "field_type": "signature",
+              "label": "Appraiser Signature",
+              "help_text": "Digital signature of the appraiser",
+              "required": true,
+              "width": "full",
+              "field_order": 3,
+              "validation": {
+                "required": {
+                  "message": "Appraiser signature is required"
+                }
+              },
+              "metadata": {
+                "dataType": "signature",
+                "category": "Appraiser Information"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

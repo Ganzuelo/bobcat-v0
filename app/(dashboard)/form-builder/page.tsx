@@ -12,6 +12,7 @@ import { DatabaseService } from "@/lib/database-service"
 import { CreateFormModal } from "@/components/form-builder/create-form-modal"
 import { createFormStructure, type FormConfig } from "@/lib/form-templates"
 import type { Form } from "@/lib/database-types"
+import { OnboardingTip } from "@/components/onboarding-tip"
 
 export default function FormBuilderPage() {
   const [forms, setForms] = useState<Form[]>([])
@@ -25,6 +26,14 @@ export default function FormBuilderPage() {
 
   useEffect(() => {
     loadForms()
+
+    // Listen for the create form modal event from the header button
+    const handleOpenCreateModal = () => setShowCreateModal(true)
+    window.addEventListener("openCreateFormModal", handleOpenCreateModal)
+
+    return () => {
+      window.removeEventListener("openCreateFormModal", handleOpenCreateModal)
+    }
   }, [])
 
   const loadForms = async () => {
@@ -54,13 +63,6 @@ export default function FormBuilderPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Form Builder</h1>
-            <p className="text-muted-foreground">Create and manage your forms</p>
-          </div>
-        </div>
-
         <Card>
           <CardContent className="text-center py-12">
             <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
@@ -160,16 +162,26 @@ export default function FormBuilderPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Form Builder</h1>
-          <p className="text-muted-foreground">Create and manage your forms</p>
-        </div>
-        <Button onClick={() => setShowCreateModal(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Form
-        </Button>
-      </div>
+      {/* Add Create Form button to header */}
+      {typeof window !== "undefined" &&
+        (() => {
+          const headerActions = document.getElementById("header-actions")
+          if (headerActions) {
+            headerActions.innerHTML = ""
+            const button = document.createElement("button")
+            button.className =
+              "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+            button.innerHTML =
+              '<svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>Create Form'
+            button.onclick = () => setShowCreateModal(true)
+            headerActions.appendChild(button)
+          }
+        })()}
+
+      <OnboardingTip
+        message="Tip: Create and manage your forms here. Use &quot;Create Form&quot; to start a new one."
+        storageKey="form-builder-tip-dismissed"
+      />
 
       {/* Filters */}
       <Card>

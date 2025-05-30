@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Edit, Trash2, Zap, AlertTriangle, CheckCircle } from "lucide-react"
+import { Edit, Trash2, Zap, AlertTriangle, CheckCircle } from "lucide-react"
 import { useRuleContext } from "@/hooks/use-rule-context"
 
 interface Rule {
@@ -68,9 +68,14 @@ export default function RulesEnginePage() {
   useEffect(() => {
     setCurrentRule(selectedRule)
 
+    // Listen for the create rule modal event from the header button
+    const handleOpenCreateModal = () => setIsEditing(true)
+    window.addEventListener("openCreateRuleModal", handleOpenCreateModal)
+
     // Cleanup
     return () => {
       setCurrentRule(null)
+      window.removeEventListener("openCreateRuleModal", handleOpenCreateModal)
     }
   }, [selectedRule, setCurrentRule])
 
@@ -102,17 +107,6 @@ export default function RulesEnginePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Rules Engine</h1>
-          <p className="text-muted-foreground">Define and manage business rules for form validation and processing</p>
-        </div>
-        <Button onClick={() => setIsEditing(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Rule
-        </Button>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Rules List */}
         <div className="lg:col-span-2">

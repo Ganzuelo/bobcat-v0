@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -43,7 +43,7 @@ export function EditSectionModal({ open, onOpenChange, section, onSave }: EditSe
   })
 
   // Reset form when section changes or modal opens
-  useState(() => {
+  useEffect(() => {
     if (open) {
       form.reset({
         title: section.title || "",
@@ -83,8 +83,10 @@ export function EditSectionModal({ open, onOpenChange, section, onSave }: EditSe
             <Layout className="h-5 w-5 text-blue-600" />
             Edit Section
           </DialogTitle>
-          <DialogDescription>
-            Update the section title and description. This will help organize your form fields into logical groups.
+          <DialogDescription asChild>
+            <div className="text-sm text-muted-foreground">
+              Update the section title and description. This will help organize your form fields into logical groups.
+            </div>
           </DialogDescription>
         </DialogHeader>
 

@@ -159,7 +159,7 @@ export function FormPreview({ formStructure, currentPageIndex = 0, onSubmit }: F
                           value={formData[field.id]}
                           onChange={(value) => handleFieldChange(field.id, value)}
                           error={errors[field.id]}
-                          isPreviewMode={true}
+                          isPreview={true}
                         />
                       </div>
                     )
@@ -171,12 +171,12 @@ export function FormPreview({ formStructure, currentPageIndex = 0, onSubmit }: F
 
           {/* Navigation */}
           <div className="flex justify-between pt-4">
-            <Button variant="outline" disabled>
+            <Button variant="outline" onClick={handlePrevPage} disabled={safeCurrentPageIndex === 0}>
               <ChevronLeft className="mr-2 h-4 w-4" />
               Previous
             </Button>
 
-            <Button disabled>
+            <Button onClick={safeCurrentPageIndex === formStructure.pages.length - 1 ? handleSubmit : handleNextPage}>
               {safeCurrentPageIndex === formStructure.pages.length - 1 ? "Submit" : "Next"}
               {safeCurrentPageIndex < formStructure.pages.length - 1 && <ChevronRight className="ml-2 h-4 w-4" />}
             </Button>

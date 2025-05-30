@@ -1,0 +1,193 @@
+{
+  "id": "bpo-valuation-form",
+  "name": "BPO Property Valuation Form",
+  "description": "Broker Price Opinion form with market analysis and property assessment",
+  "formType": "bpo",
+  "pages": [
+    {
+      "id": "page-property-details",
+      "title": "Property Details",
+      "description": "Basic property information and location",
+      "page_order": 1,
+      "settings": {
+        "showProgressBar": true,
+        "allowNavigation": true
+      },
+      "sections": [
+        {
+          "id": "section-property-info",
+          "title": "Property Information",
+          "description": "Essential property details",
+          "section_order": 1,
+          "settings": {
+            "collapsible": false,
+            "columns": 12
+          },
+          "fields": [
+            {
+              "id": "field-property-address-bpo",
+              "section_id": "section-property-info",
+              "field_type": "address",
+              "label": "Property Address",
+              "placeholder": "Enter complete address",
+              "help_text": "Full street address including city, state, and ZIP",
+              "required": true,
+              "width": "full",
+              "field_order": 1,
+              "validation": {
+                "required": {
+                  "message": "Property address is required"
+                }
+              },
+              "metadata": {
+                "dataType": "address",
+                "category": "Property Information",
+                "tags": ["address", "required"]
+              }
+            },
+            {
+              "id": "field-mls-number",
+              "section_id": "section-property-info",
+              "field_type": "text",
+              "label": "MLS Number",
+              "placeholder": "Enter MLS listing number",
+              "help_text": "Multiple Listing Service number if available",
+              "required": false,
+              "width": "half",
+              "field_order": 2,
+              "validation": {
+                "pattern": {
+                  "pattern": "^[A-Z0-9\\-]+$",
+                  "message": "MLS number format is invalid"
+                }
+              },
+              "metadata": {
+                "dataType": "text",
+                "category": "Property Information",
+                "tags": ["mls", "listing"]
+              }
+            },
+            {
+              "id": "field-parcel-number",
+              "section_id": "section-property-info",
+              "field_type": "text",
+              "label": "Parcel/APN Number",
+              "placeholder": "Enter assessor's parcel number",
+              "help_text": "Tax assessor's parcel number",
+              "required": false,
+              "width": "half",
+              "field_order": 3,
+              "metadata": {
+                "dataType": "text",
+                "category": "Property Information",
+                "tags": ["parcel", "apn", "tax"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "page-valuation",
+      "title": "Valuation Analysis",
+      "description": "Market value assessment and pricing analysis",
+      "page_order": 2,
+      "settings": {
+        "showProgressBar": true,
+        "allowNavigation": true
+      },
+      "sections": [
+        {
+          "id": "section-bpo-values",
+          "title": "BPO Values",
+          "description": "Estimated market values",
+          "section_order": 1,
+          "settings": {
+            "collapsible": false,
+            "columns": 12
+          },
+          "fields": [
+            {
+              "id": "field-as-is-value",
+              "section_id": "section-bpo-values",
+              "field_type": "number",
+              "label": "As-Is Market Value",
+              "placeholder": "0.00",
+              "help_text": "Current market value in present condition",
+              "required": true,
+              "width": "half",
+              "field_order": 1,
+              "validation": {
+                "required": {
+                  "message": "As-is value is required"
+                },
+                "min": {
+                  "value": 1000,
+                  "message": "Value must be at least $1,000"
+                }
+              },
+              "metadata": {
+                "dataType": "currency",
+                "category": "Valuation",
+                "unit": "USD",
+                "tags": ["value", "as-is", "required"]
+              }
+            },
+            {
+              "id": "field-repaired-value",
+              "section_id": "section-bpo-values",
+              "field_type": "number",
+              "label": "After Repair Value (ARV)",
+              "placeholder": "0.00",
+              "help_text": "Estimated value after necessary repairs",
+              "required": true,
+              "width": "half",
+              "field_order": 2,
+              "validation": {
+                "required": {
+                  "message": "ARV is required"
+                },
+                "min": {
+                  "value": 1000,
+                  "message": "Value must be at least $1,000"
+                }
+              },
+              "metadata": {
+                "dataType": "currency",
+                "category": "Valuation",
+                "unit": "USD",
+                "tags": ["value", "arv", "required"]
+              }
+            },
+            {
+              "id": "field-repair-costs",
+              "section_id": "section-bpo-values",
+              "field_type": "number",
+              "label": "Estimated Repair Costs",
+              "placeholder": "0.00",
+              "help_text": "Total cost of necessary repairs and improvements",
+              "required": true,
+              "width": "half",
+              "field_order": 3,
+              "validation": {
+                "required": {
+                  "message": "Repair cost estimate is required"
+                },
+                "min": {
+                  "value": 0,
+                  "message": "Repair costs cannot be negative"
+                }
+              },
+              "metadata": {
+                "dataType": "currency",
+                "category": "Valuation",
+                "unit": "USD",
+                "tags": ["repair", "costs", "required"]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -112,7 +112,7 @@ function PageNavigation({ pages, currentPageIndex, onPageChange, onAddPage, onRe
   }
 
   return (
-    <div className="flex items-center justify-between p-2 border-b bg-gray-50">
+    <div className="flex items-center justify-between py-2 border-b bg-gray-50">
       <Button
         variant="ghost"
         size="icon"
@@ -192,10 +192,6 @@ function PageNavigation({ pages, currentPageIndex, onPageChange, onAddPage, onRe
           className="shrink-0"
         >
           <ChevronRight className="h-4 w-4" />
-        </Button>
-        <Button size="sm" onClick={onAddPage} className="flex items-center gap-1 shrink-0">
-          <Plus className="h-4 w-4" />
-          Add Page
         </Button>
       </div>
     </div>

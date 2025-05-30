@@ -5,8 +5,9 @@ import { DatabaseService } from "@/lib/database-service"
 import type { Form } from "@/lib/database-types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, Zap, BarChart3, Plus, TrendingUp, Users, Clock } from "lucide-react"
+import { FileText, Zap, BarChart3, TrendingUp, Users, Clock } from "lucide-react"
 import Link from "next/link"
+import { PageHeader } from "@/components/page-header"
 
 export default function DashboardPage() {
   const [recentForms, setRecentForms] = useState<Form[]>([])
@@ -33,18 +34,13 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome to Project Bobcat - Your comprehensive form builder platform</p>
-        </div>
-        <Button asChild>
-          <Link href="/form-builder">
-            <Plus className="mr-2 h-4 w-4" />
-            New Form
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        onboardingTip={{
+          message:
+            "Welcome to Project Bobcat! This dashboard gives you an overview of your forms, rules, and decisions. Use the sidebar to navigate between different sections.",
+          storageKey: "dashboard-welcome-tip",
+        }}
+      />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

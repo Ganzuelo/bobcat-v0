@@ -1,86 +1,87 @@
 import { z } from "zod"
 import type { LucideIcon } from "lucide-react"
-import {
-  Type,
-  AlignLeft,
-  List,
-  CheckSquare,
-  Calendar,
-  Hash,
-  Upload,
-  PenTool,
-  ImageIcon,
-  Calculator,
-  Search,
-  ToggleLeft,
-  Star,
-  Sliders,
-  Grid3X3,
-  MapPin,
-  Globe,
-  Eye,
-  Minus,
-  FileText,
-  Code,
-} from "lucide-react"
+import { Type, AlignLeft, List, CheckSquare, Calendar, Hash, Upload, Grid3X3, Globe, Eye, Minus } from "lucide-react"
 
-// Base field types
 export const FIELD_TYPES = {
-  // Text inputs
+  // Basic Fields
   TEXT: "text",
   TEXTAREA: "textarea",
+  NUMBER: "number",
+  CHECKBOX: "checkbox",
+  RADIO: "radio",
+  SELECT: "select",
+  DATE: "date",
+  TIME: "time",
   EMAIL: "email",
-  PASSWORD: "password",
   PHONE: "phone",
   URL: "url",
-
-  // Number inputs
-  NUMBER: "number",
-  CURRENCY: "currency",
-  PERCENTAGE: "percentage",
-
-  // Selection inputs
-  SELECT: "select",
-  MULTISELECT: "multiselect",
-  RADIO: "radio",
-  CHECKBOX: "checkbox",
-  TOGGLE: "toggle",
-
-  // Date/time inputs
-  DATE: "date",
-  DATETIME: "datetime",
-  TIME: "time",
-
-  // File inputs
+  PASSWORD: "password",
   FILE: "file",
-  IMAGE: "image",
-  SIGNATURE: "signature",
-
-  // Interactive inputs
-  RATING: "rating",
-  SLIDER: "slider",
-  MATRIX: "matrix",
-
-  // Location inputs
-  ADDRESS: "address",
-  LOCATION: "location",
-
-  // Calculated/dynamic fields
-  CALCULATED: "calculated",
-  LOOKUP: "lookup",
   HIDDEN: "hidden",
 
-  // Layout elements
-  SECTION_BREAK: "section_break",
-  PAGE_BREAK: "page_break",
-  HTML_CONTENT: "html_content",
-} as const
+  // Layout Fields
+  HEADING: "heading",
+  PARAGRAPH: "paragraph",
+  DIVIDER: "divider",
+  SPACER: "spacer",
 
-export type FieldType = (typeof FIELD_TYPES)[keyof typeof FIELD_TYPES]
+  // Advanced Fields
+  SALES_GRID: "sales_grid",
+}
+
+export type FieldType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "checkbox"
+  | "radio"
+  | "select"
+  | "date"
+  | "time"
+  | "email"
+  | "phone"
+  | "url"
+  | "password"
+  | "file"
+  | "hidden"
+  | "heading"
+  | "paragraph"
+  | "divider"
+  | "spacer"
+  | "sales_grid"
+
+export const FIELD_CATEGORIES = {
+  BASIC: "Basic",
+  LAYOUT: "Layout",
+  ADVANCED: "Advanced",
+}
+
+export const CATEGORIZED_FIELDS = {
+  [FIELD_CATEGORIES.BASIC]: [
+    FIELD_TYPES.TEXT,
+    FIELD_TYPES.TEXTAREA,
+    FIELD_TYPES.NUMBER,
+    FIELD_TYPES.CHECKBOX,
+    FIELD_TYPES.RADIO,
+    FIELD_TYPES.SELECT,
+    FIELD_TYPES.DATE,
+    FIELD_TYPES.TIME,
+    FIELD_TYPES.EMAIL,
+    FIELD_TYPES.PHONE,
+  ],
+  [FIELD_CATEGORIES.LAYOUT]: [FIELD_TYPES.HEADING, FIELD_TYPES.PARAGRAPH, FIELD_TYPES.DIVIDER, FIELD_TYPES.SPACER],
+  [FIELD_CATEGORIES.ADVANCED]: [
+    FIELD_TYPES.SALES_GRID,
+    FIELD_TYPES.FILE,
+    FIELD_TYPES.URL,
+    FIELD_TYPES.PASSWORD,
+    FIELD_TYPES.HIDDEN,
+  ],
+}
 
 // Field type configurations with icons and metadata
 export const FIELD_TYPE_CONFIG: Record<
-  FieldType,
+  (typeof FIELD_TYPES)[keyof typeof FIELD_TYPES],
   {
     label: string
     icon: LucideIcon
@@ -162,24 +163,24 @@ export const FIELD_TYPE_CONFIG: Record<
     supportsCalculation: true,
     supportsLookup: true,
   },
-  [FIELD_TYPES.CURRENCY]: {
-    label: "Currency",
-    icon: Hash,
-    category: "input",
-    description: "Currency amount input",
+  [FIELD_TYPES.CHECKBOX]: {
+    label: "Checkbox",
+    icon: CheckSquare,
+    category: "selection",
+    description: "Multiple choice checkboxes",
     supportsValidation: true,
-    supportsOptions: false,
-    supportsCalculation: true,
-    supportsLookup: true,
+    supportsOptions: true,
+    supportsCalculation: false,
+    supportsLookup: false,
   },
-  [FIELD_TYPES.PERCENTAGE]: {
-    label: "Percentage",
-    icon: Hash,
-    category: "input",
-    description: "Percentage value input",
+  [FIELD_TYPES.RADIO]: {
+    label: "Radio",
+    icon: CheckSquare,
+    category: "selection",
+    description: "Single choice radio buttons",
     supportsValidation: true,
-    supportsOptions: false,
-    supportsCalculation: true,
+    supportsOptions: true,
+    supportsCalculation: false,
     supportsLookup: false,
   },
   [FIELD_TYPES.SELECT]: {
@@ -192,61 +193,11 @@ export const FIELD_TYPE_CONFIG: Record<
     supportsCalculation: false,
     supportsLookup: true,
   },
-  [FIELD_TYPES.MULTISELECT]: {
-    label: "Multi-Select",
-    icon: List,
-    category: "selection",
-    description: "Multiple option selection",
-    supportsValidation: true,
-    supportsOptions: true,
-    supportsCalculation: false,
-    supportsLookup: true,
-  },
-  [FIELD_TYPES.RADIO]: {
-    label: "Radio",
-    icon: CheckSquare,
-    category: "selection",
-    description: "Single choice radio buttons",
-    supportsValidation: true,
-    supportsOptions: true,
-    supportsCalculation: false,
-    supportsLookup: false,
-  },
-  [FIELD_TYPES.CHECKBOX]: {
-    label: "Checkbox",
-    icon: CheckSquare,
-    category: "selection",
-    description: "Multiple choice checkboxes",
-    supportsValidation: true,
-    supportsOptions: true,
-    supportsCalculation: false,
-    supportsLookup: false,
-  },
-  [FIELD_TYPES.TOGGLE]: {
-    label: "Toggle",
-    icon: ToggleLeft,
-    category: "selection",
-    description: "On/off toggle switch",
-    supportsValidation: false,
-    supportsOptions: false,
-    supportsCalculation: false,
-    supportsLookup: false,
-  },
   [FIELD_TYPES.DATE]: {
     label: "Date",
     icon: Calendar,
     category: "date",
     description: "Date picker",
-    supportsValidation: true,
-    supportsOptions: false,
-    supportsCalculation: true,
-    supportsLookup: false,
-  },
-  [FIELD_TYPES.DATETIME]: {
-    label: "Date & Time",
-    icon: Calendar,
-    category: "date",
-    description: "Date and time picker",
     supportsValidation: true,
     supportsOptions: false,
     supportsCalculation: true,
@@ -272,96 +223,6 @@ export const FIELD_TYPE_CONFIG: Record<
     supportsCalculation: false,
     supportsLookup: false,
   },
-  [FIELD_TYPES.IMAGE]: {
-    label: "Image Upload",
-    icon: ImageIcon,
-    category: "file",
-    description: "Image upload with preview",
-    supportsValidation: true,
-    supportsOptions: false,
-    supportsCalculation: false,
-    supportsLookup: false,
-  },
-  [FIELD_TYPES.SIGNATURE]: {
-    label: "Signature",
-    icon: PenTool,
-    category: "file",
-    description: "Digital signature capture",
-    supportsValidation: true,
-    supportsOptions: false,
-    supportsCalculation: false,
-    supportsLookup: false,
-  },
-  [FIELD_TYPES.RATING]: {
-    label: "Rating",
-    icon: Star,
-    category: "interactive",
-    description: "Star rating input",
-    supportsValidation: true,
-    supportsOptions: false,
-    supportsCalculation: true,
-    supportsLookup: false,
-  },
-  [FIELD_TYPES.SLIDER]: {
-    label: "Slider",
-    icon: Sliders,
-    category: "interactive",
-    description: "Range slider input",
-    supportsValidation: true,
-    supportsOptions: false,
-    supportsCalculation: true,
-    supportsLookup: false,
-  },
-  [FIELD_TYPES.MATRIX]: {
-    label: "Matrix",
-    icon: Grid3X3,
-    category: "interactive",
-    description: "Matrix/grid of options",
-    supportsValidation: true,
-    supportsOptions: true,
-    supportsCalculation: false,
-    supportsLookup: false,
-  },
-  [FIELD_TYPES.ADDRESS]: {
-    label: "Address",
-    icon: MapPin,
-    category: "location",
-    description: "Address input with autocomplete",
-    supportsValidation: true,
-    supportsOptions: false,
-    supportsCalculation: false,
-    supportsLookup: true,
-  },
-  [FIELD_TYPES.LOCATION]: {
-    label: "Location",
-    icon: MapPin,
-    category: "location",
-    description: "GPS coordinates picker",
-    supportsValidation: true,
-    supportsOptions: false,
-    supportsCalculation: false,
-    supportsLookup: false,
-  },
-  [FIELD_TYPES.CALCULATED]: {
-    label: "Calculated",
-    icon: Calculator,
-    category: "calculated",
-    description: "Auto-calculated field",
-    supportsValidation: false,
-    supportsOptions: false,
-    supportsCalculation: true,
-    supportsLookup: false,
-  },
-  [FIELD_TYPES.LOOKUP]: {
-    label: "Lookup",
-    icon: Search,
-    category: "calculated",
-    description: "Data lookup field",
-    supportsValidation: false,
-    supportsOptions: false,
-    supportsCalculation: false,
-    supportsLookup: true,
-  },
   [FIELD_TYPES.HIDDEN]: {
     label: "Hidden",
     icon: Eye,
@@ -372,32 +233,52 @@ export const FIELD_TYPE_CONFIG: Record<
     supportsCalculation: true,
     supportsLookup: true,
   },
-  [FIELD_TYPES.SECTION_BREAK]: {
-    label: "Section Break",
+  [FIELD_TYPES.HEADING]: {
+    label: "Heading",
+    icon: Type,
+    category: "layout",
+    description: "Section heading",
+    supportsValidation: false,
+    supportsOptions: false,
+    supportsCalculation: false,
+    supportsLookup: false,
+  },
+  [FIELD_TYPES.PARAGRAPH]: {
+    label: "Paragraph",
+    icon: AlignLeft,
+    category: "layout",
+    description: "Paragraph of text",
+    supportsValidation: false,
+    supportsOptions: false,
+    supportsCalculation: false,
+    supportsLookup: false,
+  },
+  [FIELD_TYPES.DIVIDER]: {
+    label: "Divider",
     icon: Minus,
     category: "layout",
-    description: "Visual section separator",
+    description: "Visual divider line",
     supportsValidation: false,
     supportsOptions: false,
     supportsCalculation: false,
     supportsLookup: false,
   },
-  [FIELD_TYPES.PAGE_BREAK]: {
-    label: "Page Break",
-    icon: FileText,
+  [FIELD_TYPES.SPACER]: {
+    label: "Spacer",
+    icon: Minus,
     category: "layout",
-    description: "Page separator for multi-page forms",
+    description: "Empty space",
     supportsValidation: false,
     supportsOptions: false,
     supportsCalculation: false,
     supportsLookup: false,
   },
-  [FIELD_TYPES.HTML_CONTENT]: {
-    label: "HTML Content",
-    icon: Code,
-    category: "layout",
-    description: "Custom HTML content block",
-    supportsValidation: false,
+  [FIELD_TYPES.SALES_GRID]: {
+    label: "Sales Grid",
+    icon: Grid3X3,
+    category: "interactive",
+    description: "Configurable data grid for comparable sales",
+    supportsValidation: true,
     supportsOptions: false,
     supportsCalculation: false,
     supportsLookup: false,
@@ -620,16 +501,58 @@ export const FormFieldMetadataSchema = z.object({
 })
 
 // Fixed: Use a single schema instead of discriminated union with extend
+// export const FormFieldSchema = z.object({
+//   id: z.string().uuid(),
+//   section_id: z.string().uuid(),
+//   field_type: z.nativeEnum(FIELD_TYPES),
+//   label: z.string().min(1, "Field label is required"),
+//   placeholder: z.string().optional(),
+//   help_text: z.string().optional(),
+//   guidance: z.string().optional(),
+//   required: z.boolean().default(false),
+//   width: z.nativeEnum(FIELD_WIDTHS).default(FIELD_WIDTHS.FULL),
+//   field_order: z.number().min(0),
+
+//   // Field configuration
+//   options: z.array(FieldOptionSchema).optional(),
+//   validation: z.array(ValidationRuleSchema).optional(),
+//   conditional_visibility: ConditionalVisibilitySchema.optional(),
+//   calculated_config: CalculatedConfigSchema.optional(),
+//   lookup_config: LookupConfigSchema.optional(),
+//   prefill_config: PrefillConfigSchema.optional(),
+//   carryforward_config: CarryforwardConfigSchema.optional(),
+//   metadata: FormFieldMetadataSchema.optional(),
+
+//   // Timestamps
+//   created_at: z.string(),
+//   updated_at: z.string(),
+// })
+
+// New interfaces
+export interface FieldValidation {
+  type: string
+  value?: any
+  message?: string
+}
+
+export interface FieldConditional {
+  field: string
+  operator: string
+  value: any
+}
+
+export type FieldWidthType = "FULL" | "HALF" | "THIRD" | "QUARTER"
+
 export const FormFieldSchema = z.object({
   id: z.string().uuid(),
   section_id: z.string().uuid(),
-  field_type: z.nativeEnum(FIELD_TYPES),
+  field_type: z.string(), // Changed to string to match FieldType
   label: z.string().min(1, "Field label is required"),
   placeholder: z.string().optional(),
   help_text: z.string().optional(),
   guidance: z.string().optional(),
   required: z.boolean().default(false),
-  width: z.nativeEnum(FIELD_WIDTHS).default(FIELD_WIDTHS.FULL),
+  width: z.string().optional(), // Changed to string to match FieldWidth
   field_order: z.number().min(0),
 
   // Field configuration
@@ -643,9 +566,60 @@ export const FormFieldSchema = z.object({
   metadata: FormFieldMetadataSchema.optional(),
 
   // Timestamps
-  created_at: z.string(),
-  updated_at: z.string(),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
 })
+
+export interface FormField {
+  id: string
+  type: FieldType
+  label: string
+  placeholder?: string
+  helpText?: string
+  required?: boolean
+  options?: { label: string; value: string }[]
+  defaultValue?: any
+  validation?: FieldValidation
+  conditional?: FieldConditional
+  width?: FieldWidthType
+  prefill?: PrefillConfig
+  metadata?: Record<string, any>
+  // Sales Grid specific properties
+  gridConfig?: SalesGridConfig
+}
+
+// New interface for Sales Grid configuration
+export interface SalesGridConfig {
+  columns: SalesGridColumn[]
+  minRows?: number
+  maxRows?: number
+  rowLabel?: string
+}
+
+export interface SalesGridColumn {
+  id: string
+  header: string
+  type: "TEXT" | "NUMBER" | "SELECT" | "CHECKBOX"
+  width?: number // Width in pixels or percentage
+  options?: { label: string; value: string }[]
+  defaultValue?: any
+  required?: boolean
+  validation?: {
+    min?: number
+    max?: number
+    pattern?: string
+  }
+}
+
+export interface SalesGridData {
+  rows: SalesGridRow[]
+}
+
+export interface SalesGridRow {
+  id: string
+  label: string
+  cells: Record<string, any> // Map of column id to cell value
+}
 
 export const FormSectionSchema = z.object({
   id: z.string().uuid(),
@@ -689,7 +663,7 @@ export const FormPageSchema = z.object({
 })
 
 // Extended interfaces with populated relationships
-export interface FormField extends z.infer<typeof FormFieldSchema> {}
+// export interface FormField extends z.infer<typeof FormFieldSchema> {}
 
 export interface FormSection extends z.infer<typeof FormSectionSchema> {
   fields?: FormField[]

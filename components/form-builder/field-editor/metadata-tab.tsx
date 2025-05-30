@@ -1,37 +1,87 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tag, X } from "lucide-react"
-import type { MetadataState } from "@/lib/field-editor-types"
+import type { FormField } from "@/lib/form-types"
 import { XmlMappingSection } from "./xml-mapping-section"
 
 interface MetadataTabProps {
-  metadataState: MetadataState
-  updateMetadataState: (updates: Partial<MetadataState>) => void
-  updateXmlMappingState: (updates: Partial<MetadataState["xml"]>) => void
-  tagInput: string
-  setTagInput: (value: string) => void
-  addTag: () => void
-  removeTag: (tag: string) => void
-  xmlMappingOpen: boolean
-  setXmlMappingOpen: (open: boolean) => void
+  field: FormField
+  onChange: (fieldId: string, updates: Partial<FormField>) => void
 }
 
-export function MetadataTab({
-  metadataState,
-  updateMetadataState,
-  updateXmlMappingState,
-  tagInput,
-  setTagInput,
-  addTag,
-  removeTag,
-  xmlMappingOpen,
-  setXmlMappingOpen,
-}: MetadataTabProps) {
+export function MetadataTab({ field, onChange }: MetadataTabProps) {
+  // Initialize metadata state from field
+  const [metadataState, setMetadataState] = useState({
+    uad_field_id: field.metadata?.uad_field_id || "",
+    fieldKey: field.metadata?.fieldKey || field.id || "",
+    dataType: field.metadata?.dataType || "text",
+    uadFieldName: field.metadata?.uadFieldName || "",
+    tags: field.metadata?.tags || [],
+    xml: field.metadata?.xml || {
+      fieldId: "",
+      path: "",
+      required: false,
+      format: "text",
+    },
+  })
+
+  const [tagInput, setTagInput] = useState("")
+  const [xmlMappingOpen, setXmlMappingOpen] = useState(false)
+
+  // Update metadata state when field changes
+  useEffect(() => {
+    setMetadataState({
+      uad_field_id: field.metadata?.uad_field_id || "",
+      fieldKey: field.metadata?.fieldKey || field.id || "",
+      dataType: field.metadata?.dataType || "text",
+      uadFieldName: field.metadata?.uadFieldName || "",
+      tags: field.metadata?.tags || [],
+      xml: field.metadata?.xml || {
+        fieldId: "",
+        path: "",
+        required: false,
+        format: "text",
+      },
+    })
+  }, [field])
+
+  const updateMetadataState = (updates: Partial<typeof metadataState>) => {
+    const newMetadataState = { ...metadataState, ...updates }
+    setMetadataState(newMetadataState)
+
+    // Update the field with new metadata
+    onChange(field.id, {
+      metadata: {
+        ...field.metadata,
+        ...updates,
+      },
+    })
+  }
+
+  const updateXmlMappingState = (updates: Partial<typeof metadataState.xml>) => {
+    const newXmlState = { ...metadataState.xml, ...updates }
+    updateMetadataState({ xml: newXmlState })
+  }
+
+  const addTag = () => {
+    if (tagInput.trim() && !metadataState.tags.includes(tagInput.trim())) {
+      const newTags = [...metadataState.tags, tagInput.trim()]
+      updateMetadataState({ tags: newTags })
+      setTagInput("")
+    }
+  }
+
+  const removeTag = (tag: string) => {
+    const newTags = metadataState.tags.filter((t) => t !== tag)
+    updateMetadataState({ tags: newTags })
+  }
+
   return (
     <div className="space-y-4 mt-0">
       {/* UAD Field ID Display - Read Only */}

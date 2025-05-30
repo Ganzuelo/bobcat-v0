@@ -5,6 +5,30 @@ import { supabase } from "@/lib/supabase-client"
 import type { FormStructure } from "@/lib/database-types"
 import { useToast } from "@/hooks/use-toast"
 
+// Map import form types to database enum values
+function mapFormTypeToDbType(formType: string): string {
+  switch (formType.toLowerCase()) {
+    case "uad_3_6":
+    case "uad_2_6":
+      return "urar" // Uniform Residential Appraisal Report
+    case "bpo":
+      return "assessment" // Broker Price Opinion
+    case "survey":
+      return "survey"
+    case "application":
+      return "application"
+    case "registration":
+      return "registration"
+    case "feedback":
+      return "feedback"
+    case "inspection":
+      return "inspection"
+    case "other":
+    default:
+      return "custom"
+  }
+}
+
 export function useFormBuilder(formId?: string) {
   const [formStructure, setFormStructure] = useState<FormStructure | null>(null)
   const [loading, setLoading] = useState(false)
@@ -168,11 +192,15 @@ export function useFormBuilder(formId?: string) {
 
       // Prepare form data with proper constraint handling
       const currentTime = new Date().toISOString()
+
+      // Map the form type to a valid database enum
+      const mappedFormType = mapFormTypeToDbType(normalizedFormStructure.form.form_type)
+
       const formData = {
         id: normalizedFormStructure.form.id,
         title: normalizedFormStructure.form.title,
         description: normalizedFormStructure.form.description,
-        form_type: normalizedFormStructure.form.form_type,
+        form_type: mappedFormType, // Use the mapped form type
         version: normalizedFormStructure.form.version,
         status: normalizedFormStructure.form.status,
         created_by: user.id,
