@@ -66,6 +66,7 @@ export default function LoginPage() {
   const [currentFeature, setCurrentFeature] = useState(0)
   const [appName, setAppName] = useState("Project Bobcat")
   const [logoIconName, setLogoIconName] = useState("Cat")
+  const [companyName, setCompanyName] = useState("Your Company")
 
   const { signIn, user, loading: authLoading } = useAuth()
   const router = useRouter()
@@ -80,6 +81,7 @@ export default function LoginPage() {
     // Load app settings
     const savedAppName = localStorage.getItem("appName")
     const savedLogoIcon = localStorage.getItem("logoIcon")
+    const savedCompanyName = localStorage.getItem("companyName")
 
     if (savedAppName) {
       setAppName(savedAppName)
@@ -87,6 +89,33 @@ export default function LoginPage() {
 
     if (savedLogoIcon) {
       setLogoIconName(savedLogoIcon)
+    }
+
+    if (savedCompanyName) {
+      setCompanyName(savedCompanyName)
+    }
+
+    // Listen for app name and logo icon changes
+    const handleAppNameChange = (event: CustomEvent) => {
+      setAppName(event.detail)
+    }
+
+    const handleLogoIconChange = (event: CustomEvent) => {
+      setLogoIconName(event.detail)
+    }
+
+    const handleCompanyNameChange = (event: CustomEvent) => {
+      setCompanyName(event.detail)
+    }
+
+    window.addEventListener("appNameChanged", handleAppNameChange as EventListener)
+    window.addEventListener("logoIconChanged", handleLogoIconChange as EventListener)
+    window.addEventListener("companyNameChanged", handleCompanyNameChange as EventListener)
+
+    return () => {
+      window.removeEventListener("appNameChanged", handleAppNameChange as EventListener)
+      window.removeEventListener("logoIconChanged", handleLogoIconChange as EventListener)
+      window.removeEventListener("companyNameChanged", handleCompanyNameChange as EventListener)
     }
   }, [])
 
@@ -241,126 +270,128 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex" aria-label="Login page">
       {/* Left Panel - Login Form (40% width) */}
-      <div
-        className="w-2/5 flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8"
-        aria-label="Login form section"
-      >
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <div className="flex justify-center">
-              <LogoIcon className="h-12 w-12 text-primary" />
+      <div className="w-2/5 flex flex-col bg-gray-50 px-4 sm:px-6 lg:px-8" aria-label="Login form section">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-md space-y-8">
+            <div className="text-center">
+              <div className="flex justify-center">
+                <LogoIcon className="h-12 w-12 text-primary" />
+              </div>
+              <h2 className="mt-6 text-3xl font-bold text-gray-900">Welcome back</h2>
+              <p className="mt-2 text-sm text-gray-600">Sign in to your {appName} account</p>
             </div>
-            <h2 className="mt-6 text-3xl font-bold text-gray-900">Welcome back</h2>
-            <p className="mt-2 text-sm text-gray-600">Sign in to your {appName} account</p>
-          </div>
 
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle>Sign In</CardTitle>
-              <CardDescription>Enter your credentials to access your account</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6" role="form" aria-label="Sign in to your account">
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle>Sign In</CardTitle>
+                <CardDescription>Enter your credentials to access your account</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6" role="form" aria-label="Sign in to your account">
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email address</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    className="h-12"
-                    disabled={loading}
-                    aria-label="Email address"
-                    aria-describedby="email-description"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email address</Label>
                     <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="current-password"
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
                       required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your password"
-                      className="h-12 pr-12"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email"
+                      className="h-12"
                       disabled={loading}
-                      aria-label="Password"
-                      aria-describedby="password-description"
+                      aria-label="Email address"
+                      aria-describedby="email-description"
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-12 px-3 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                      disabled={loading}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Remember Me Options */}
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="remember-email"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                      disabled={loading}
-                      aria-label="Remember my email address"
-                    />
-                    <Label htmlFor="remember-email" className="text-sm font-normal cursor-pointer">
-                      Remember my email address
-                    </Label>
                   </div>
 
-                  {rememberMe && (
-                    <div className="text-xs text-gray-500">
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter your password"
+                        className="h-12 pr-12"
+                        disabled={loading}
+                        aria-label="Password"
+                        aria-describedby="password-description"
+                      />
                       <Button
                         type="button"
-                        variant="link"
+                        variant="ghost"
                         size="sm"
-                        className="h-auto p-0 text-xs"
-                        onClick={clearSavedCredentials}
-                        aria-label="Clear saved login credentials"
+                        className="absolute right-0 top-0 h-12 px-3 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                        disabled={loading}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
                       >
-                        Clear saved credentials
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="text-sm">
-                    <Link href="/auth/forgot-password" className="font-medium text-primary hover:text-primary/80">
-                      Forgot your password?
-                    </Link>
                   </div>
-                </div>
 
-                <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
-                  {loading ? "Signing in..." : "Sign in"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                  {/* Remember Me Options */}
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="remember-email"
+                        checked={rememberMe}
+                        onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                        disabled={loading}
+                        aria-label="Remember my email address"
+                      />
+                      <Label htmlFor="remember-email" className="text-sm font-normal cursor-pointer">
+                        Remember my email address
+                      </Label>
+                    </div>
+
+                    {rememberMe && (
+                      <div className="text-xs text-gray-500">
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={clearSavedCredentials}
+                          aria-label="Clear saved login credentials"
+                        >
+                          Clear saved credentials
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <Link href="/auth/forgot-password" className="font-medium text-primary hover:text-primary/80">
+                        Forgot your password?
+                      </Link>
+                    </div>
+                  </div>
+
+                  <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
+                    {loading ? "Signing in..." : "Sign in"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        <div className="text-center text-xs text-gray-500 py-4">
+          © {new Date().getFullYear()} {companyName}
         </div>
       </div>
 

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, Edit, Trash2, Copy, BarChart3 } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Copy, BarChart3, AlertCircle } from "lucide-react"
 import { DatabaseService } from "@/lib/database-service"
 import { CreateFormModal } from "@/components/form-builder/create-form-modal"
 import { createFormStructure, type FormConfig } from "@/lib/form-templates"
@@ -16,6 +16,7 @@ import type { Form } from "@/lib/database-types"
 export default function FormBuilderPage() {
   const [forms, setForms] = useState<Form[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
@@ -28,15 +29,48 @@ export default function FormBuilderPage() {
 
   const loadForms = async () => {
     setLoading(true)
+    setError(null)
     try {
+      console.log("Loading forms...")
       const userId = await DatabaseService.getCurrentUserId()
-      const formsData = await DatabaseService.getForms(userId || undefined)
+      console.log("Current user ID:", userId)
+
+      if (!userId) {
+        throw new Error("User not authenticated")
+      }
+
+      const formsData = await DatabaseService.getForms(userId)
+      console.log("Forms loaded:", formsData)
       setForms(formsData)
     } catch (error) {
       console.error("Error loading forms:", error)
+      setError(error instanceof Error ? error.message : "Failed to load forms")
     } finally {
       setLoading(false)
     }
+  }
+
+  // Add error state rendering
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Form Builder</h1>
+            <p className="text-muted-foreground">Create and manage your forms</p>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="text-center py-12">
+            <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+            <div className="text-lg font-semibold mb-2">Error Loading Forms</div>
+            <div className="text-muted-foreground mb-4">{error}</div>
+            <Button onClick={loadForms}>Try Again</Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   const filteredForms = forms.filter((form) => {
