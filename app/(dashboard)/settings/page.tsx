@@ -25,15 +25,17 @@ import { useAuth } from "@/components/auth/auth-provider"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { TriangleAlertIcon as WarningTriangle } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
+import { AppSettingsService, type AppSettings } from "@/lib/app-settings-service"
+import { IconSelector } from "@/components/ui/icon-selector"
 
 const generalSettingsSchema = z.object({
-  appName: z.string().min(2).max(50),
-  companyName: z.string().min(2).max(50),
-  logoIcon: z.string().optional(),
-  emailNotificationsEnabled: z.boolean().default(false),
-  pushNotificationsEnabled: z.boolean().default(false),
-  termsOfService: z.string().optional(),
-  privacyPolicy: z.string().optional(),
+  app_name: z.string().min(2).max(50),
+  company_name: z.string().min(2).max(50),
+  logo_icon: z.string().min(1, "Please select an icon"),
+  email_notifications_enabled: z.boolean().default(false),
+  push_notifications_enabled: z.boolean().default(false),
+  terms_of_service: z.string().optional(),
+  privacy_policy: z.string().optional(),
 })
 
 export default function SettingsPage() {
@@ -49,14 +51,16 @@ export default function SettingsPage() {
   const { toast } = useToast()
 
   // General Settings State
-  const [appName, setAppName] = useState("")
+  const [settings, setSettings] = useState<AppSettings>({
+    app_name: "Project Bobcat",
+    company_name: "Your Company",
+    logo_icon: "Cat",
+    email_notifications_enabled: false,
+    push_notifications_enabled: false,
+    terms_of_service: "",
+    privacy_policy: "",
+  })
   const [tempAppName, setTempAppName] = useState("")
-  const [companyName, setCompanyName] = useState("")
-  const [logoIcon, setLogoIcon] = useState("")
-  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false)
-  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false)
-  const [termsOfService, setTermsOfService] = useState("")
-  const [privacyPolicy, setPrivacyPolicy] = useState("")
   const [isSaving, setIsSaving] = useState(false)
 
   // Auth Hook
@@ -192,86 +196,62 @@ export default function SettingsPage() {
   const form = useForm<z.infer<typeof generalSettingsSchema>>({
     resolver: zodResolver(generalSettingsSchema),
     defaultValues: {
-      appName: "",
-      companyName: "",
-      logoIcon: "",
-      emailNotificationsEnabled: false,
-      pushNotificationsEnabled: false,
-      termsOfService: "",
-      privacyPolicy: "",
+      app_name: "",
+      company_name: "",
+      logo_icon: "",
+      email_notifications_enabled: false,
+      push_notifications_enabled: false,
+      terms_of_service: "",
+      privacy_policy: "",
     },
     mode: "onChange",
   })
 
-  // Reset form when state changes
+  // Reset form when settings change
   useEffect(() => {
     form.reset({
-      appName: appName,
-      companyName: companyName,
-      logoIcon: logoIcon,
-      emailNotificationsEnabled: emailNotificationsEnabled,
-      pushNotificationsEnabled: pushNotificationsEnabled,
-      termsOfService: termsOfService,
-      privacyPolicy: privacyPolicy,
+      app_name: settings.app_name,
+      company_name: settings.company_name,
+      logo_icon: settings.logo_icon,
+      email_notifications_enabled: settings.email_notifications_enabled,
+      push_notifications_enabled: settings.push_notifications_enabled,
+      terms_of_service: settings.terms_of_service,
+      privacy_policy: settings.privacy_policy,
     })
-  }, [
-    appName,
-    companyName,
-    logoIcon,
-    emailNotificationsEnabled,
-    pushNotificationsEnabled,
-    termsOfService,
-    privacyPolicy,
-    form,
-  ])
+  }, [settings, form])
 
   useEffect(() => {
-    // Load saved settings from localStorage
-    const savedAppName = localStorage.getItem("appName")
-    const savedCompanyName = localStorage.getItem("companyName")
-    const savedLogoIcon = localStorage.getItem("logoIcon")
-
-    if (savedAppName) {
-      setAppName(savedAppName)
-      setTempAppName(savedAppName)
+    // Load settings from database
+    const loadSettings = async () => {
+      try {
+        const appSettings = await AppSettingsService.getAllSettings()
+        setSettings(appSettings)
+        setTempAppName(appSettings.app_name)
+      } catch (error) {
+        console.error("Error loading settings:", error)
+      }
     }
 
-    if (savedCompanyName) {
-      setCompanyName(savedCompanyName)
-    }
-
-    if (savedLogoIcon) {
-      setLogoIcon(savedLogoIcon)
-    }
+    loadSettings()
   }, [])
 
   const handleSaveGeneralSettings = async (values: z.infer<typeof generalSettingsSchema>) => {
     setIsSaving(true)
     try {
-      // Save to localStorage
-      localStorage.setItem("appName", values.appName)
-      localStorage.setItem("companyName", values.companyName)
-      localStorage.setItem("logoIcon", values.logoIcon || "")
+      const success = await AppSettingsService.updateSettings(values)
 
-      // Dispatch events for other components to listen
-      window.dispatchEvent(new CustomEvent("appNameChanged", { detail: values.appName }))
-      window.dispatchEvent(new CustomEvent("companyNameChanged", { detail: values.companyName }))
-      window.dispatchEvent(new CustomEvent("logoIconChanged", { detail: values.logoIcon || "" }))
+      if (success) {
+        // Update local state
+        setSettings(values)
+        setTempAppName(values.app_name)
 
-      // Update local state
-      setAppName(values.appName)
-      setTempAppName(values.appName)
-      setCompanyName(values.companyName)
-      setLogoIcon(values.logoIcon || "")
-      setEmailNotificationsEnabled(values.emailNotificationsEnabled)
-      setPushNotificationsEnabled(values.pushNotificationsEnabled)
-      setTermsOfService(values.termsOfService || "")
-      setPrivacyPolicy(values.privacyPolicy || "")
-
-      toast({
-        title: "Settings saved",
-        description: "Your settings have been saved successfully.",
-      })
+        toast({
+          title: "Settings saved",
+          description: "Your settings have been saved successfully.",
+        })
+      } else {
+        throw new Error("Failed to save settings")
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -318,7 +298,7 @@ export default function SettingsPage() {
                 </Alert>
               ) : null}
 
-              {appName !== tempAppName ? (
+              {settings.app_name !== tempAppName ? (
                 <Alert>
                   <CheckCircle2 className="h-4 w-4" />
                   <AlertTitle>Pending Changes</AlertTitle>
@@ -333,13 +313,13 @@ export default function SettingsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="appName"
+                      name="app_name"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>App Name</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Acme Corp"
+                              placeholder="Project Bobcat"
                               {...field}
                               onChange={(e) => {
                                 field.onChange(e)
@@ -354,12 +334,12 @@ export default function SettingsPage() {
 
                     <FormField
                       control={form.control}
-                      name="companyName"
+                      name="company_name"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Company Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Acme Inc." {...field} />
+                            <Input placeholder="Your Company" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -368,12 +348,12 @@ export default function SettingsPage() {
 
                     <FormField
                       control={form.control}
-                      name="logoIcon"
+                      name="logo_icon"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Logo Icon</FormLabel>
                           <FormControl>
-                            <Input placeholder="A" {...field} />
+                            <IconSelector value={field.value} onChange={field.onChange} placeholder="Select an icon" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -397,7 +377,7 @@ export default function SettingsPage() {
                     </div>
                     <FormField
                       control={form.control}
-                      name="emailNotificationsEnabled"
+                      name="email_notifications_enabled"
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                           <FormControl>
@@ -417,7 +397,7 @@ export default function SettingsPage() {
                     </div>
                     <FormField
                       control={form.control}
-                      name="pushNotificationsEnabled"
+                      name="push_notifications_enabled"
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                           <FormControl>
@@ -437,7 +417,7 @@ export default function SettingsPage() {
 
                   <FormField
                     control={form.control}
-                    name="termsOfService"
+                    name="terms_of_service"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Terms of Service URL</FormLabel>
@@ -451,7 +431,7 @@ export default function SettingsPage() {
 
                   <FormField
                     control={form.control}
-                    name="privacyPolicy"
+                    name="privacy_policy"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Privacy Policy URL</FormLabel>

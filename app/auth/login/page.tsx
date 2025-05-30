@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/components/auth/auth-provider"
 import { Cat, FileText, Zap, BarChart3, Shield, Grid3X3, Settings, Eye, EyeOff } from "lucide-react"
 import * as LucideIcons from "lucide-react"
+import { AppSettingsService } from "@/lib/app-settings-service"
 
 const features = [
   {
@@ -78,22 +79,19 @@ export default function LoginPage() {
     // Load saved credentials on mount
     loadSavedCredentials()
 
-    // Load app settings
-    const savedAppName = localStorage.getItem("appName")
-    const savedLogoIcon = localStorage.getItem("logoIcon")
-    const savedCompanyName = localStorage.getItem("companyName")
-
-    if (savedAppName) {
-      setAppName(savedAppName)
+    // Load app settings from database
+    const loadSettings = async () => {
+      try {
+        const settings = await AppSettingsService.getAllSettings()
+        setAppName(settings.app_name)
+        setLogoIconName(settings.logo_icon)
+        setCompanyName(settings.company_name)
+      } catch (error) {
+        console.error("Error loading app settings:", error)
+      }
     }
 
-    if (savedLogoIcon) {
-      setLogoIconName(savedLogoIcon)
-    }
-
-    if (savedCompanyName) {
-      setCompanyName(savedCompanyName)
-    }
+    loadSettings()
 
     // Listen for app name and logo icon changes
     const handleAppNameChange = (event: CustomEvent) => {

@@ -1,17 +1,29 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { AppSettingsService } from "@/lib/app-settings-service"
 
 export function Footer() {
   const [companyName, setCompanyName] = useState("Your Company")
   const currentYear = new Date().getFullYear()
 
   useEffect(() => {
-    // Load saved company name from localStorage
-    const savedCompanyName = localStorage.getItem("companyName")
-    if (savedCompanyName) {
-      setCompanyName(savedCompanyName)
+    // Load company name from database
+    const loadSettings = async () => {
+      try {
+        const settings = await AppSettingsService.getAllSettings()
+        setCompanyName(settings.company_name)
+      } catch (error) {
+        console.error("Error loading company name:", error)
+        // Fallback to localStorage if database fails
+        const savedCompanyName = localStorage.getItem("companyName")
+        if (savedCompanyName) {
+          setCompanyName(savedCompanyName)
+        }
+      }
     }
+
+    loadSettings()
 
     // Listen for company name changes
     const handleCompanyNameChange = (event: CustomEvent) => {

@@ -5,6 +5,7 @@ import "./globals.css"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
+import { AppSettingsInitializer } from "@/components/app-settings-initializer"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
     description:
       "Build UAD 3.6-compliant appraisal forms faster with Bobcat. Modular, intelligent, and built for real estate professionals. Powered by smart form logic.",
   },
-    generator: 'v0.dev'
+  generator: "v0.dev",
 }
 
 export default function RootLayout({
@@ -35,6 +36,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <AuthProvider>
+            <AppSettingsInitializer />
             {children}
             <Toaster />
           </AuthProvider>

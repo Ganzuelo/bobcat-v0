@@ -31,6 +31,7 @@ import {
 import { CustomAvatar } from "@/components/ui/custom-avatar"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useSidebar } from "@/components/ui/sidebar"
+import { AppSettingsService } from "@/lib/app-settings-service"
 
 const navigation = [
   {
@@ -216,17 +217,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [logoIconName, setLogoIconName] = useState("Cat")
 
   useEffect(() => {
-    // Load saved app name and logo icon from localStorage
-    const savedAppName = localStorage.getItem("appName")
-    const savedLogoIcon = localStorage.getItem("logoIcon")
-
-    if (savedAppName) {
-      setAppName(savedAppName)
+    // Load saved app name and logo icon from database
+    const loadSettings = async () => {
+      try {
+        const settings = await AppSettingsService.getAllSettings()
+        setAppName(settings.app_name)
+        setLogoIconName(settings.logo_icon)
+      } catch (error) {
+        console.error("Error loading app settings:", error)
+      }
     }
 
-    if (savedLogoIcon) {
-      setLogoIconName(savedLogoIcon)
-    }
+    loadSettings()
 
     // Listen for app name and logo icon changes
     const handleAppNameChange = (event: CustomEvent) => {
