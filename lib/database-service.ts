@@ -29,6 +29,44 @@ function safeLog(message: string, data: any): void {
   }
 }
 
+// Deep clean object to ensure all UUIDs are valid
+function deepCleanObject(obj: any): any {
+  if (!obj) return obj
+
+  // Handle arrays
+  if (Array.isArray(obj)) {
+    return obj.map((item) => deepCleanObject(item))
+  }
+
+  // Handle objects
+  if (typeof obj === "object") {
+    const cleaned: any = {}
+
+    for (const [key, value] of Object.entries(obj)) {
+      // Skip null or undefined values
+      if (value === null || value === undefined) continue
+
+      // Handle ID fields specifically
+      if ((key === "id" || key.endsWith("_id")) && typeof value === "string") {
+        cleaned[key] = ensureValidUUID(value)
+      }
+      // Recursively clean nested objects
+      else if (typeof value === "object") {
+        cleaned[key] = deepCleanObject(value)
+      }
+      // Keep other values as is
+      else {
+        cleaned[key] = value
+      }
+    }
+
+    return cleaned
+  }
+
+  // Return primitive values as is
+  return obj
+}
+
 export class DatabaseService {
   // Get current user ID
   static async getCurrentUserId(): Promise<string | null> {
@@ -117,9 +155,12 @@ export class DatabaseService {
         settings: form.settings || {},
       }
 
-      safeLog("Creating form with data:", formData)
+      // Clean the form data to ensure all UUIDs are valid
+      const cleanFormData = deepCleanObject(formData)
 
-      const { data, error } = await supabase.from("forms").insert(formData).select().single()
+      safeLog("Creating form with data:", cleanFormData)
+
+      const { data, error } = await supabase.from("forms").insert(cleanFormData).select().single()
 
       if (error) {
         console.error("Error creating form:", error)
@@ -136,11 +177,8 @@ export class DatabaseService {
 
   static async updateForm(id: string, updates: Partial<Form>) {
     try {
-      // Validate ID
+      // Generate a valid UUID for the form ID
       const validId = ensureValidUUID(id)
-      if (validId !== id) {
-        throw new Error(`Invalid form ID for update operation: ${id}`)
-      }
 
       // Create a clean update object
       const updateData = {
@@ -153,9 +191,12 @@ export class DatabaseService {
         delete updateData.id
       }
 
-      safeLog(`Updating form ${id} with data:`, updateData)
+      // Clean the update data to ensure all UUIDs are valid
+      const cleanUpdateData = deepCleanObject(updateData)
 
-      const { data, error } = await supabase.from("forms").update(updateData).eq("id", id).select().single()
+      safeLog(`Updating form ${validId} with data:`, cleanUpdateData)
+
+      const { data, error } = await supabase.from("forms").update(cleanUpdateData).eq("id", validId).select().single()
 
       if (error) {
         console.error("Error updating form:", error)
@@ -269,11 +310,16 @@ export class DatabaseService {
 
       // Validate form ID and ensure it's a valid UUID
       const formId = ensureValidUUID(form.id)
-      form.id = formId
+
+      // Create a clean form object with the valid ID
+      const cleanForm = {
+        ...form,
+        id: formId,
+      }
 
       safeLog("Form data for save:", {
-        id: form.id,
-        title: form.title,
+        id: cleanForm.id,
+        title: cleanForm.title,
         pageCount: pages?.length || 0,
         ruleCount: rules?.length || 0,
       })
@@ -281,10 +327,12 @@ export class DatabaseService {
       // Save or update form
       let savedForm: Form
       try {
-        if (form.created_at) {
-          savedForm = await this.updateForm(formId, form)
+        if (cleanForm.created_at) {
+          // For existing forms, use the valid ID for the update
+          savedForm = await this.updateForm(formId, cleanForm)
         } else {
-          savedForm = await this.createForm(form)
+          // For new forms, create with the clean form object
+          savedForm = await this.createForm(cleanForm)
         }
       } catch (error) {
         console.error("Error saving form:", error)
@@ -319,11 +367,16 @@ export class DatabaseService {
       if (rules && rules.length > 0) {
         for (const rule of rules) {
           try {
-            rule.form_id = savedForm.id
-            if (rule.id) {
-              await this.updateRule(rule.id, rule)
+            const cleanRule = {
+              ...rule,
+              form_id: savedForm.id,
+              id: rule.id ? ensureValidUUID(rule.id) : crypto.randomUUID(),
+            }
+
+            if (cleanRule.id && cleanRule.id !== "new") {
+              await this.updateRule(cleanRule.id, cleanRule)
             } else {
-              await this.createRule(rule)
+              await this.createRule(cleanRule)
             }
           } catch (error) {
             console.error(`Error saving rule:`, error)
@@ -362,14 +415,21 @@ export class DatabaseService {
         settings: page.settings || {},
       }
 
+      // Clean the page data to ensure all UUIDs are valid
+      const cleanPageData = deepCleanObject(pageData)
+
       safeLog(`Saving page ${pageId} with data:`, {
-        id: pageData.id,
-        title: pageData.title,
+        id: cleanPageData.id,
+        title: cleanPageData.title,
         sectionCount: page.sections?.length || 0,
       })
 
       // Upsert page
-      const { data: savedPage, error: pageError } = await supabase.from("form_pages").upsert(pageData).select().single()
+      const { data: savedPage, error: pageError } = await supabase
+        .from("form_pages")
+        .upsert(cleanPageData)
+        .select()
+        .single()
 
       if (pageError) {
         console.error(`Error upserting page ${pageId}:`, pageError)
@@ -417,16 +477,19 @@ export class DatabaseService {
         settings: section.settings || {},
       }
 
+      // Clean the section data to ensure all UUIDs are valid
+      const cleanSectionData = deepCleanObject(sectionData)
+
       safeLog(`Saving section ${sectionId} with data:`, {
-        id: sectionData.id,
-        title: sectionData.title,
+        id: cleanSectionData.id,
+        title: cleanSectionData.title,
         fieldCount: section.fields?.length || 0,
       })
 
       // Upsert section
       const { data: savedSection, error: sectionError } = await supabase
         .from("form_sections")
-        .upsert(sectionData)
+        .upsert(cleanSectionData)
         .select()
         .single()
 
@@ -497,16 +560,19 @@ export class DatabaseService {
         }
       }
 
+      // Clean the field data to ensure all UUIDs are valid
+      const cleanFieldData = deepCleanObject(fieldData)
+
       safeLog(`Saving field ${fieldId} with data:`, {
-        id: fieldData.id,
-        type: fieldData.field_type,
-        label: fieldData.label,
+        id: cleanFieldData.id,
+        type: cleanFieldData.field_type,
+        label: cleanFieldData.label,
       })
 
       // Upsert field
       const { data: savedField, error: fieldError } = await supabase
         .from("form_fields")
-        .upsert(fieldData)
+        .upsert(cleanFieldData)
         .select()
         .single()
 
@@ -528,17 +594,21 @@ export class DatabaseService {
     }
   }
 
+  // Other methods remain the same...
   static async createPage(page: Omit<FormPage, "id" | "created_at" | "updated_at">) {
     try {
       // Ensure page has a valid ID
-      const pageId = !page.id || page.id === "" ? crypto.randomUUID() : page.id
+      const pageId = ensureValidUUID(page.id)
 
       const pageData = {
         ...page,
         id: pageId,
       }
 
-      const { data, error } = await supabase.from("form_pages").insert(pageData).select().single()
+      // Clean the page data to ensure all UUIDs are valid
+      const cleanPageData = deepCleanObject(pageData)
+
+      const { data, error } = await supabase.from("form_pages").insert(cleanPageData).select().single()
 
       if (error) throw error
       return data as FormPage
@@ -551,11 +621,12 @@ export class DatabaseService {
   static async updatePage(id: string, updates: Partial<FormPage>) {
     try {
       // Validate ID before proceeding
-      if (!id || id === "") {
-        throw new Error("Invalid page ID for update operation")
-      }
+      const validId = ensureValidUUID(id)
 
-      const { data, error } = await supabase.from("form_pages").update(updates).eq("id", id).select().single()
+      // Clean the update data to ensure all UUIDs are valid
+      const cleanUpdates = deepCleanObject(updates)
+
+      const { data, error } = await supabase.from("form_pages").update(cleanUpdates).eq("id", validId).select().single()
 
       if (error) throw error
       return data as FormPage
@@ -567,7 +638,8 @@ export class DatabaseService {
 
   static async deletePage(id: string) {
     try {
-      const { error } = await supabase.from("form_pages").delete().eq("id", id)
+      const validId = ensureValidUUID(id)
+      const { error } = await supabase.from("form_pages").delete().eq("id", validId)
 
       if (error) throw error
     } catch (error) {
@@ -580,14 +652,17 @@ export class DatabaseService {
   static async createSection(section: Omit<FormSection, "id" | "created_at" | "updated_at">) {
     try {
       // Ensure section has a valid ID
-      const sectionId = !section.id || section.id === "" ? crypto.randomUUID() : section.id
+      const sectionId = ensureValidUUID(section.id)
 
       const sectionData = {
         ...section,
         id: sectionId,
       }
 
-      const { data, error } = await supabase.from("form_sections").insert(sectionData).select().single()
+      // Clean the section data to ensure all UUIDs are valid
+      const cleanSectionData = deepCleanObject(sectionData)
+
+      const { data, error } = await supabase.from("form_sections").insert(cleanSectionData).select().single()
 
       if (error) throw error
       return data as FormSection
@@ -600,11 +675,17 @@ export class DatabaseService {
   static async updateSection(id: string, updates: Partial<FormSection>) {
     try {
       // Validate ID before proceeding
-      if (!id || id === "") {
-        throw new Error("Invalid section ID for update operation")
-      }
+      const validId = ensureValidUUID(id)
 
-      const { data, error } = await supabase.from("form_sections").update(updates).eq("id", id).select().single()
+      // Clean the update data to ensure all UUIDs are valid
+      const cleanUpdates = deepCleanObject(updates)
+
+      const { data, error } = await supabase
+        .from("form_sections")
+        .update(cleanUpdates)
+        .eq("id", validId)
+        .select()
+        .single()
 
       if (error) throw error
       return data as FormSection
@@ -616,7 +697,8 @@ export class DatabaseService {
 
   static async deleteSection(id: string) {
     try {
-      const { error } = await supabase.from("form_sections").delete().eq("id", id)
+      const validId = ensureValidUUID(id)
+      const { error } = await supabase.from("form_sections").delete().eq("id", validId)
 
       if (error) throw error
     } catch (error) {
@@ -629,7 +711,7 @@ export class DatabaseService {
   static async createField(field: Omit<FormField, "id" | "created_at" | "updated_at">) {
     try {
       // Ensure field has a valid ID
-      const fieldId = !field.id || field.id === "" ? crypto.randomUUID() : field.id
+      const fieldId = ensureValidUUID(field.id)
 
       const fieldData = {
         ...field,
@@ -638,7 +720,10 @@ export class DatabaseService {
         prefill_config: field.prefill_config || {},
       }
 
-      const { data, error } = await supabase.from("form_fields").insert(fieldData).select().single()
+      // Clean the field data to ensure all UUIDs are valid
+      const cleanFieldData = deepCleanObject(fieldData)
+
+      const { data, error } = await supabase.from("form_fields").insert(cleanFieldData).select().single()
 
       if (error) throw error
       return data as FormField
@@ -651,17 +736,17 @@ export class DatabaseService {
   static async updateField(id: string, updates: Partial<FormField>) {
     try {
       // Validate ID before proceeding
-      if (!id || id === "") {
-        throw new Error("Invalid field ID for update operation")
-      }
+      const validId = ensureValidUUID(id)
 
-      const updateData = {
-        ...updates,
-        validation: updates.validation || {}, // Ensure it's always an object
-        prefill_config: updates.prefill_config || {},
-      }
+      // Clean the update data to ensure all UUIDs are valid
+      const cleanUpdates = deepCleanObject(updates)
 
-      const { data, error } = await supabase.from("form_fields").update(updateData).eq("id", id).select().single()
+      const { data, error } = await supabase
+        .from("form_fields")
+        .update(cleanUpdates)
+        .eq("id", validId)
+        .select()
+        .single()
 
       if (error) throw error
       return data as FormField
@@ -673,7 +758,8 @@ export class DatabaseService {
 
   static async deleteField(id: string) {
     try {
-      const { error } = await supabase.from("form_fields").delete().eq("id", id)
+      const validId = ensureValidUUID(id)
+      const { error } = await supabase.from("form_fields").delete().eq("id", validId)
 
       if (error) throw error
     } catch (error) {
@@ -682,13 +768,73 @@ export class DatabaseService {
     }
   }
 
-  // Submission operations
+  // Rule operations
+  static async createRule(rule: Omit<FormRule, "id" | "created_at" | "updated_at">) {
+    try {
+      // Ensure rule has a valid ID
+      const ruleId = ensureValidUUID(rule.id)
+
+      const ruleData = {
+        ...rule,
+        id: ruleId,
+      }
+
+      // Clean the rule data to ensure all UUIDs are valid
+      const cleanRuleData = deepCleanObject(ruleData)
+
+      const { data, error } = await supabase.from("form_rules").insert(cleanRuleData).select().single()
+
+      if (error) throw error
+      return data as FormRule
+    } catch (error) {
+      console.error("Error creating rule:", error)
+      throw error
+    }
+  }
+
+  static async updateRule(id: string, updates: Partial<FormRule>) {
+    try {
+      // Validate ID before proceeding
+      const validId = ensureValidUUID(id)
+
+      // Clean the update data to ensure all UUIDs are valid
+      const cleanUpdates = deepCleanObject(updates)
+
+      // Remove id from updates to prevent conflicts
+      if ("id" in cleanUpdates) {
+        delete cleanUpdates.id
+      }
+
+      const { data, error } = await supabase.from("form_rules").update(cleanUpdates).eq("id", validId).select().single()
+
+      if (error) throw error
+      return data as FormRule
+    } catch (error) {
+      console.error("Error updating rule:", error)
+      throw error
+    }
+  }
+
+  static async deleteRule(id: string) {
+    try {
+      const validId = ensureValidUUID(id)
+      const { error } = await supabase.from("form_rules").delete().eq("id", validId)
+
+      if (error) throw error
+    } catch (error) {
+      console.error("Error deleting rule:", error)
+      throw error
+    }
+  }
+
+  // Submission operations remain the same...
   static async getSubmissions(formId: string) {
     try {
+      const validId = ensureValidUUID(formId)
       const { data, error } = await supabase
         .from("form_submissions")
         .select("*")
-        .eq("form_id", formId)
+        .eq("form_id", validId)
         .order("submitted_at", { ascending: false })
 
       if (error) throw error
@@ -703,9 +849,16 @@ export class DatabaseService {
     try {
       // Ensure submitted_by is set to current user if not provided
       const userId = await this.getCurrentUserId()
-      const submissionData = { ...submission, submitted_by: submission.submitted_by || userId }
+      const submissionData = {
+        ...submission,
+        submitted_by: submission.submitted_by || userId,
+        id: ensureValidUUID(submission.id),
+      }
 
-      const { data, error } = await supabase.from("form_submissions").insert(submissionData).select().single()
+      // Clean the submission data to ensure all UUIDs are valid
+      const cleanSubmissionData = deepCleanObject(submissionData)
+
+      const { data, error } = await supabase.from("form_submissions").insert(cleanSubmissionData).select().single()
 
       if (error) throw error
       return data as FormSubmission
@@ -717,48 +870,27 @@ export class DatabaseService {
 
   static async updateSubmission(id: string, updates: Partial<FormSubmission>) {
     try {
-      const { data, error } = await supabase.from("form_submissions").update(updates).eq("id", id).select().single()
+      const validId = ensureValidUUID(id)
+
+      // Clean the update data to ensure all UUIDs are valid
+      const cleanUpdates = deepCleanObject(updates)
+
+      // Remove id from updates to prevent conflicts
+      if ("id" in cleanUpdates) {
+        delete cleanUpdates.id
+      }
+
+      const { data, error } = await supabase
+        .from("form_submissions")
+        .update(cleanUpdates)
+        .eq("id", validId)
+        .select()
+        .single()
 
       if (error) throw error
       return data as FormSubmission
     } catch (error) {
       console.error("Error updating submission:", error)
-      throw error
-    }
-  }
-
-  // Rule operations
-  static async createRule(rule: Omit<FormRule, "id" | "created_at" | "updated_at">) {
-    try {
-      const { data, error } = await supabase.from("form_rules").insert(rule).select().single()
-
-      if (error) throw error
-      return data as FormRule
-    } catch (error) {
-      console.error("Error creating rule:", error)
-      throw error
-    }
-  }
-
-  static async updateRule(id: string, updates: Partial<FormRule>) {
-    try {
-      const { data, error } = await supabase.from("form_rules").update(updates).eq("id", id).select().single()
-
-      if (error) throw error
-      return data as FormRule
-    } catch (error) {
-      console.error("Error updating rule:", error)
-      throw error
-    }
-  }
-
-  static async deleteRule(id: string) {
-    try {
-      const { error } = await supabase.from("form_rules").delete().eq("id", id)
-
-      if (error) throw error
-    } catch (error) {
-      console.error("Error deleting rule:", error)
       throw error
     }
   }

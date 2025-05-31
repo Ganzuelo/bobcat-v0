@@ -8,14 +8,6 @@ import { DatabaseService } from "@/lib/database-service"
 import type { Form } from "@/lib/database-types"
 import { toast } from "@/components/ui/use-toast"
 
-// Utility function to validate and generate UUIDs
-function ensureValidUUID(id: string | undefined | null): string {
-  if (!id || id === "" || id === "new" || id === "undefined" || id === "null") {
-    return crypto.randomUUID()
-  }
-  return id
-}
-
 export default function FormBuilderEditPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const formId = params.id
@@ -68,64 +60,34 @@ export default function FormBuilderEditPage({ params }: { params: { id: string }
     setIsSaving(true)
 
     try {
-      // Validate form ID and ensure it's a valid UUID
-      const validFormId = ensureValidUUID(form.id)
-      form.id = validFormId
+      // Create a deep copy of the form to avoid modifying the original
+      const formCopy = JSON.parse(JSON.stringify(form))
 
-      // First update the current form in memory
-      setCurrentForm(form)
+      // Create a clean form structure with valid UUIDs
+      const formStructure = {
+        form: formCopy,
+        pages: currentForm?.pages || [],
+        rules: currentForm?.rules || [],
+      }
 
-      // Then persist the entire form structure to the database
-      if (formId !== "new") {
-        // For existing forms, save the complete structure
-        // Ensure all pages, sections, and fields have valid IDs
-        const formStructure = {
-          form,
-          pages: (currentForm?.pages || []).map((page) => {
-            // Ensure page has a valid ID
-            const pageId = ensureValidUUID(page.id)
+      // Save the form structure
+      const savedStructure = await DatabaseService.saveFormStructure(formStructure)
 
-            return {
-              ...page,
-              id: pageId,
-              sections: (page.sections || []).map((section) => {
-                // Ensure section has a valid ID
-                const sectionId = ensureValidUUID(section.id)
+      // Update the current form with the saved structure
+      setCurrentForm({
+        ...savedStructure.form,
+        pages: savedStructure.pages,
+        rules: savedStructure.rules,
+      })
 
-                return {
-                  ...section,
-                  id: sectionId,
-                  fields: (section.fields || []).map((field) => {
-                    // Ensure field has a valid ID
-                    const fieldId = ensureValidUUID(field.id)
+      toast({
+        title: "Form Saved",
+        description: "Your form has been saved successfully.",
+      })
 
-                    return {
-                      ...field,
-                      id: fieldId,
-                    }
-                  }),
-                }
-              }),
-            }
-          }),
-          rules: currentForm?.rules || [],
-        }
-
-        await DatabaseService.saveFormStructure(formStructure)
-        toast({
-          title: "Form Saved",
-          description: "Your form has been saved successfully.",
-        })
-      } else {
-        // For new forms, create a new form first
-        const newForm = await DatabaseService.createForm(form)
-        setCurrentForm(newForm)
-        // Redirect to the new form's edit page
-        toast({
-          title: "Form Created",
-          description: "Your new form has been created successfully.",
-        })
-        router.push(`/form-builder/${newForm.id}`)
+      // If this was a new form, redirect to the edit page
+      if (formId === "new") {
+        router.push(`/form-builder/${savedStructure.form.id}`)
       }
     } catch (error) {
       console.error("Error saving form:", error)
