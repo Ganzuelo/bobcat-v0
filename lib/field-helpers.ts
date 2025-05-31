@@ -1,6 +1,6 @@
 import type { FieldType } from "@/lib/field-types"
-import type { FormField, FieldTypeGroup, FieldCategory } from "./form-interfaces"
-import { FormFieldSchema } from "./form-interfaces"
+import type { FormField, FieldTypeGroup, FieldCategory } from "@/lib/form-types"
+import { FormFieldSchema } from "@/lib/form-types"
 
 // Helper functions for field type management
 export const getFieldTypesByCategory = (): FieldTypeGroup[] => {
@@ -10,7 +10,13 @@ export const getFieldTypesByCategory = (): FieldTypeGroup[] => {
 
 export const getFieldTypeConfig = (type: FieldType) => {
   // Return basic config - this function needs to be implemented based on actual field-types exports
-  return { label: type, category: "input" as FieldCategory }
+  return {
+    label: type,
+    category: "input" as FieldCategory,
+    supportsOptions: false,
+    supportsCalculation: false,
+    supportsLookup: false,
+  }
 }
 
 export const validateFieldData = (field: Partial<FormField>) => {

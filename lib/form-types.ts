@@ -500,34 +500,6 @@ export const FormFieldMetadataSchema = z.object({
   custom: z.record(z.any()).optional(),
 })
 
-// Fixed: Use a single schema instead of discriminated union with extend
-// export const FormFieldSchema = z.object({
-//   id: z.string().uuid(),
-//   section_id: z.string().uuid(),
-//   field_type: z.nativeEnum(FIELD_TYPES),
-//   label: z.string().min(1, "Field label is required"),
-//   placeholder: z.string().optional(),
-//   help_text: z.string().optional(),
-//   guidance: z.string().optional(),
-//   required: z.boolean().default(false),
-//   width: z.nativeEnum(FIELD_WIDTHS).default(FIELD_WIDTHS.FULL),
-//   field_order: z.number().min(0),
-
-//   // Field configuration
-//   options: z.array(FieldOptionSchema).optional(),
-//   validation: z.array(ValidationRuleSchema).optional(),
-//   conditional_visibility: ConditionalVisibilitySchema.optional(),
-//   calculated_config: CalculatedConfigSchema.optional(),
-//   lookup_config: LookupConfigSchema.optional(),
-//   prefill_config: PrefillConfigSchema.optional(),
-//   carryforward_config: CarryforwardConfigSchema.optional(),
-//   metadata: FormFieldMetadataSchema.optional(),
-
-//   // Timestamps
-//   created_at: z.string(),
-//   updated_at: z.string(),
-// })
-
 // New interfaces
 export interface FieldValidation {
   type: string
@@ -663,8 +635,6 @@ export const FormPageSchema = z.object({
 })
 
 // Extended interfaces with populated relationships
-// export interface FormField extends z.infer<typeof FormFieldSchema> {}
-
 export interface FormSection extends z.infer<typeof FormSectionSchema> {
   fields?: FormField[]
 }
@@ -672,10 +642,6 @@ export interface FormSection extends z.infer<typeof FormSectionSchema> {
 export interface FormPage extends z.infer<typeof FormPageSchema> {
   sections?: FormSection[]
 }
-import type {
-  CarryforwardConfigSchema as CarryforwardConfigSchemaType,
-  FormFieldMetadataSchema as FormFieldMetadataSchemaType,
-} from "./field-metadata"
 
 // Extended interfaces with populated relationships
 export interface FieldOption extends z.infer<typeof FieldOptionSchema> {}
@@ -684,8 +650,8 @@ export interface ConditionalVisibility extends z.infer<typeof ConditionalVisibil
 export interface CalculatedConfig extends z.infer<typeof CalculatedConfigSchema> {}
 export interface LookupConfig extends z.infer<typeof LookupConfigSchema> {}
 export interface PrefillConfig extends z.infer<typeof PrefillConfigSchema> {}
-export interface CarryforwardConfig extends z.infer<typeof CarryforwardConfigSchemaType> {}
-export interface FormFieldMetadata extends z.infer<typeof FormFieldMetadataSchemaType> {}
+export interface CarryforwardConfig extends z.infer<typeof CarryforwardConfigSchema> {}
+export interface FormFieldMetadata extends z.infer<typeof FormFieldMetadataSchema> {}
 
 // Form builder utility types
 export type FieldCategory = (typeof FIELD_TYPE_CONFIG)[FieldType]["category"]
@@ -758,7 +724,7 @@ export const createDefaultField = (
 // URAR-specific field templates with UAD Field IDs
 export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
   property_address: {
-    field_type: FIELD_TYPES.ADDRESS,
+    field_type: FIELD_TYPES.TEXT, // Changed from ADDRESS to TEXT since ADDRESS doesn't exist
     label: "Property Address",
     required: true,
     metadata: {
@@ -778,7 +744,7 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
   property_value: {
-    field_type: FIELD_TYPES.CURRENCY,
+    field_type: FIELD_TYPES.NUMBER, // Changed from CURRENCY to NUMBER since CURRENCY doesn't exist
     label: "Property Value",
     required: true,
     metadata: {
@@ -798,7 +764,7 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
   loan_amount: {
-    field_type: FIELD_TYPES.CURRENCY,
+    field_type: FIELD_TYPES.NUMBER, // Changed from CURRENCY to NUMBER since CURRENCY doesn't exist
     label: "Loan Amount",
     required: true,
     metadata: {
@@ -878,37 +844,3 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
 }
-
-// Re-export everything for backward compatibility
-export * from "@/lib/field-types"
-export * from "./field-validation"
-export * from "./field-metadata"
-export * from "./form-schemas"
-export * from "./form-interfaces"
-export * from "./field-helpers"
-export * from "./urar-templates"
-
-// Legacy exports for backward compatibility
-export type { FieldType, FieldWidth } from "@/lib/field-types"
-export type {
-  FormField,
-  FieldValidation,
-  FieldConditional,
-  FieldWidthType,
-  SalesGridConfig,
-  SalesGridColumn,
-  SalesGridData,
-  SalesGridRow,
-  FormSection,
-  FormPage,
-  FieldOption,
-  ValidationRule,
-  ConditionalVisibility,
-  CalculatedConfig,
-  LookupConfig,
-  PrefillConfig,
-  CarryforwardConfig,
-  FormFieldMetadata,
-  FieldCategory,
-  FieldTypeGroup,
-} from "./form-interfaces"
