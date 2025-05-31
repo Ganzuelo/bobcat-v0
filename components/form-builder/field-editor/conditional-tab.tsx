@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Trash2, Eye, EyeOff } from "lucide-react"
-import type { FormField } from "@/lib/database-types"
+import type { FormField } from "@/lib/form-types"
 
 interface ConditionalTabProps {
   field: FormField

@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { Plus, Trash2, GripVertical, ArrowUp, ArrowDown, Calculator, ArrowLeft, ArrowRight } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { FormField as Field } from "@/lib/database-types"
+import type { FormField as Field } from "@/lib/form-types"
 import type {
   SalesGridRow,
   SalesGridConfig,
@@ -1109,6 +1109,11 @@ export function SalesGridTab({ field, onChange }: SalesGridTabProps) {
                         </div>
                       </td>
                     )}
+                    {Array.from({ length: safeComparableCount }).map((_, index) => (
+                      <td key={index} className="px-2 py-2">
+                        <div className="h-8 bg-gray-100 rounded"></div>
+                      </td>
+                    ))}
                   </tr>
                 ))}
 

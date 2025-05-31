@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tag, X } from "lucide-react"
-import type { FormField } from "@/lib/database-types"
+import type { FormField } from "@/lib/form-types"
 import { XmlMappingSection } from "./xml-mapping-section"
 
 interface MetadataTabProps {

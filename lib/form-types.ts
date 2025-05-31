@@ -878,3 +878,37 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
 }
+
+// Re-export everything for backward compatibility
+export * from "./field-types"
+export * from "./field-validation"
+export * from "./field-metadata"
+export * from "./form-schemas"
+export * from "./form-interfaces"
+export * from "./field-helpers"
+export * from "./urar-templates"
+
+// Legacy exports for backward compatibility
+export type { FieldType, FieldWidth } from "./field-types"
+export type {
+  FormField,
+  FieldValidation,
+  FieldConditional,
+  FieldWidthType,
+  SalesGridConfig,
+  SalesGridColumn,
+  SalesGridData,
+  SalesGridRow,
+  FormSection,
+  FormPage,
+  FieldOption,
+  ValidationRule,
+  ConditionalVisibility,
+  CalculatedConfig,
+  LookupConfig,
+  PrefillConfig,
+  CarryforwardConfig,
+  FormFieldMetadata,
+  FieldCategory,
+  FieldTypeGroup,
+} from "./form-interfaces"
