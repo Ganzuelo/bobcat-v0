@@ -13,7 +13,7 @@ export interface FieldPreset {
     required?: boolean
     width?: string
     validation?: any
-    options?: string[]
+    options?: string[] | { value: string; label: string }[]
   }>
 }
 
@@ -101,7 +101,7 @@ export const FIELD_PRESETS: FieldPreset[] = [
         help_text: "Select your state",
         required: true,
         width: "quarter",
-        options: US_STATES,
+        options: US_STATES.map((state) => ({ value: state, label: state })),
       },
       {
         field_type: FIELD_TYPES.TEXT,
