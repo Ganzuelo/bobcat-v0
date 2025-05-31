@@ -1,11 +1,10 @@
-import type { FormField } from "@/components/ui/form"
-import { FIELD_TYPES } from "./field-types"
+import type { FormField } from "./form-interfaces"
 import { URAR_CARDINALITY, URAR_CONDITIONALITY, URAR_OUTPUT_FORMAT } from "./field-metadata"
 
 // URAR-specific field templates with UAD Field IDs
 export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
   property_address: {
-    field_type: FIELD_TYPES.TEXT,
+    field_type: "text",
     label: "Property Address",
     required: true,
     metadata: {
@@ -25,7 +24,7 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
   property_value: {
-    field_type: FIELD_TYPES.NUMBER,
+    field_type: "number",
     label: "Property Value",
     required: true,
     metadata: {
@@ -45,7 +44,7 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
   loan_amount: {
-    field_type: FIELD_TYPES.NUMBER,
+    field_type: "number",
     label: "Loan Amount",
     required: true,
     metadata: {
@@ -65,7 +64,7 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
   borrower_name: {
-    field_type: FIELD_TYPES.TEXT,
+    field_type: "text",
     label: "Borrower Name",
     required: true,
     metadata: {
@@ -85,7 +84,7 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
   appraiser_name: {
-    field_type: FIELD_TYPES.TEXT,
+    field_type: "text",
     label: "Appraiser Name",
     required: true,
     metadata: {
@@ -105,7 +104,7 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
   appraisal_date: {
-    field_type: FIELD_TYPES.DATE,
+    field_type: "date",
     label: "Appraisal Date",
     required: true,
     metadata: {
