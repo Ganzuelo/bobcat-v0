@@ -197,8 +197,24 @@ export class DatabaseService {
       // Create a clean update object
       const updateData = {
         ...updates,
-        updated_by: userId, // Add this line
+        updated_by: userId,
         updated_at: new Date().toISOString(),
+      }
+
+      // Handle published status validation
+      if (updateData.status === "published") {
+        // Ensure published_at is set when status is published
+        if (!updateData.published_at) {
+          updateData.published_at = new Date().toISOString()
+        }
+
+        // Ensure required fields for published forms
+        if (!updateData.title || updateData.title.trim() === "") {
+          throw new Error("Title is required for published forms")
+        }
+      } else if (updateData.status === "draft") {
+        // Clear published_at when status is draft
+        updateData.published_at = null
       }
 
       // Remove id from updateData to prevent conflicts
