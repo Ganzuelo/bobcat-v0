@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { FIELD_CATEGORIES, CATEGORIZED_FIELDS } from "@/lib/form-types"
-import { FIELD_PRESETS, type FieldPreset } from "@/lib/field-presets"
+import { FIELD_PRESETS, type FieldPreset } from "@/lib/field_presets"
 import { Search, MapPin, User, CalendarDays, Package } from "lucide-react"
 import { useState } from "react"
 
@@ -57,7 +57,7 @@ export function FieldPalette({ onAddField, onAddPreset }: FieldPaletteProps) {
   }
 
   return (
-    <div className="w-80 border-r bg-gradient-to-b from-gray-50 to-white p-4 flex flex-col h-full overflow-y-auto shadow-sm">
+    <div className="w-96 border-r bg-gradient-to-b from-gray-50 to-white p-4 flex flex-col h-full overflow-y-auto shadow-sm">
       <h2 className="text-lg font-semibold mb-4 text-gray-800">Form Elements</h2>
 
       <div className="relative mb-6">
