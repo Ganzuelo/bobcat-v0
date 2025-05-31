@@ -185,7 +185,7 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
         return (
           <SalesGrid
             id={field.id}
-            label={field.label}
+            label=""
             config={gridConfig}
             value={value}
             onChange={onChange}
