@@ -220,7 +220,7 @@ export function SalesGridTab({ field, onChange }: SalesGridTabProps) {
     if (!newRow.label?.trim()) return
 
     const row: SalesGridRow = {
-      id: newRow.label.toLowerCase().replace(/\s+/g, "_"),
+      id: newRow.label.toLowerCase().replace(/\s+/g, "_") + "_" + Date.now(), // Make ID unique
       label: newRow.label,
       type: newRow.type as "text" | "number" | "currency" | "percentage" | "dropdown",
       guidance: newRow.guidance,

@@ -543,11 +543,14 @@ export function SalesGrid({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <label htmlFor={id} className="text-base font-medium">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
-      </div>
+      {/* Only show label if not in preview mode or if explicitly requested */}
+      {!isPreview && (
+        <div className="flex justify-between items-center">
+          <label htmlFor={id} className="text-base font-medium">
+            {label} {required && <span className="text-red-500">*</span>}
+          </label>
+        </div>
+      )}
 
       <div className="border rounded-lg overflow-x-auto">
         <table className="w-full min-w-full divide-y divide-gray-200">
