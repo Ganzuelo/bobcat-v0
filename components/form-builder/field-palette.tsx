@@ -57,7 +57,7 @@ export function FieldPalette({ onAddField, onAddPreset }: FieldPaletteProps) {
   }
 
   return (
-    <div className="w-72 border-r bg-gradient-to-b from-gray-50 to-white p-4 flex flex-col h-full overflow-y-auto shadow-sm">
+    <div className="w-80 border-r bg-gradient-to-b from-gray-50 to-white p-4 flex flex-col h-full overflow-y-auto shadow-sm">
       <h2 className="text-lg font-semibold mb-4 text-gray-800">Form Elements</h2>
 
       <div className="relative mb-6">
