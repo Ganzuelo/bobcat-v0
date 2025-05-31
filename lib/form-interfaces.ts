@@ -8,7 +8,7 @@ import type {
   PrefillConfigSchema,
 } from "./form-schemas"
 import type { CarryforwardConfigSchema, FormFieldMetadataSchema } from "./field-metadata"
-import type { FieldType } from "./field-types"
+import type { FieldType } from "@/lib/field-types"
 
 // Core field interfaces
 export interface FieldValidation {

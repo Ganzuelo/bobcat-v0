@@ -1,4 +1,4 @@
-import { type FieldType, FIELD_WIDTHS } from "./field-types"
+import type { FieldType } from "@/lib/field-types"
 import type { FormField, FieldTypeGroup, FieldCategory } from "./form-interfaces"
 import { FormFieldSchema } from "./form-interfaces"
 
@@ -29,7 +29,7 @@ export const createDefaultField = (
     field_type: type,
     label: `New ${config.label} Field`,
     required: false,
-    width: FIELD_WIDTHS.FULL,
+    width: "full",
     field_order: order,
     options: config.supportsOptions ? [] : undefined,
     validation: [],
