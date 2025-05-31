@@ -185,7 +185,7 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
         return (
           <SalesGrid
             id={field.id}
-            label={isPreview ? "" : field.label} // Only show label in builder mode, not preview
+            label={field.label}
             config={gridConfig}
             value={value}
             onChange={onChange}
