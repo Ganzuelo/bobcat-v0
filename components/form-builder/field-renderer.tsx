@@ -14,22 +14,36 @@ interface FieldProps {
 }
 
 const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, disabled }) => {
-  // Add debugging to see when component renders
-  console.log("FieldRenderer rendering with field type:", field?.type)
+  // Add comprehensive debugging
+  console.log("🔍 FieldRenderer Debug Info:")
+  console.log("  - field object:", field)
+  console.log("  - field.type:", field?.type)
+  console.log("  - field.field_type:", field?.field_type)
+  console.log("  - typeof field.type:", typeof field?.type)
+  console.log("  - typeof field.field_type:", typeof field?.field_type)
 
   const renderField = () => {
-    switch (field.type) {
+    // Check both field.type and field.field_type for compatibility
+    const fieldType = field.type || field.field_type
+    console.log("  - Using fieldType:", fieldType)
+
+    switch (fieldType?.toLowerCase()) {
       case "text":
+      case "email":
+      case "phone":
+      case "url":
+      case "password":
         return (
           <div>
             <label htmlFor={field.id}>{field.label}</label>
             <input
-              type="text"
+              type={fieldType === "password" ? "password" : fieldType === "email" ? "email" : "text"}
               id={field.id}
               value={values?.[field.id] || ""}
               onChange={(e) => onFieldChange?.(field.id, e.target.value)}
               disabled={disabled}
               required={field.required}
+              placeholder={field.placeholder}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
@@ -45,6 +59,7 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
               onChange={(e) => onFieldChange?.(field.id, Number.parseFloat(e.target.value))}
               disabled={disabled}
               required={field.required}
+              placeholder={field.placeholder}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
@@ -59,6 +74,7 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
               onChange={(e) => onFieldChange?.(field.id, e.target.value)}
               disabled={disabled}
               required={field.required}
+              placeholder={field.placeholder}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
@@ -137,8 +153,62 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
             />
           </div>
         )
-      case "sales_grid": {
-        console.log("Rendering sales_grid with config:", field.gridConfig || field.config?.gridConfig)
+      case "time":
+        return (
+          <div>
+            <label htmlFor={field.id}>{field.label}</label>
+            <input
+              type="time"
+              id={field.id}
+              value={values?.[field.id] || ""}
+              onChange={(e) => onFieldChange?.(field.id, e.target.value)}
+              disabled={disabled}
+              required={field.required}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+        )
+      case "file":
+        return (
+          <div>
+            <label htmlFor={field.id}>{field.label}</label>
+            <input
+              type="file"
+              id={field.id}
+              onChange={(e) => onFieldChange?.(field.id, e.target.files?.[0])}
+              disabled={disabled}
+              required={field.required}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+          </div>
+        )
+      case "hidden":
+        return <input type="hidden" id={field.id} value={values?.[field.id] || field.defaultValue || ""} />
+      case "heading":
+        return (
+          <div>
+            <h2 className="text-xl font-semibold mb-2">{field.label || field.text}</h2>
+          </div>
+        )
+      case "paragraph":
+        return (
+          <div>
+            <p className="text-gray-700 mb-2">{field.text || field.label}</p>
+          </div>
+        )
+      case "divider":
+        return (
+          <div>
+            <hr className="my-4 border-gray-300" />
+          </div>
+        )
+      case "spacer":
+        return (
+          <div style={{ height: field.height === "small" ? "10px" : field.height === "large" ? "40px" : "20px" }} />
+        )
+      case "sales_grid":
+        console.log("🔍 Rendering sales_grid with field:", field)
+        console.log("🔍 gridConfig:", field.gridConfig || field.config?.gridConfig)
 
         const gridConfig = field.gridConfig || field.config?.gridConfig
         if (!gridConfig) {
@@ -161,10 +231,15 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
             isPreview={true}
           />
         )
-      }
       default:
-        console.log("Unsupported field type:", field.type)
-        return <div>Unsupported field type: {field.type}</div>
+        console.error("❌ Unsupported field type:", fieldType, "for field:", field)
+        return (
+          <div className="p-4 border border-red-300 bg-red-50 rounded text-red-700">
+            Unsupported field type: {fieldType}
+            <br />
+            <small>Field object: {JSON.stringify(field, null, 2)}</small>
+          </div>
+        )
     }
   }
 
