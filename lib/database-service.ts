@@ -191,9 +191,13 @@ export class DatabaseService {
       // Generate a valid UUID for the form ID
       const validId = ensureValidUUID(id)
 
+      // Get current user for updated_by field
+      const userId = await this.getCurrentUserId()
+
       // Create a clean update object
       const updateData = {
         ...updates,
+        updated_by: userId, // Add this line
         updated_at: new Date().toISOString(),
       }
 
@@ -416,6 +420,9 @@ export class DatabaseService {
       // Validate page ID and ensure it's a valid UUID
       const pageId = ensureValidUUID(page.id)
 
+      // Get current user for tracking
+      const userId = await this.getCurrentUserId()
+
       // Create a clean page object with all required fields
       const pageData = {
         id: pageId,
@@ -424,6 +431,10 @@ export class DatabaseService {
         description: page.description || "",
         page_order: page.page_order ?? 0,
         settings: page.settings || {},
+        // Add user tracking
+        ...(page.created_at ? { updated_by: userId } : { created_by: userId }),
+        ...(page.created_at ? {} : { created_at: new Date().toISOString() }),
+        updated_at: new Date().toISOString(),
       }
 
       // Clean the page data to ensure all UUIDs are valid
@@ -478,6 +489,9 @@ export class DatabaseService {
       // Validate section ID and ensure it's a valid UUID
       const sectionId = ensureValidUUID(section.id)
 
+      // Get current user for tracking
+      const userId = await this.getCurrentUserId()
+
       // Create a clean section object with all required fields
       const sectionData = {
         id: sectionId,
@@ -486,6 +500,10 @@ export class DatabaseService {
         description: section.description || "",
         section_order: section.section_order ?? 0,
         settings: section.settings || {},
+        // Add user tracking
+        ...(section.created_at ? { updated_by: userId } : { created_by: userId }),
+        ...(section.created_at ? {} : { created_at: new Date().toISOString() }),
+        updated_at: new Date().toISOString(),
       }
 
       // Clean the section data to ensure all UUIDs are valid
@@ -540,6 +558,9 @@ export class DatabaseService {
       // Validate field ID and ensure it's a valid UUID
       const fieldId = ensureValidUUID(field.id)
 
+      // Get current user for tracking
+      const userId = await this.getCurrentUserId()
+
       // Handle field_type vs type inconsistency
       const fieldType = field.field_type || field.type || "text"
 
@@ -561,6 +582,10 @@ export class DatabaseService {
         lookup_config: field.lookup_config || {},
         prefill_config: field.prefill_config || {},
         metadata: field.metadata || {},
+        // Add user tracking
+        ...(field.created_at ? { updated_by: userId } : { created_by: userId }),
+        ...(field.created_at ? {} : { created_at: new Date().toISOString() }),
+        updated_at: new Date().toISOString(),
       }
 
       // Handle special field types
@@ -883,8 +908,15 @@ export class DatabaseService {
     try {
       const validId = ensureValidUUID(id)
 
+      // Get current user for updated_by field
+      const userId = await this.getCurrentUserId()
+
       // Clean the update data to ensure all UUIDs are valid
-      const cleanUpdates = deepCleanObject(updates)
+      const cleanUpdates = deepCleanObject({
+        ...updates,
+        updated_by: userId, // Add this line
+        updated_at: new Date().toISOString(), // Add this line
+      })
 
       // Remove id from updates to prevent conflicts
       if ("id" in cleanUpdates) {

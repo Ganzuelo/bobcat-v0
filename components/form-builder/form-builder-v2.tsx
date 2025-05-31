@@ -73,7 +73,6 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
             form_type: "custom",
             version: 1,
             status: "draft",
-            created_by: "",
             tags: [],
             settings: {},
             metadata: {},

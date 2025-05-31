@@ -56,7 +56,6 @@ export function useFormBuilder(formId?: string) {
         form_type: "custom",
         version: 1,
         status: "draft",
-        created_by: "",
         tags: [],
         settings: {},
         metadata: {},
@@ -160,6 +159,8 @@ export function useFormBuilder(formId?: string) {
 
     setSaving(true)
     try {
+      // DatabaseService.saveFormStructure() will handle setting created_by/updated_by
+      // using the safe getCurrentUserId() method with system user fallback
       const {
         data: { user },
       } = await supabase.auth.getUser()
