@@ -130,14 +130,52 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
             />
           </div>
         )
-      case "sales_grid": {
-        const gridConfig = field.gridConfig || field.config?.gridConfig
-        if (!gridConfig) {
-          return (
-            <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500">
-              Sales Grid not configured
-            </div>
-          )
+      case "sales_grid":
+        // Parse the sales grid configuration from field metadata
+        const gridConfig = field.metadata?.gridConfig || {
+          type: "sales",
+          comparableCount: 3,
+          showSubject: true,
+          columnLabels: {
+            subject: "Subject",
+            comparables: ["Comparable 1", "Comparable 2", "Comparable 3"],
+          },
+          rows: [
+            {
+              id: "view",
+              label: "View",
+              type: "dropdown",
+              options: [
+                { label: "Excellent", value: "excellent" },
+                { label: "Good", value: "good" },
+                { label: "Average", value: "average" },
+                { label: "Poor", value: "poor" },
+              ],
+            },
+            {
+              id: "condition",
+              label: "Condition",
+              type: "dropdown",
+              options: [
+                { label: "Excellent", value: "excellent" },
+                { label: "Good", value: "good" },
+                { label: "Average", value: "average" },
+                { label: "Poor", value: "poor" },
+              ],
+            },
+            {
+              id: "gross_living_area",
+              label: "Gross Living Area",
+              type: "number",
+              guidance: "Enter square footage",
+            },
+            {
+              id: "sale_price",
+              label: "Sale Price",
+              type: "currency",
+              guidance: "Enter in dollars",
+            },
+          ],
         }
 
         return (
@@ -152,7 +190,6 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
             isPreview={true}
           />
         )
-      }
       default:
         return <div>Unsupported field type: {field.type}</div>
     }
