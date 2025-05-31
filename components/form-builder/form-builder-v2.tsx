@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast"
 import type { FormStructure } from "@/lib/database-types"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { getPresetById } from "@/lib/field-presets"
 
 // Import components
 import { FieldPalette } from "./field-palette"
@@ -316,6 +317,80 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
     })
   }
 
+  const handleAddPreset = (presetId: string) => {
+    console.log("Adding preset:", presetId)
+
+    if (!formStructure?.pages?.[currentPageIndex]?.sections?.[0]) {
+      toast({
+        title: "Error",
+        description: "No section available to add preset to",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const preset = getPresetById(presetId)
+    if (!preset) {
+      toast({
+        title: "Error",
+        description: "Preset not found",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const sectionId = formStructure.pages[currentPageIndex].sections[0].id
+
+    // Add each field from the preset
+    preset.fields.forEach((fieldConfig) => {
+      addField(sectionId, fieldConfig.field_type)
+
+      // Update the field with preset configuration
+      // We need to find the field that was just added and update it
+      setTimeout(() => {
+        if (formStructure) {
+          const updatedPages = formStructure.pages.map((page) => ({
+            ...page,
+            sections: page.sections?.map((section) => {
+              if (section.id === sectionId) {
+                const fields = section.fields || []
+                const lastField = fields[fields.length - 1]
+                if (lastField) {
+                  const updatedField = {
+                    ...lastField,
+                    label: fieldConfig.label,
+                    placeholder: fieldConfig.placeholder,
+                    help_text: fieldConfig.help_text,
+                    required: fieldConfig.required || false,
+                    width: fieldConfig.width || "full",
+                    validation: fieldConfig.validation || {},
+                    options: fieldConfig.options || [],
+                  }
+
+                  return {
+                    ...section,
+                    fields: [...fields.slice(0, -1), updatedField],
+                  }
+                }
+              }
+              return section
+            }),
+          }))
+
+          setFormStructure({
+            ...formStructure,
+            pages: updatedPages,
+          })
+        }
+      }, 100)
+    })
+
+    toast({
+      title: "Preset Added",
+      description: `Added "${preset.name}" preset with ${preset.fields.length} fields`,
+    })
+  }
+
   const handleAddPage = (pageData: { title: string; description?: string }) => {
     if (!formStructure) return
 
@@ -603,7 +678,7 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Builder Palette - Hide in preview mode */}
-        {!previewMode && <FieldPalette onAddField={handleAddField} />}
+        {!previewMode && <FieldPalette onAddField={handleAddField} onAddPreset={handleAddPreset} />}
 
         {/* Main Canvas */}
         <div className="flex-1 p-6 overflow-y-auto">
