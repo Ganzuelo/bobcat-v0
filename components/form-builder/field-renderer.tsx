@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { SalesGrid } from "./sales-grid"
 
 interface FieldProps {
   field: any
@@ -11,7 +12,7 @@ interface FieldProps {
 
 const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, disabled }) => {
   const renderField = () => {
-    switch (field.type) {
+    switch (field.field_type || field.type) {
       case "text":
         return (
           <div>
@@ -132,70 +133,60 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
         )
       case "sales_grid":
         // Parse the sales grid configuration from field metadata
-        const gridConfig = field.metadata?.gridConfig || {
-          type: "sales",
-          comparableCount: 3,
-          showSubject: true,
-          columnLabels: {
-            subject: "Subject",
-            comparables: ["Comparable 1", "Comparable 2", "Comparable 3"],
-          },
-          rows: [
-            {
-              id: "view",
-              label: "View",
-              type: "dropdown",
-              options: [
-                { label: "Excellent", value: "excellent" },
-                { label: "Good", value: "good" },
-                { label: "Average", value: "average" },
-                { label: "Poor", value: "poor" },
-              ],
+        const gridConfig = field.config?.gridConfig ||
+          field.gridConfig || {
+            type: "sales",
+            comparableCount: 3,
+            showSubject: true,
+            columnLabels: {
+              subject: "Subject",
+              comparables: ["Comparable 1", "Comparable 2", "Comparable 3"],
             },
-            {
-              id: "condition",
-              label: "Condition",
-              type: "dropdown",
-              options: [
-                { label: "Excellent", value: "excellent" },
-                { label: "Good", value: "good" },
-                { label: "Average", value: "average" },
-                { label: "Poor", value: "poor" },
-              ],
-            },
-            {
-              id: "gross_living_area",
-              label: "Gross Living Area",
-              type: "number",
-              guidance: "Enter square footage",
-            },
-            {
-              id: "sale_price",
-              label: "Sale Price",
-              type: "currency",
-              guidance: "Enter in dollars",
-            },
-          ],
-        }
+            rows: [
+              {
+                id: "view",
+                label: "View",
+                type: "dropdown",
+                options: [
+                  { label: "Excellent", value: "excellent" },
+                  { label: "Good", value: "good" },
+                  { label: "Average", value: "average" },
+                  { label: "Poor", value: "poor" },
+                ],
+              },
+              {
+                id: "condition",
+                label: "Condition",
+                type: "dropdown",
+                options: [
+                  { label: "Excellent", value: "excellent" },
+                  { label: "Good", value: "good" },
+                  { label: "Average", value: "average" },
+                  { label: "Poor", value: "poor" },
+                ],
+              },
+              {
+                id: "gross_living_area",
+                label: "Gross Living Area",
+                type: "number",
+                guidance: "Enter square footage",
+              },
+              {
+                id: "sale_price",
+                label: "Sale Price",
+                type: "currency",
+                guidance: "Enter in dollars",
+              },
+            ],
+          }
 
         const value = values?.[field.id]
         const onChange = (value: any) => onFieldChange?.(field.id, value)
-        const isPreview = true
 
-        return (
-          <SalesGrid
-            id={field.id}
-            label=""
-            config={gridConfig}
-            value={value}
-            onChange={onChange}
-            required={field.required}
-            disabled={!isPreview}
-            isPreview={isPreview}
-          />
-        )
+        // Only pass props that SalesGrid expects
+        return <SalesGrid config={gridConfig} value={value} onChange={onChange} />
       default:
-        return <div>Unsupported field type: {field.type}</div>
+        return <div>Unsupported field type: {field.field_type || field.type}</div>
     }
   }
 
@@ -203,5 +194,3 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
 }
 
 export { FieldRenderer }
-
-import { SalesGrid } from "./sales-grid"
