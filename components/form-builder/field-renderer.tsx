@@ -202,6 +202,6 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
   return <div className="mb-4">{renderField()}</div>
 }
 
-export default FieldRenderer
+export { FieldRenderer }
 
 import { SalesGrid } from "./sales-grid"
