@@ -878,3 +878,6 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
 }
+
+// Re-export all types from the new modular structure
+export * from "./types/index"
