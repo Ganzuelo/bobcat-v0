@@ -1,177 +1,339 @@
 "use client"
+
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Plus, Trash2, Edit } from "lucide-react"
-import type { FormData, FormField } from "@/lib/types"
+import { Edit, Trash2, ChevronUp, ChevronDown, SquarePen } from "lucide-react"
+import type { FormStructure, FormField } from "@/lib/form-types"
+import { getGridColClass, getWidthLabel } from "@/lib/form-builder-utils"
+import { FieldRenderer } from "./field-renderer"
+import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
 
 interface FormCanvasProps {
-  formData: FormData | null | undefined
+  formStructure: FormStructure
   currentPageIndex: number
-  onFieldEdit?: (field: FormField) => void
-  onFieldDelete?: (fieldId: string) => void
-  onSectionAdd?: (pageIndex: number) => void
-  onSectionDelete?: (pageIndex: number, sectionIndex: number) => void
-  onFieldAdd?: (pageIndex: number, sectionIndex: number) => void
-  onPageChange?: (pageIndex: number) => void
-  onReorderPages?: (fromIndex: number, toIndex: number) => void
+  onEditField: (field: FormField) => void
+  onDeleteField: (fieldId: string) => void
+  onMoveFieldUp: (fieldId: string) => void
+  onMoveFieldDown: (fieldId: string) => void
+  onEditPage?: (page: any) => void
+  onEditSection?: (section: any) => void
+  onUpdatePage?: (pageId: string, updates: { title: string; description?: string }) => void
+  onUpdateSection?: (sectionId: string, updates: { title: string; description?: string }) => void
+  onDeleteSection?: (sectionId: string) => void
 }
 
 export function FormCanvas({
-  formData,
-  currentPageIndex = 0,
-  onFieldEdit,
-  onFieldDelete,
-  onSectionAdd,
-  onSectionDelete,
-  onFieldAdd,
+  formStructure,
+  currentPageIndex,
+  onEditField,
+  onDeleteField,
+  onMoveFieldUp,
+  onMoveFieldDown,
+  onEditPage,
+  onEditSection,
+  onUpdatePage,
+  onUpdateSection,
+  onDeleteSection,
 }: FormCanvasProps) {
-  if (!formData || !formData.pages || formData.pages.length === 0) {
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean
+    type: "section" | "page"
+    id: string
+    title: string
+  }>({
+    open: false,
+    type: "section",
+    id: "",
+    title: "",
+  })
+
+  // Add defensive checks to prevent undefined errors
+  if (!formStructure) {
     return (
-      <div className="flex-1 p-6 bg-gray-50">
+      <div className="max-w-5xl mx-auto">
         <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-gray-500">No form data available</p>
+          <CardContent className="p-8">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+              <p>Loading form structure...</p>
+            </div>
           </CardContent>
         </Card>
       </div>
     )
   }
 
-  const currentPage = formData.pages[currentPageIndex]
+  if (!formStructure.pages || formStructure.pages.length === 0) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <Card>
+          <CardContent className="p-8">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+              <p>No pages available. Please create a page first.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Ensure currentPageIndex is valid
+  const safePageIndex = Math.min(Math.max(0, currentPageIndex), formStructure.pages.length - 1)
+  const currentPage = formStructure.pages[safePageIndex]
+
   if (!currentPage) {
     return (
-      <div className="flex-1 p-6 bg-gray-50">
+      <div className="max-w-5xl mx-auto">
         <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-gray-500">No page data available</p>
+          <CardContent className="p-8">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+              <p>Page data not available.</p>
+            </div>
           </CardContent>
         </Card>
       </div>
     )
   }
 
-  const sections = currentPage.sections || []
+  const handleEditPage = () => {
+    console.log("Edit page clicked:", currentPage)
+    if (onEditPage) {
+      onEditPage(currentPage)
+    }
+  }
+
+  const handleEditSection = (section: any) => {
+    console.log("Edit section clicked:", section)
+    if (onEditSection) {
+      onEditSection(section)
+    }
+  }
+
+  const handleDeleteSection = (sectionId: string, sectionTitle: string) => {
+    setDeleteDialog({
+      open: true,
+      type: "section",
+      id: sectionId,
+      title: sectionTitle || "Untitled Section",
+    })
+  }
+
+  const confirmDeleteSection = async () => {
+    if (onDeleteSection && deleteDialog.id) {
+      await onDeleteSection(deleteDialog.id)
+    }
+    setDeleteDialog({ open: false, type: "section", id: "", title: "" })
+  }
+
+  // Helper function to handle field movement
+  const handleMoveField = (fieldId: string, direction: "up" | "down") => {
+    console.log(`Moving field ${fieldId} ${direction}`)
+    if (direction === "up") {
+      onMoveFieldUp(fieldId)
+    } else {
+      onMoveFieldDown(fieldId)
+    }
+  }
+
+  // Ensure sections is an array
+  const sections = Array.isArray(currentPage.sections) ? currentPage.sections : []
+
+  if (sections.length === 0) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Page Header */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">{currentPage.title || "Untitled Page"}</h2>
+                {currentPage.description && (
+                  <p className="text-sm text-muted-foreground mt-1">{currentPage.description}</p>
+                )}
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleEditPage} title="Edit page">
+                <SquarePen className="h-4 w-4" />
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+              <p>No sections available. Please create a section first.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
-    <div className="flex-1 p-6 bg-gray-50">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Page Header */}
-      <Card className="mb-6">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold">{currentPage.title || `Page ${currentPageIndex + 1}`}</h2>
-              {currentPage.description && <p className="text-sm text-gray-600 mt-1">{currentPage.description}</p>}
+              <h2 className="text-xl font-semibold">{currentPage.title || "Untitled Page"}</h2>
+              {currentPage.description && (
+                <p className="text-sm text-muted-foreground mt-1">{currentPage.description}</p>
+              )}
             </div>
-            <Button onClick={() => onSectionAdd?.(currentPageIndex)} size="sm" className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Section
+            <Button variant="ghost" size="sm" onClick={handleEditPage} title="Edit page">
+              <SquarePen className="h-4 w-4" />
             </Button>
           </CardTitle>
         </CardHeader>
       </Card>
 
       {/* Sections */}
-      <div className="space-y-6">
-        {sections.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-gray-500">No sections in this page</p>
-              <Button onClick={() => onSectionAdd?.(currentPageIndex)} className="mt-4" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Add First Section
-              </Button>
+      {sections.map((section) => {
+        if (!section) return null
+
+        // Ensure fields is an array
+        const fields = Array.isArray(section.fields) ? section.fields : []
+
+        return (
+          <Card key={section.id} className="overflow-hidden">
+            {/* Section Header */}
+            <CardHeader className="bg-gray-50/50 border-b">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-medium">{section.title || "Untitled Section"}</h3>
+                  </div>
+                  {section.description && <p className="text-sm text-muted-foreground mt-1">{section.description}</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {fields.length || 0} fields
+                  </Badge>
+                  <Button variant="ghost" size="sm" onClick={() => handleEditSection(section)} title="Edit section">
+                    <SquarePen className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteSection(section.id, section.title)}
+                    title="Delete section"
+                    className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent className="p-6">
+              {fields.length === 0 ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+                  <p>No fields in this section. Add fields from the Builder Palette.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 auto-rows-min">
+                  {fields.map((field, index) => {
+                    if (!field) return null
+
+                    const gridColClass = getGridColClass(field.width || "full")
+                    const isFirst = index === 0
+                    const isLast = index === fields.length - 1
+
+                    return (
+                      <div key={field.id || `field-${index}`} className={`${gridColClass} min-w-0`}>
+                        <Card className="group hover:shadow-md transition-shadow border-2 hover:border-blue-300 h-full">
+                          <CardContent className="p-4">
+                            <div className="space-y-3">
+                              {/* Field Header */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1">
+                                    <div className="font-medium text-sm">{field.label || "Untitled Field"}</div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Badge variant="secondary" className="text-xs">
+                                        {field.field_type || "unknown"}
+                                      </Badge>
+                                      <Badge variant="outline" className="text-xs">
+                                        {getWidthLabel(field.width)}
+                                      </Badge>
+                                      {field.required && (
+                                        <Badge variant="destructive" className="text-xs">
+                                          Required
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => field.id && handleMoveField(field.id, "up")}
+                                    disabled={isFirst || !field.id}
+                                    title="Move up"
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <ChevronUp className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => field.id && handleMoveField(field.id, "down")}
+                                    disabled={isLast || !field.id}
+                                    title="Move down"
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <ChevronDown className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onEditField(field)}
+                                    title="Edit field"
+                                    disabled={!field}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => field.id && onDeleteField(field.id)}
+                                    title="Delete field"
+                                    disabled={!field.id}
+                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive/80"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Field Preview */}
+                              <div className="space-y-2">
+                                <FieldRenderer field={field} isPreviewMode={false} />
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
-        ) : (
-          sections.map((section, sectionIndex) => (
-            <Card key={section.id || sectionIndex} className="border-l-4 border-l-blue-500">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-medium">{section.title || `Section ${sectionIndex + 1}`}</h3>
-                    {section.description && <p className="text-sm text-gray-600 mt-1">{section.description}</p>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={() => onFieldAdd?.(currentPageIndex, sectionIndex)}
-                      size="sm"
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Field
-                    </Button>
-                    <Button
-                      onClick={() => onSectionDelete?.(currentPageIndex, sectionIndex)}
-                      size="sm"
-                      variant="outline"
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {!section.fields || section.fields.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No fields in this section</p>
-                    <Button
-                      onClick={() => onFieldAdd?.(currentPageIndex, sectionIndex)}
-                      className="mt-4"
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add First Field
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {section.fields.map((field, fieldIndex) => (
-                      <Card key={field.id || fieldIndex} className="relative group">
-                        <CardContent className="p-4">
-                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => onFieldEdit?.(field)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => onFieldDelete?.(field.id)}
-                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="mb-3">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium">
-                                {field.label || "Untitled Field"}
-                                {field.required && <span className="text-red-500 ml-1">*</span>}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Type: {field.field_type || "text"} | ID: {field.id}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+        )
+      })}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
+        title={`Delete ${deleteDialog.type}`}
+        description={`Are you sure you want to delete this ${deleteDialog.type}?`}
+        itemName={deleteDialog.title}
+        onConfirm={confirmDeleteSection}
+        variant={deleteDialog.type as "section" | "page"}
+      />
     </div>
   )
 }

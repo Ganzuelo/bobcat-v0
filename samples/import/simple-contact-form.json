@@ -1,0 +1,286 @@
+{
+  "id": "simple-contact-form",
+  "name": "Simple Contact Form",
+  "description": "Basic contact form with validation and conditional logic",
+  "formType": "Other",
+  "pages": [
+    {
+      "id": "page-contact",
+      "title": "Contact Information",
+      "description": "Please provide your contact details",
+      "page_order": 1,
+      "settings": {
+        "showProgressBar": false,
+        "allowNavigation": true
+      },
+      "sections": [
+        {
+          "id": "section-personal",
+          "title": "Personal Information",
+          "description": "Your basic contact details",
+          "section_order": 1,
+          "settings": {
+            "collapsible": false,
+            "columns": 12
+          },
+          "fields": [
+            {
+              "id": "field-first-name",
+              "section_id": "section-personal",
+              "field_type": "text",
+              "label": "First Name",
+              "placeholder": "Enter your first name",
+              "help_text": "Your given name",
+              "required": true,
+              "width": "half",
+              "field_order": 1,
+              "validation": {
+                "required": {
+                  "message": "First name is required"
+                },
+                "minLength": {
+                  "value": 2,
+                  "message": "First name must be at least 2 characters"
+                },
+                "pattern": {
+                  "pattern": "^[a-zA-Z\\s\\-']+$",
+                  "message": "First name can only contain letters, spaces, hyphens, and apostrophes"
+                }
+              },
+              "metadata": {
+                "dataType": "text",
+                "category": "Personal Information",
+                "tags": ["name", "required"]
+              }
+            },
+            {
+              "id": "field-last-name",
+              "section_id": "section-personal",
+              "field_type": "text",
+              "label": "Last Name",
+              "placeholder": "Enter your last name",
+              "help_text": "Your family name",
+              "required": true,
+              "width": "half",
+              "field_order": 2,
+              "validation": {
+                "required": {
+                  "message": "Last name is required"
+                },
+                "minLength": {
+                  "value": 2,
+                  "message": "Last name must be at least 2 characters"
+                },
+                "pattern": {
+                  "pattern": "^[a-zA-Z\\s\\-']+$",
+                  "message": "Last name can only contain letters, spaces, hyphens, and apostrophes"
+                }
+              },
+              "carryforward_config": {
+                "enabled": true,
+                "source": "field-first-name",
+                "mode": "default"
+              },
+              "metadata": {
+                "dataType": "text",
+                "category": "Personal Information",
+                "tags": ["name", "required"]
+              }
+            },
+            {
+              "id": "field-email",
+              "section_id": "section-personal",
+              "field_type": "email",
+              "label": "Email Address",
+              "placeholder": "name@example.com",
+              "help_text": "We'll use this to contact you",
+              "required": true,
+              "width": "half",
+              "field_order": 3,
+              "validation": {
+                "required": {
+                  "message": "Email address is required"
+                },
+                "pattern": {
+                  "pattern": "^[\\w\\.-]+@[\\w\\.-]+\\.[a-zA-Z]{2,}$",
+                  "message": "Please enter a valid email address"
+                }
+              },
+              "metadata": {
+                "dataType": "email",
+                "category": "Contact Information",
+                "tags": ["email", "contact", "required"]
+              }
+            },
+            {
+              "id": "field-phone",
+              "section_id": "section-personal",
+              "field_type": "phone",
+              "label": "Phone Number",
+              "placeholder": "(555) 123-4567",
+              "help_text": "Optional phone number for follow-up",
+              "required": false,
+              "width": "half",
+              "field_order": 4,
+              "validation": {
+                "pattern": {
+                  "pattern": "^([0-9]{3})[-. ]?([0-9]{3})[-. ]?([0-9]{4})$",
+                  "message": "Please enter a valid phone number"
+                }
+              },
+              "metadata": {
+                "dataType": "phone",
+                "category": "Contact Information",
+                "tags": ["phone", "contact", "optional"]
+              }
+            }
+          ]
+        },
+        {
+          "id": "section-inquiry",
+          "title": "Your Inquiry",
+          "description": "Tell us how we can help you",
+          "section_order": 2,
+          "settings": {
+            "collapsible": false,
+            "columns": 12
+          },
+          "fields": [
+            {
+              "id": "field-inquiry-type",
+              "section_id": "section-inquiry",
+              "field_type": "select",
+              "label": "Type of Inquiry",
+              "placeholder": "Select inquiry type",
+              "help_text": "Choose the category that best describes your inquiry",
+              "required": true,
+              "width": "full",
+              "field_order": 1,
+              "options": [
+                { "label": "General Information", "value": "general" },
+                { "label": "Technical Support", "value": "support" },
+                { "label": "Sales Inquiry", "value": "sales" },
+                { "label": "Partnership Opportunity", "value": "partnership" },
+                { "label": "Other", "value": "other" }
+              ],
+              "validation": {
+                "required": {
+                  "message": "Please select an inquiry type"
+                }
+              },
+              "metadata": {
+                "dataType": "select",
+                "category": "Inquiry Details",
+                "tags": ["inquiry", "type", "required"]
+              }
+            },
+            {
+              "id": "field-other-inquiry",
+              "section_id": "section-inquiry",
+              "field_type": "text",
+              "label": "Other Inquiry Type",
+              "placeholder": "Please specify",
+              "help_text": "Describe your inquiry type",
+              "required": false,
+              "width": "full",
+              "field_order": 2,
+              "conditional_visibility": {
+                "enabled": true,
+                "conditions": [
+                  {
+                    "fieldId": "field-inquiry-type",
+                    "operator": "equals",
+                    "value": "other"
+                  }
+                ]
+              },
+              "validation": {
+                "required": {
+                  "message": "Please specify your inquiry type"
+                },
+                "minLength": {
+                  "value": 5,
+                  "message": "Please provide more detail (at least 5 characters)"
+                }
+              },
+              "metadata": {
+                "dataType": "text",
+                "category": "Inquiry Details",
+                "tags": ["inquiry", "other", "conditional"]
+              }
+            },
+            {
+              "id": "field-message",
+              "section_id": "section-inquiry",
+              "field_type": "textarea",
+              "label": "Message",
+              "placeholder": "Please describe your inquiry in detail...",
+              "help_text": "Provide as much detail as possible to help us assist you",
+              "required": true,
+              "width": "full",
+              "field_order": 3,
+              "validation": {
+                "required": {
+                  "message": "Please provide a message"
+                },
+                "minLength": {
+                  "value": 10,
+                  "message": "Message must be at least 10 characters"
+                },
+                "maxLength": {
+                  "value": 1000,
+                  "message": "Message cannot exceed 1000 characters"
+                }
+              },
+              "metadata": {
+                "dataType": "text",
+                "category": "Inquiry Details",
+                "tags": ["message", "required", "textarea"]
+              }
+            },
+            {
+              "id": "field-preferred-contact",
+              "section_id": "section-inquiry",
+              "field_type": "radio",
+              "label": "Preferred Contact Method",
+              "help_text": "How would you like us to respond?",
+              "required": true,
+              "width": "full",
+              "field_order": 4,
+              "options": [
+                { "label": "Email", "value": "email" },
+                { "label": "Phone", "value": "phone" },
+                { "label": "Either is fine", "value": "either" }
+              ],
+              "validation": {
+                "required": {
+                  "message": "Please select a preferred contact method"
+                }
+              },
+              "metadata": {
+                "dataType": "select",
+                "category": "Contact Preferences",
+                "tags": ["contact", "preference", "required"]
+              }
+            },
+            {
+              "id": "field-newsletter",
+              "section_id": "section-inquiry",
+              "field_type": "toggle",
+              "label": "Subscribe to Newsletter",
+              "help_text": "Receive updates and news from us",
+              "required": false,
+              "width": "full",
+              "field_order": 5,
+              "metadata": {
+                "dataType": "boolean",
+                "category": "Marketing Preferences",
+                "tags": ["newsletter", "marketing", "optional"]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
