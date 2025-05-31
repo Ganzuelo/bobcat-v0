@@ -119,13 +119,77 @@ export function useFieldOperations(
   }
 
   const moveFieldUp = (fieldId: string) => {
-    // Implementation for moving field up
-    console.log("Move field up:", fieldId)
+    if (!formStructure) return
+
+    console.log("Moving field up:", fieldId)
+
+    const updatedPages = formStructure.pages.map((page) => ({
+      ...page,
+      sections: page.sections?.map((section) => {
+        if (!section.fields) return section
+
+        const fieldIndex = section.fields.findIndex((field) => field.id === fieldId)
+        if (fieldIndex <= 0) return section // Can't move up if it's the first field
+
+        // Create a new fields array with the field moved up
+        const newFields = [...section.fields]
+        const fieldToMove = newFields[fieldIndex]
+        const fieldAbove = newFields[fieldIndex - 1]
+
+        // Swap the fields
+        newFields[fieldIndex - 1] = { ...fieldToMove, field_order: fieldAbove.field_order }
+        newFields[fieldIndex] = { ...fieldAbove, field_order: fieldToMove.field_order }
+
+        console.log(`Moved field "${fieldToMove.label}" up in section "${section.title}"`)
+
+        return {
+          ...section,
+          fields: newFields,
+        }
+      }),
+    }))
+
+    setFormStructure({
+      ...formStructure,
+      pages: updatedPages,
+    })
   }
 
   const moveFieldDown = (fieldId: string) => {
-    // Implementation for moving field down
-    console.log("Move field down:", fieldId)
+    if (!formStructure) return
+
+    console.log("Moving field down:", fieldId)
+
+    const updatedPages = formStructure.pages.map((page) => ({
+      ...page,
+      sections: page.sections?.map((section) => {
+        if (!section.fields) return section
+
+        const fieldIndex = section.fields.findIndex((field) => field.id === fieldId)
+        if (fieldIndex < 0 || fieldIndex >= section.fields.length - 1) return section // Can't move down if it's the last field
+
+        // Create a new fields array with the field moved down
+        const newFields = [...section.fields]
+        const fieldToMove = newFields[fieldIndex]
+        const fieldBelow = newFields[fieldIndex + 1]
+
+        // Swap the fields
+        newFields[fieldIndex] = { ...fieldBelow, field_order: fieldToMove.field_order }
+        newFields[fieldIndex + 1] = { ...fieldToMove, field_order: fieldBelow.field_order }
+
+        console.log(`Moved field "${fieldToMove.label}" down in section "${section.title}"`)
+
+        return {
+          ...section,
+          fields: newFields,
+        }
+      }),
+    }))
+
+    setFormStructure({
+      ...formStructure,
+      pages: updatedPages,
+    })
   }
 
   return {
