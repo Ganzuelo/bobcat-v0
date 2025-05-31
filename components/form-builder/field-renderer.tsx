@@ -178,16 +178,20 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
           ],
         }
 
+        const value = values?.[field.id]
+        const onChange = (value: any) => onFieldChange?.(field.id, value)
+        const isPreview = true
+
         return (
           <SalesGrid
             id={field.id}
-            label="" // Don't pass label here to avoid duplication
+            label={isPreview ? "" : field.label} // Only show label in builder mode, not preview
             config={gridConfig}
-            value={values?.[field.id]}
-            onChange={(value) => onFieldChange?.(field.id, value)}
+            value={value}
+            onChange={onChange}
             required={field.required}
-            disabled={disabled}
-            isPreview={true}
+            disabled={!isPreview}
+            isPreview={isPreview}
           />
         )
       default:
