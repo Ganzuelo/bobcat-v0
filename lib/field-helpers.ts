@@ -1,6 +1,6 @@
 import { FIELD_TYPE_CONFIG, type FieldType, FIELD_WIDTHS } from "./field-types"
-import { FormFieldSchema } from "./form-schemas"
 import type { FormField, FieldTypeGroup, FieldCategory } from "./form-interfaces"
+import { FormFieldSchema } from "./form-interfaces"
 
 // Helper functions for field type management
 export const getFieldTypesByCategory = (): FieldTypeGroup[] => {
@@ -53,7 +53,7 @@ export const createDefaultField = (
     calculated_config: config.supportsCalculation ? { enabled: false } : undefined,
     lookup_config: config.supportsLookup ? { enabled: false, dataSource: "static" } : undefined,
     prefill_config: { enabled: false, source: "internal" },
-    carryforward_config: { enabled: false, mode: "DEFAULT" },
+    carryforward_config: { enabled: false, mode: "default" },
     metadata: {},
   }
 }
