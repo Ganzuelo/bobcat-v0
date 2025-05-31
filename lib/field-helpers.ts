@@ -1,4 +1,4 @@
-import type { FieldType } from "./field-types"
+import { type FieldType, FIELD_WIDTHS } from "./field-types"
 import type { FormField, FieldTypeGroup, FieldCategory } from "./form-interfaces"
 import { FormFieldSchema } from "./form-interfaces"
 
@@ -22,15 +22,20 @@ export const createDefaultField = (
   sectionId: string,
   order: number,
 ): Omit<FormField, "id" | "created_at" | "updated_at"> => {
+  const config = getFieldTypeConfig(type)
+
   return {
     section_id: sectionId,
     field_type: type,
-    label: `New ${type} Field`,
+    label: `New ${config.label} Field`,
     required: false,
-    width: "full",
+    width: FIELD_WIDTHS.FULL,
     field_order: order,
+    options: config.supportsOptions ? [] : undefined,
     validation: [],
     conditional_visibility: { enabled: false },
+    calculated_config: config.supportsCalculation ? { enabled: false } : undefined,
+    lookup_config: config.supportsLookup ? { enabled: false, dataSource: "static" } : undefined,
     prefill_config: { enabled: false, source: "internal" },
     carryforward_config: { enabled: false, mode: "default" },
     metadata: {},

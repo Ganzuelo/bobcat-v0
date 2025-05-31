@@ -2,7 +2,7 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { FIELD_CATEGORIES, CATEGORIZED_FIELDS } from "@/lib/form-types"
+import { FIELD_CATEGORIES, CATEGORIZED_FIELDS } from "@/lib/field-types"
 import { Search } from "lucide-react"
 import { useState } from "react"
 
