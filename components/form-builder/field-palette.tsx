@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { FIELD_CATEGORIES, CATEGORIZED_FIELDS } from "@/lib/form-types"
-import { PRESET_CATEGORIES, type PresetField, getComplianceLabel } from "@/lib/field-presets"
+import { PRESET_CATEGORIES, type PresetField, getPresetFieldById, getComplianceLabel } from "@/lib/field-presets"
 import { Search, Shield } from "lucide-react"
 import { useState } from "react"
 
 interface FieldPaletteProps {
   onAddField: (fieldType: string) => void
-  onAddPresetField?: (presetFieldId: string) => void
+  onAddPresetField?: (presetField: PresetField) => void
 }
 
 export function FieldPalette({ onAddField, onAddPresetField }: FieldPaletteProps) {
@@ -25,7 +25,10 @@ export function FieldPalette({ onAddField, onAddPresetField }: FieldPaletteProps
 
   const handleAddPresetField = (presetFieldId: string) => {
     console.log("Adding preset field:", presetFieldId)
-    onAddPresetField?.(presetFieldId)
+    const presetField = getPresetFieldById(presetFieldId)
+    if (presetField) {
+      onAddPresetField?.(presetField)
+    }
   }
 
   // Filter fields based on search term

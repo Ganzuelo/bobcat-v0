@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast"
 import type { FormStructure } from "@/lib/database-types"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { getPresetById } from "@/lib/field-presets"
+import type { PresetField } from "@/lib/field-presets"
 
 // Import components
 import { FieldPalette } from "./field-palette"
@@ -317,23 +317,13 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
     })
   }
 
-  const handleAddPreset = (presetId: string) => {
-    console.log("Adding preset:", presetId)
+  const handleAddPresetField = (presetField: PresetField) => {
+    console.log("Adding preset field:", presetField)
 
     if (!formStructure?.pages?.[currentPageIndex]?.sections?.[0]) {
       toast({
         title: "Error",
-        description: "No section available to add preset to",
-        variant: "destructive",
-      })
-      return
-    }
-
-    const preset = getPresetById(presetId)
-    if (!preset) {
-      toast({
-        title: "Error",
-        description: "Preset not found",
+        description: "No section available to add preset field to",
         variant: "destructive",
       })
       return
@@ -342,36 +332,34 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
     const sectionId = formStructure.pages[currentPageIndex].sections[0].id
     const currentSection = formStructure.pages[currentPageIndex].sections[0]
 
-    // Create all preset fields with proper configuration
-    const newFields = preset.fields.map((fieldConfig) => {
-      const fieldId = crypto.randomUUID()
-      return {
-        id: fieldId,
-        section_id: sectionId,
-        field_type: fieldConfig.field_type,
-        label: fieldConfig.label,
-        placeholder: fieldConfig.placeholder || "",
-        help_text: fieldConfig.help_text || "",
-        required: fieldConfig.required || false,
-        field_order: (currentSection.fields?.length || 0) + 1,
-        width: fieldConfig.width || "full",
-        validation: fieldConfig.validation || {},
-        options: fieldConfig.options || [],
-        settings: {},
-        metadata: {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-    })
+    // Create a new field with the preset configuration
+    const fieldId = crypto.randomUUID()
+    const newField = {
+      id: fieldId,
+      section_id: sectionId,
+      field_type: presetField.field_type,
+      label: presetField.label,
+      placeholder: presetField.placeholder || "",
+      help_text: presetField.help_text || "",
+      required: presetField.required || false,
+      field_order: (currentSection.fields?.length || 0) + 1,
+      width: presetField.width || "full",
+      validation: presetField.validation || {},
+      options: presetField.options || [],
+      settings: {},
+      metadata: presetField.compliance ? { compliance: presetField.compliance } : {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
 
-    // Update the form structure with all new fields at once
+    // Update the form structure with the new field
     const updatedPages = formStructure.pages.map((page) => ({
       ...page,
       sections: page.sections?.map((section) => {
         if (section.id === sectionId) {
           return {
             ...section,
-            fields: [...(section.fields || []), ...newFields],
+            fields: [...(section.fields || []), newField],
           }
         }
         return section
@@ -384,8 +372,8 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
     })
 
     toast({
-      title: "Preset Added",
-      description: `Added "${preset.name}" preset with ${preset.fields.length} fields`,
+      title: "Field Added",
+      description: `Added "${presetField.name}" field to the form`,
     })
   }
 
@@ -676,7 +664,7 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Builder Palette - Hide in preview mode */}
-        {!previewMode && <FieldPalette onAddField={handleAddField} onAddPreset={handleAddPreset} />}
+        {!previewMode && <FieldPalette onAddField={handleAddField} onAddPresetField={handleAddPresetField} />}
 
         {/* Main Canvas */}
         <div className="flex-1 p-6 overflow-y-auto">
