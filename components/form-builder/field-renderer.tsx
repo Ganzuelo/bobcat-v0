@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { SalesGrid } from "./sales-grid"
 
 interface FieldProps {
   field: any
@@ -162,5 +163,3 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
 }
 
 export default FieldRenderer
-
-import { SalesGrid } from "./sales-grid"
