@@ -39,17 +39,47 @@ export default function FormBuilderEditPage({ params }: { params: { id: string }
   const handleSave = async (form: Form) => {
     console.log("Form saved:", form)
     try {
+      // Validate form ID
+      if (!form.id || form.id === "") {
+        form.id = crypto.randomUUID()
+        console.log("Generated new form ID:", form.id)
+      }
+
       // First update the current form in memory
       setCurrentForm(form)
 
       // Then persist the entire form structure to the database
       if (formId !== "new") {
         // For existing forms, save the complete structure
-        await DatabaseService.saveFormStructure({
+        // Ensure all pages, sections, and fields have valid IDs
+        const formStructure = {
           form,
-          pages: currentForm?.pages || [],
+          pages: (currentForm?.pages || []).map((page) => {
+            if (!page.id || page.id === "") {
+              page.id = crypto.randomUUID()
+            }
+            return {
+              ...page,
+              sections: (page.sections || []).map((section) => {
+                if (!section.id || section.id === "") {
+                  section.id = crypto.randomUUID()
+                }
+                return {
+                  ...section,
+                  fields: (section.fields || []).map((field) => {
+                    if (!field.id || field.id === "") {
+                      field.id = crypto.randomUUID()
+                    }
+                    return field
+                  }),
+                }
+              }),
+            }
+          }),
           rules: currentForm?.rules || [],
-        })
+        }
+
+        await DatabaseService.saveFormStructure(formStructure)
       } else {
         // For new forms, create a new form first
         const newForm = await DatabaseService.createForm(form)

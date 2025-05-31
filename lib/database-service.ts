@@ -203,6 +203,12 @@ export class DatabaseService {
       // Start transaction-like operations
       const { form, pages } = formStructure
 
+      // Validate form ID
+      if (!form.id || form.id === "") {
+        form.id = crypto.randomUUID()
+        console.log("Generated new form ID:", form.id)
+      }
+
       // Save or update form
       let savedForm: Form
       if (form.created_at && form.id) {
@@ -241,6 +247,12 @@ export class DatabaseService {
   // Page operations
   static async savePage(page: FormPage & { sections: (FormSection & { fields: FormField[] })[] }, formId: string) {
     try {
+      // Validate page ID
+      if (!page.id || page.id === "") {
+        page.id = crypto.randomUUID()
+        console.log("Generated new page ID:", page.id)
+      }
+
       const pageData = {
         id: page.id,
         form_id: formId,
@@ -274,6 +286,12 @@ export class DatabaseService {
 
   static async saveSection(section: FormSection & { fields: FormField[] }, pageId: string) {
     try {
+      // Validate section ID
+      if (!section.id || section.id === "") {
+        section.id = crypto.randomUUID()
+        console.log("Generated new section ID:", section.id)
+      }
+
       const sectionData = {
         id: section.id,
         page_id: pageId,
@@ -311,6 +329,12 @@ export class DatabaseService {
 
   static async saveField(field: FormField, sectionId: string) {
     try {
+      // Validate field ID
+      if (!field.id || field.id === "") {
+        field.id = crypto.randomUUID()
+        console.log("Generated new field ID:", field.id)
+      }
+
       const fieldData = {
         id: field.id,
         section_id: sectionId,

@@ -154,6 +154,7 @@ export function useFormBuilder(formId?: string) {
     }
   }
 
+  // Add UUID validation in the saveForm method
   const saveForm = async (onSave?: (form: any) => void) => {
     if (!formStructure) return
 
@@ -171,19 +172,36 @@ export function useFormBuilder(formId?: string) {
       const normalizedFormStructure = {
         ...formStructure,
         pages: pages.map((page, pageIndex) => {
+          // Ensure page has a valid ID
+          if (!page.id || page.id === "") {
+            page.id = crypto.randomUUID()
+          }
+
           const sections = Array.isArray(page.sections) ? page.sections : []
           return {
             ...page,
             page_order: pageIndex + 1, // Ensure sequential page ordering based on array position
             sections: sections.map((section, sectionIndex) => {
+              // Ensure section has a valid ID
+              if (!section.id || section.id === "") {
+                section.id = crypto.randomUUID()
+              }
+
               const fields = Array.isArray(section.fields) ? section.fields : []
               return {
                 ...section,
                 section_order: sectionIndex + 1,
-                fields: fields.map((field, fieldIndex) => ({
-                  ...field,
-                  field_order: fieldIndex + 1,
-                })),
+                fields: fields.map((field, fieldIndex) => {
+                  // Ensure field has a valid ID
+                  if (!field.id || field.id === "") {
+                    field.id = crypto.randomUUID()
+                  }
+
+                  return {
+                    ...field,
+                    field_order: fieldIndex + 1,
+                  }
+                }),
               }
             }),
           }
