@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { HelpCircle, Upload, Loader2, Database } from "lucide-react"
 import { SalesGrid } from "./sales-grid"
@@ -35,21 +35,29 @@ export function FieldRenderer({
   isPrefilling = false,
   prefillSource,
 }: FieldRendererProps) {
-  // Helper function to render guidance tooltip
+  // Helper function to render guidance popover
   const renderGuidance = () => {
     if (!field.guidance) return null
 
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="max-w-xs text-sm">{field.guidance}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 p-0 text-muted-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-1 focus-visible:ring-offset-1"
+          >
+            <HelpCircle className="h-4 w-4" />
+            <span className="sr-only">Field guidance</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-4" align="start" side="top">
+          <div className="space-y-2">
+            <h4 className="font-medium">Field Guidance</h4>
+            <p className="text-sm text-muted-foreground">{field.guidance}</p>
+          </div>
+        </PopoverContent>
+      </Popover>
     )
   }
 
@@ -379,6 +387,18 @@ export function FieldRenderer({
     return (
       <div className="w-full space-y-2">
         {renderPrefillIndicator()}
+
+        {/* Field Label with guidance for sales grid */}
+        {field.label && (
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-base font-medium">
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </h3>
+            {renderGuidance()}
+          </div>
+        )}
+
         {renderInputField()}
         {field.help_text && <p className="text-sm text-muted-foreground">{field.help_text}</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -393,7 +413,7 @@ export function FieldRenderer({
 
       {/* Field Label with guidance */}
       {field.label && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Label htmlFor={field.id} className="text-sm font-medium">
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
