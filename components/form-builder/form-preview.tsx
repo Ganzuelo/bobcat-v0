@@ -136,17 +136,17 @@ export function FormPreview({ formStructure, currentPageIndex = 0, onSubmit }: F
             const fields = Array.isArray(section.fields) ? section.fields : []
 
             return (
-              <div key={section.id} className="space-y-4">
+              <div key={section.id} className="space-y-6">
                 {/* Section Header */}
                 {(section.title || section.description) && (
-                  <div className="mb-4">
+                  <div className="mb-6">
                     {section.title && <h3 className="text-lg font-medium">{section.title}</h3>}
                     {section.description && <p className="text-sm text-muted-foreground mt-1">{section.description}</p>}
                   </div>
                 )}
 
                 {/* Fields */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6">
                   {fields.map((field) => {
                     if (!field) return null
 
@@ -170,7 +170,7 @@ export function FormPreview({ formStructure, currentPageIndex = 0, onSubmit }: F
           })}
 
           {/* Navigation */}
-          <div className="flex justify-between pt-4">
+          <div className="flex justify-between pt-6 border-t">
             <Button variant="outline" onClick={handlePrevPage} disabled={safeCurrentPageIndex === 0}>
               <ChevronLeft className="mr-2 h-4 w-4" />
               Previous
