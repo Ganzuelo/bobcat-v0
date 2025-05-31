@@ -17,8 +17,8 @@ export interface FieldPreset {
   }>
 }
 
-// U.S. States for dropdown
-const US_STATES = [
+// U.S. States and Territories
+const US_STATES_AND_TERRITORIES = [
   "Alabama",
   "Alaska",
   "Arizona",
@@ -69,6 +69,16 @@ const US_STATES = [
   "West Virginia",
   "Wisconsin",
   "Wyoming",
+  // U.S. Territories
+  "American Samoa",
+  "District of Columbia",
+  "Federated States of Micronesia",
+  "Guam",
+  "Marshall Islands",
+  "Northern Mariana Islands",
+  "Palau",
+  "Puerto Rico",
+  "U.S. Virgin Islands",
 ]
 
 export const FIELD_PRESETS: FieldPreset[] = [
@@ -97,11 +107,11 @@ export const FIELD_PRESETS: FieldPreset[] = [
       {
         field_type: FIELD_TYPES.SELECT,
         label: "State",
-        placeholder: "Select state",
-        help_text: "Select your state",
+        placeholder: "Select state or territory",
+        help_text: "Select your state or territory",
         required: true,
         width: "quarter",
-        options: US_STATES.map((state) => ({ value: state, label: state })),
+        options: US_STATES_AND_TERRITORIES.map((state) => ({ value: state, label: state })),
       },
       {
         field_type: FIELD_TYPES.TEXT,
