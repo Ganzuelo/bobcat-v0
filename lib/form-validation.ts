@@ -1,121 +1,137 @@
 import { z } from "zod"
 
-// Validation schemas
-export const FormFieldSchema = z.object({
+// Zod schemas for validation
+export const FormSchema = z.object({
   id: z.string().uuid().optional(),
-  label: z.string().min(1, "Field label is required"),
-  field_type: z.string().min(1, "Field type is required"),
-  section_id: z.string().uuid("Invalid section ID"),
-  field_order: z.number().int().min(0),
-  required: z.boolean().default(false),
-  width: z.enum(["full", "half", "third", "quarter"]).default("full"),
-  placeholder: z.string().optional(),
-  help_text: z.string().optional(),
-  options: z.any().optional(),
-  validation: z.any().optional(),
-  conditional_visibility: z.any().optional(),
-  calculated_config: z.any().optional(),
-  lookup_config: z.any().optional(),
-  prefill_config: z.any().optional(),
-  metadata: z.any().optional(),
-})
-
-export const FormSectionSchema = z.object({
-  id: z.string().uuid().optional(),
-  title: z.string().min(1, "Section title is required"),
+  title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  page_id: z.string().uuid("Invalid page ID"),
-  section_order: z.number().int().min(0),
-  settings: z.any().optional(),
+  status: z.enum(["draft", "published", "archived"]).default("draft"),
+  settings: z.record(z.any()).default({}),
+  metadata: z.record(z.any()).default({}),
 })
 
 export const FormPageSchema = z.object({
   id: z.string().uuid().optional(),
   title: z.string().min(1, "Page title is required"),
   description: z.string().optional(),
-  form_id: z.string().uuid("Invalid form ID"),
+  form_id: z.string().uuid(),
   page_order: z.number().int().min(0),
-  settings: z.any().optional(),
+  settings: z.record(z.any()).default({}),
 })
 
-export const FormSchema = z.object({
+export const FormSectionSchema = z.object({
   id: z.string().uuid().optional(),
-  title: z.string().min(1, "Form title is required"),
+  title: z.string().min(1, "Section title is required"),
   description: z.string().optional(),
-  status: z.enum(["draft", "published", "archived"]).default("draft"),
-  settings: z.any().optional(),
-  metadata: z.any().optional(),
+  page_id: z.string().uuid(),
+  section_order: z.number().int().min(0),
+  settings: z.record(z.any()).default({}),
 })
 
-export type ValidatedFormField = z.infer<typeof FormFieldSchema>
-export type ValidatedFormSection = z.infer<typeof FormSectionSchema>
-export type ValidatedFormPage = z.infer<typeof FormPageSchema>
+export const FormFieldSchema = z.object({
+  id: z.string().uuid().optional(),
+  label: z.string().min(1, "Field label is required"),
+  field_type: z.string().min(1, "Field type is required"),
+  section_id: z.string().uuid(),
+  field_order: z.number().int().min(0),
+  required: z.boolean().default(false),
+  width: z.enum(["quarter", "half", "three-quarters", "full"]).default("full"),
+  placeholder: z.string().optional(),
+  help_text: z.string().optional(),
+  options: z.record(z.any()).optional(),
+  validation: z.record(z.any()).optional(),
+  conditional_visibility: z.record(z.any()).optional(),
+  calculated_config: z.record(z.any()).optional(),
+  lookup_config: z.record(z.any()).optional(),
+  prefill_config: z.record(z.any()).optional(),
+  metadata: z.record(z.any()).optional(),
+})
+
+export const FormStructureSchema = z.object({
+  form: FormSchema,
+  pages: z.array(FormPageSchema),
+  sections: z.array(FormSectionSchema),
+  fields: z.array(FormFieldSchema),
+})
+
+// Type definitions
 export type ValidatedForm = z.infer<typeof FormSchema>
+export type ValidatedFormPage = z.infer<typeof FormPageSchema>
+export type ValidatedFormSection = z.infer<typeof FormSectionSchema>
+export type ValidatedFormField = z.infer<typeof FormFieldSchema>
+export type ValidatedFormStructure = z.infer<typeof FormStructureSchema>
 
-// Validation functions
-export function validateFormData(formData: any) {
-  const errors: string[] = []
-
+// Validation function
+export function validateFormData(formData: any): {
+  isValid: boolean
+  errors: string[]
+  data?: ValidatedFormStructure
+} {
   try {
-    // Validate form
-    FormSchema.parse(formData)
+    // Extract and validate form
+    const form = FormSchema.parse(formData.form || formData)
 
-    // Validate pages
+    // Extract and validate pages
+    const pages: ValidatedFormPage[] = []
+    const sections: ValidatedFormSection[] = []
+    const fields: ValidatedFormField[] = []
+
     if (formData.pages) {
       formData.pages.forEach((page: any, pageIndex: number) => {
-        try {
-          FormPageSchema.parse(page)
-        } catch (error) {
-          if (error instanceof z.ZodError) {
-            error.errors.forEach((err) => {
-              errors.push(`Page ${pageIndex + 1}: ${err.message}`)
-            })
-          }
-        }
+        const pageData = FormPageSchema.parse({
+          ...page,
+          form_id: form.id,
+          page_order: pageIndex,
+        })
+        pages.push(pageData)
 
-        // Validate sections
         if (page.sections) {
           page.sections.forEach((section: any, sectionIndex: number) => {
-            try {
-              FormSectionSchema.parse(section)
-            } catch (error) {
-              if (error instanceof z.ZodError) {
-                error.errors.forEach((err) => {
-                  errors.push(`Page ${pageIndex + 1}, Section ${sectionIndex + 1}: ${err.message}`)
-                })
-              }
-            }
+            const sectionData = FormSectionSchema.parse({
+              ...section,
+              page_id: page.id,
+              section_order: sectionIndex,
+            })
+            sections.push(sectionData)
 
-            // Validate fields
             if (section.fields) {
               section.fields.forEach((field: any, fieldIndex: number) => {
-                try {
-                  FormFieldSchema.parse(field)
-                } catch (error) {
-                  if (error instanceof z.ZodError) {
-                    error.errors.forEach((err) => {
-                      errors.push(
-                        `Page ${pageIndex + 1}, Section ${sectionIndex + 1}, Field ${fieldIndex + 1}: ${err.message}`,
-                      )
-                    })
-                  }
-                }
+                const fieldData = FormFieldSchema.parse({
+                  ...field,
+                  section_id: section.id,
+                  field_order: fieldIndex,
+                })
+                fields.push(fieldData)
               })
             }
           })
         }
       })
     }
+
+    const validatedData = {
+      form,
+      pages,
+      sections,
+      fields,
+    }
+
+    return {
+      isValid: true,
+      errors: [],
+      data: validatedData,
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      error.errors.forEach((err) => {
-        errors.push(`Form: ${err.message}`)
-      })
+      return {
+        isValid: false,
+        errors: error.errors.map((err) => `${err.path.join(".")}: ${err.message}`),
+      }
     }
-  }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
+    return {
+      isValid: false,
+      errors: [error instanceof Error ? error.message : "Unknown validation error"],
+    }
   }
 }
