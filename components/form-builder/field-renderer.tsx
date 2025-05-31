@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-import { SalesGrid } from "./sales-grid"
 
 interface FieldProps {
   field: any
@@ -12,7 +11,7 @@ interface FieldProps {
 
 const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, disabled }) => {
   const renderField = () => {
-    switch (field.field_type || field.type) {
+    switch (field.type) {
       case "text":
         return (
           <div>
@@ -131,66 +130,37 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
             />
           </div>
         )
-      case "sales_grid":
-        // Parse the sales grid configuration from field metadata
-        const gridConfig = field.config?.gridConfig ||
-          field.gridConfig || {
-            type: "sales",
-            comparableCount: 3,
-            showSubject: true,
-            columnLabels: {
-              subject: "Subject",
-              comparables: ["Comparable 1", "Comparable 2", "Comparable 3"],
-            },
-            rows: [
-              {
-                id: "view",
-                label: "View",
-                type: "dropdown",
-                options: [
-                  { label: "Excellent", value: "excellent" },
-                  { label: "Good", value: "good" },
-                  { label: "Average", value: "average" },
-                  { label: "Poor", value: "poor" },
-                ],
-              },
-              {
-                id: "condition",
-                label: "Condition",
-                type: "dropdown",
-                options: [
-                  { label: "Excellent", value: "excellent" },
-                  { label: "Good", value: "good" },
-                  { label: "Average", value: "average" },
-                  { label: "Poor", value: "poor" },
-                ],
-              },
-              {
-                id: "gross_living_area",
-                label: "Gross Living Area",
-                type: "number",
-                guidance: "Enter square footage",
-              },
-              {
-                id: "sale_price",
-                label: "Sale Price",
-                type: "currency",
-                guidance: "Enter in dollars",
-              },
-            ],
-          }
+      case "sales_grid": {
+        const gridConfig = field.gridConfig || field.config?.gridConfig
+        if (!gridConfig) {
+          return (
+            <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+              Sales Grid not configured
+            </div>
+          )
+        }
 
-        const value = values?.[field.id]
-        const onChange = (value: any) => onFieldChange?.(field.id, value)
-
-        // Only pass props that SalesGrid expects
-        return <SalesGrid config={gridConfig} value={value} onChange={onChange} />
+        return (
+          <SalesGrid
+            id={field.id}
+            label="" // Don't pass label here to avoid duplication
+            config={gridConfig}
+            value={values?.[field.id]}
+            onChange={(value) => onFieldChange?.(field.id, value)}
+            required={field.required}
+            disabled={disabled}
+            isPreview={true}
+          />
+        )
+      }
       default:
-        return <div>Unsupported field type: {field.field_type || field.type}</div>
+        return <div>Unsupported field type: {field.type}</div>
     }
   }
 
   return <div className="mb-4">{renderField()}</div>
 }
 
-export { FieldRenderer }
+export default FieldRenderer
+
+import { SalesGrid } from "./sales-grid"

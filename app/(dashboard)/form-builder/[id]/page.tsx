@@ -40,7 +40,7 @@ export default function FormBuilderEditPage({ params }: { params: { id: string }
     console.log("Form saved:", form)
     try {
       // Validate form ID
-      if (!form.id || form.id === "") {
+      if (!form.id || form.id === "" || form.id === "new") {
         form.id = crypto.randomUUID()
         console.log("Generated new form ID:", form.id)
       }
@@ -55,22 +55,27 @@ export default function FormBuilderEditPage({ params }: { params: { id: string }
         const formStructure = {
           form,
           pages: (currentForm?.pages || []).map((page) => {
-            if (!page.id || page.id === "") {
-              page.id = crypto.randomUUID()
-            }
+            // Ensure page has a valid ID
+            const pageId = !page.id || page.id === "" ? crypto.randomUUID() : page.id
+
             return {
               ...page,
+              id: pageId,
               sections: (page.sections || []).map((section) => {
-                if (!section.id || section.id === "") {
-                  section.id = crypto.randomUUID()
-                }
+                // Ensure section has a valid ID
+                const sectionId = !section.id || section.id === "" ? crypto.randomUUID() : section.id
+
                 return {
                   ...section,
+                  id: sectionId,
                   fields: (section.fields || []).map((field) => {
-                    if (!field.id || field.id === "") {
-                      field.id = crypto.randomUUID()
+                    // Ensure field has a valid ID
+                    const fieldId = !field.id || field.id === "" ? crypto.randomUUID() : field.id
+
+                    return {
+                      ...field,
+                      id: fieldId,
                     }
-                    return field
                   }),
                 }
               }),

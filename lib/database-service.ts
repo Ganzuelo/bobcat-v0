@@ -68,8 +68,12 @@ export class DatabaseService {
       const userId = await this.getCurrentUserId()
       if (!userId) throw new Error("User not authenticated")
 
+      // Ensure form has a valid ID
+      const formId = !form.id || form.id === "" || form.id === "new" ? crypto.randomUUID() : form.id
+
       const formData = {
         ...form,
+        id: formId,
         created_by: userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -94,9 +98,19 @@ export class DatabaseService {
 
   static async updateForm(id: string, updates: Partial<Form>) {
     try {
+      // Validate ID before proceeding
+      if (!id || id === "" || id === "new") {
+        throw new Error("Invalid form ID for update operation")
+      }
+
       const updateData = {
         ...updates,
         updated_at: new Date().toISOString(),
+      }
+
+      // Remove id from updateData to prevent conflicts
+      if (updateData.id) {
+        delete updateData.id
       }
 
       console.log("Updating form with data:", updateData)
@@ -204,7 +218,7 @@ export class DatabaseService {
       const { form, pages } = formStructure
 
       // Validate form ID
-      if (!form.id || form.id === "") {
+      if (!form.id || form.id === "" || form.id === "new") {
         form.id = crypto.randomUUID()
         console.log("Generated new form ID:", form.id)
       }
@@ -218,10 +232,17 @@ export class DatabaseService {
       }
 
       // Update form_id in pages
-      const updatedPages = pages.map((page) => ({
-        ...page,
-        form_id: savedForm.id,
-      }))
+      const updatedPages = pages.map((page) => {
+        // Ensure page has a valid ID
+        if (!page.id || page.id === "") {
+          page.id = crypto.randomUUID()
+        }
+
+        return {
+          ...page,
+          form_id: savedForm.id,
+        }
+      })
 
       // Save pages, sections, and fields
       const savedPages = []
@@ -256,7 +277,7 @@ export class DatabaseService {
       const pageData = {
         id: page.id,
         form_id: formId,
-        title: page.title,
+        title: page.title || "Untitled Page",
         description: page.description,
         page_order: page.page_order,
         settings: page.settings || {},
@@ -269,7 +290,12 @@ export class DatabaseService {
 
       // Save sections
       const savedSections = []
-      for (const section of page.sections) {
+      for (const section of page.sections || []) {
+        // Ensure section has a valid ID
+        if (!section.id || section.id === "") {
+          section.id = crypto.randomUUID()
+        }
+
         const savedSection = await this.saveSection(section, savedPage.id)
         savedSections.push(savedSection)
       }
@@ -312,7 +338,12 @@ export class DatabaseService {
 
       // Save fields
       const savedFields = []
-      for (const field of section.fields) {
+      for (const field of section.fields || []) {
+        // Ensure field has a valid ID
+        if (!field.id || field.id === "") {
+          field.id = crypto.randomUUID()
+        }
+
         const savedField = await this.saveField(field, savedSection.id)
         savedFields.push(savedField)
       }
@@ -339,7 +370,7 @@ export class DatabaseService {
         id: field.id,
         section_id: sectionId,
         field_type: field.field_type,
-        label: field.label,
+        label: field.label || "Untitled Field",
         placeholder: field.placeholder,
         help_text: field.help_text,
         required: field.required,
@@ -352,6 +383,7 @@ export class DatabaseService {
         lookup_config: field.lookup_config || {},
         prefill_config: field.prefill_config || {},
         metadata: field.metadata || {},
+        gridConfig: field.gridConfig || undefined,
       }
 
       // Upsert field
@@ -372,7 +404,15 @@ export class DatabaseService {
 
   static async createPage(page: Omit<FormPage, "id" | "created_at" | "updated_at">) {
     try {
-      const { data, error } = await supabase.from("form_pages").insert(page).select().single()
+      // Ensure page has a valid ID
+      const pageId = !page.id || page.id === "" ? crypto.randomUUID() : page.id
+
+      const pageData = {
+        ...page,
+        id: pageId,
+      }
+
+      const { data, error } = await supabase.from("form_pages").insert(pageData).select().single()
 
       if (error) throw error
       return data as FormPage
@@ -384,6 +424,11 @@ export class DatabaseService {
 
   static async updatePage(id: string, updates: Partial<FormPage>) {
     try {
+      // Validate ID before proceeding
+      if (!id || id === "") {
+        throw new Error("Invalid page ID for update operation")
+      }
+
       const { data, error } = await supabase.from("form_pages").update(updates).eq("id", id).select().single()
 
       if (error) throw error
@@ -408,7 +453,15 @@ export class DatabaseService {
   // Section operations
   static async createSection(section: Omit<FormSection, "id" | "created_at" | "updated_at">) {
     try {
-      const { data, error } = await supabase.from("form_sections").insert(section).select().single()
+      // Ensure section has a valid ID
+      const sectionId = !section.id || section.id === "" ? crypto.randomUUID() : section.id
+
+      const sectionData = {
+        ...section,
+        id: sectionId,
+      }
+
+      const { data, error } = await supabase.from("form_sections").insert(sectionData).select().single()
 
       if (error) throw error
       return data as FormSection
@@ -420,6 +473,11 @@ export class DatabaseService {
 
   static async updateSection(id: string, updates: Partial<FormSection>) {
     try {
+      // Validate ID before proceeding
+      if (!id || id === "") {
+        throw new Error("Invalid section ID for update operation")
+      }
+
       const { data, error } = await supabase.from("form_sections").update(updates).eq("id", id).select().single()
 
       if (error) throw error
@@ -444,8 +502,12 @@ export class DatabaseService {
   // Field operations
   static async createField(field: Omit<FormField, "id" | "created_at" | "updated_at">) {
     try {
+      // Ensure field has a valid ID
+      const fieldId = !field.id || field.id === "" ? crypto.randomUUID() : field.id
+
       const fieldData = {
         ...field,
+        id: fieldId,
         validation: field.validation || {}, // Ensure it's always an object
         prefill_config: field.prefill_config || {},
       }
@@ -462,6 +524,11 @@ export class DatabaseService {
 
   static async updateField(id: string, updates: Partial<FormField>) {
     try {
+      // Validate ID before proceeding
+      if (!id || id === "") {
+        throw new Error("Invalid field ID for update operation")
+      }
+
       const updateData = {
         ...updates,
         validation: updates.validation || {}, // Ensure it's always an object
