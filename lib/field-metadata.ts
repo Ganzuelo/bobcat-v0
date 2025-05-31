@@ -1,50 +1,6 @@
 import { z } from "zod"
-
-// URAR/MISMO compliance metadata
-export const URAR_CARDINALITY = {
-  REQUIRED: "required",
-  OPTIONAL: "optional",
-  CONDITIONAL: "conditional",
-  NOT_APPLICABLE: "not_applicable",
-} as const
-
-export type UrarCardinality = (typeof URAR_CARDINALITY)[keyof typeof URAR_CARDINALITY]
-
-export const URAR_CONDITIONALITY = {
-  ALWAYS: "always",
-  CONDITIONAL: "conditional",
-  NEVER: "never",
-} as const
-
-export type UrarConditionality = (typeof URAR_CONDITIONALITY)[keyof typeof URAR_CONDITIONALITY]
-
-export const URAR_OUTPUT_FORMAT = {
-  TEXT: "text",
-  NUMBER: "number",
-  DATE: "date",
-  CURRENCY: "currency",
-  PERCENTAGE: "percentage",
-  BOOLEAN: "boolean",
-  LIST: "list",
-} as const
-
-export type UrarOutputFormat = (typeof URAR_OUTPUT_FORMAT)[keyof typeof URAR_OUTPUT_FORMAT]
-
-// Carryforward configuration
-export const CARRYFORWARD_MODES = {
-  DEFAULT: "default",
-  MIRROR: "mirror",
-} as const
-
-export type CarryforwardMode = (typeof CARRYFORWARD_MODES)[keyof typeof CARRYFORWARD_MODES]
-
-export const CarryforwardConfigSchema = z.object({
-  enabled: z.boolean().default(false),
-  source: z.string().optional(), // Field ID to copy from
-  mode: z.nativeEnum(CARRYFORWARD_MODES).default(CARRYFORWARD_MODES.DEFAULT),
-})
-
-export interface CarryforwardConfig extends z.infer<typeof CarryforwardConfigSchema> {}
+import { URAR_CARDINALITY, URAR_CONDITIONALITY, URAR_OUTPUT_FORMAT } from "./field-types"
+import { CARRYFORWARD_MODES } from "./form-interfaces"
 
 export const FormFieldMetadataSchema = z.object({
   // UAD 3.6 compliance field
@@ -57,14 +13,40 @@ export const FormFieldMetadataSchema = z.object({
   cardinality: z.nativeEnum(URAR_CARDINALITY).optional(),
   conditionality: z.nativeEnum(URAR_CONDITIONALITY).optional(),
   outputFormat: z.nativeEnum(URAR_OUTPUT_FORMAT).optional(),
-  category: z.string().optional(),
+
+  // XML configuration
   xml: z
     .object({
       fieldId: z.string().optional(),
+      path: z.string().optional(),
       required: z.boolean().optional(),
       format: z.string().optional(),
     })
     .optional(),
+
+  // Field categorization
+  category: z.string().optional(),
+  subcategory: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  dataType: z.string().optional(),
+  unit: z.string().optional(),
+
+  // Documentation
+  documentation: z.string().optional(),
+  examples: z.array(z.string()).optional(),
+  notes: z.string().optional(),
+
+  // Compliance tracking
+  lastReviewed: z.string().optional(),
+  reviewedBy: z.string().optional(),
+  complianceVersion: z.string().optional(),
+
+  // Custom metadata
+  custom: z.record(z.any()).optional(),
 })
 
-export interface FormFieldMetadata extends z.infer<typeof FormFieldMetadataSchema> {}
+export const CarryforwardConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  source: z.string().optional(), // Field ID to copy from
+  mode: z.nativeEnum(CARRYFORWARD_MODES).default(CARRYFORWARD_MODES.DEFAULT),
+})

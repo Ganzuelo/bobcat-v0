@@ -1,11 +1,11 @@
-import type { FormField } from "./form-interfaces"
 import { FIELD_TYPES } from "./field-types"
-import { URAR_CARDINALITY, URAR_CONDITIONALITY, URAR_OUTPUT_FORMAT } from "./field-metadata"
+import { URAR_CARDINALITY, URAR_CONDITIONALITY, URAR_OUTPUT_FORMAT } from "./field-types"
+import type { FormField } from "./form-interfaces"
 
 // URAR-specific field templates with UAD Field IDs
 export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
   property_address: {
-    field_type: FIELD_TYPES.ADDRESS,
+    field_type: "text", // Changed from FIELD_TYPES.ADDRESS since ADDRESS is not defined
     label: "Property Address",
     required: true,
     metadata: {
@@ -25,7 +25,7 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
   property_value: {
-    field_type: FIELD_TYPES.CURRENCY,
+    field_type: "number", // Changed from FIELD_TYPES.CURRENCY since CURRENCY is not defined
     label: "Property Value",
     required: true,
     metadata: {
@@ -45,7 +45,7 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
   loan_amount: {
-    field_type: FIELD_TYPES.CURRENCY,
+    field_type: "number", // Changed from FIELD_TYPES.CURRENCY since CURRENCY is not defined
     label: "Loan Amount",
     required: true,
     metadata: {
