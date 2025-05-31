@@ -1,6 +1,34 @@
 import { supabase } from "./supabase-client"
 import type { Form, FormPage, FormSection, FormField, FormSubmission, FormRule, FormStructure } from "./database-types"
 
+// Utility function to validate and generate UUIDs
+function ensureValidUUID(id: string | undefined | null): string {
+  if (!id || id === "" || id === "new" || id === "undefined" || id === "null") {
+    return crypto.randomUUID()
+  }
+  return id
+}
+
+// Utility function to safely log objects
+function safeLog(message: string, data: any): void {
+  try {
+    console.log(
+      message,
+      JSON.stringify(
+        data,
+        (key, value) => {
+          if (value === undefined) return "undefined"
+          if (value === null) return "null"
+          return value
+        },
+        2,
+      ),
+    )
+  } catch (error) {
+    console.log(message, "Error stringifying object:", error)
+  }
+}
+
 export class DatabaseService {
   // Get current user ID
   static async getCurrentUserId(): Promise<string | null> {
@@ -48,6 +76,11 @@ export class DatabaseService {
 
   static async getForm(id: string) {
     try {
+      // Validate ID
+      if (!id || id === "" || id === "new") {
+        throw new Error("Invalid form ID for fetch operation")
+      }
+
       const { data, error } = await supabase.from("forms").select("*").eq("id", id).single()
 
       if (error) {
@@ -68,18 +101,23 @@ export class DatabaseService {
       const userId = await this.getCurrentUserId()
       if (!userId) throw new Error("User not authenticated")
 
-      // Ensure form has a valid ID
-      const formId = !form.id || form.id === "" || form.id === "new" ? crypto.randomUUID() : form.id
+      // Generate a valid UUID for the form
+      const formId = ensureValidUUID(form.id)
 
+      // Create a clean form object with all required fields
       const formData = {
         ...form,
         id: formId,
         created_by: userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        title: form.title || "Untitled Form",
+        description: form.description || "",
+        status: form.status || "draft",
+        settings: form.settings || {},
       }
 
-      console.log("Creating form with data:", formData)
+      safeLog("Creating form with data:", formData)
 
       const { data, error } = await supabase.from("forms").insert(formData).select().single()
 
@@ -88,7 +126,7 @@ export class DatabaseService {
         throw error
       }
 
-      console.log("Form created successfully:", data)
+      console.log("Form created successfully:", data?.id)
       return data as Form
     } catch (error) {
       console.error("Error in createForm:", error)
@@ -98,22 +136,24 @@ export class DatabaseService {
 
   static async updateForm(id: string, updates: Partial<Form>) {
     try {
-      // Validate ID before proceeding
-      if (!id || id === "" || id === "new") {
-        throw new Error("Invalid form ID for update operation")
+      // Validate ID
+      const validId = ensureValidUUID(id)
+      if (validId !== id) {
+        throw new Error(`Invalid form ID for update operation: ${id}`)
       }
 
+      // Create a clean update object
       const updateData = {
         ...updates,
         updated_at: new Date().toISOString(),
       }
 
       // Remove id from updateData to prevent conflicts
-      if (updateData.id) {
+      if ("id" in updateData) {
         delete updateData.id
       }
 
-      console.log("Updating form with data:", updateData)
+      safeLog(`Updating form ${id} with data:`, updateData)
 
       const { data, error } = await supabase.from("forms").update(updateData).eq("id", id).select().single()
 
@@ -122,7 +162,7 @@ export class DatabaseService {
         throw error
       }
 
-      console.log("Form updated successfully:", data)
+      console.log("Form updated successfully:", data?.id)
       return data as Form
     } catch (error) {
       console.error("Error in updateForm:", error)
@@ -132,6 +172,11 @@ export class DatabaseService {
 
   static async deleteForm(id: string) {
     try {
+      // Validate ID
+      if (!id || id === "" || id === "new") {
+        throw new Error("Invalid form ID for delete operation")
+      }
+
       const { error } = await supabase.from("forms").delete().eq("id", id)
 
       if (error) {
@@ -139,7 +184,7 @@ export class DatabaseService {
         throw error
       }
 
-      console.log("Form deleted successfully")
+      console.log("Form deleted successfully:", id)
     } catch (error) {
       console.error("Error in deleteForm:", error)
       throw error
@@ -150,6 +195,11 @@ export class DatabaseService {
   static async getFormStructure(formId: string): Promise<FormStructure> {
     try {
       console.log("Getting form structure for:", formId)
+
+      // Validate ID
+      if (!formId || formId === "" || formId === "new") {
+        throw new Error("Invalid form ID for structure fetch operation")
+      }
 
       // Get form
       const form = await this.getForm(formId)
@@ -201,7 +251,7 @@ export class DatabaseService {
         rules: rules || [],
       }
 
-      console.log("Form structure loaded:", structure)
+      console.log("Form structure loaded successfully:", formId)
       return structure
     } catch (error) {
       console.error("Error in getFormStructure:", error)
@@ -212,52 +262,83 @@ export class DatabaseService {
   // Save complete form structure
   static async saveFormStructure(formStructure: FormStructure): Promise<FormStructure> {
     try {
-      console.log("Saving form structure:", formStructure)
+      console.log("Starting form structure save...")
 
       // Start transaction-like operations
-      const { form, pages } = formStructure
+      const { form, pages, rules } = formStructure
 
-      // Validate form ID
-      if (!form.id || form.id === "" || form.id === "new") {
-        form.id = crypto.randomUUID()
-        console.log("Generated new form ID:", form.id)
-      }
+      // Validate form ID and ensure it's a valid UUID
+      const formId = ensureValidUUID(form.id)
+      form.id = formId
+
+      safeLog("Form data for save:", {
+        id: form.id,
+        title: form.title,
+        pageCount: pages?.length || 0,
+        ruleCount: rules?.length || 0,
+      })
 
       // Save or update form
       let savedForm: Form
-      if (form.created_at && form.id) {
-        savedForm = await this.updateForm(form.id, form)
-      } else {
-        savedForm = await this.createForm(form)
+      try {
+        if (form.created_at) {
+          savedForm = await this.updateForm(formId, form)
+        } else {
+          savedForm = await this.createForm(form)
+        }
+      } catch (error) {
+        console.error("Error saving form:", error)
+        throw new Error(`Failed to save form: ${error.message}`)
       }
 
-      // Update form_id in pages
-      const updatedPages = pages.map((page) => {
-        // Ensure page has a valid ID
-        if (!page.id || page.id === "") {
-          page.id = crypto.randomUUID()
-        }
-
+      // Update form_id in pages and ensure all pages have valid IDs
+      const updatedPages = (pages || []).map((page, index) => {
+        const pageId = ensureValidUUID(page.id)
         return {
           ...page,
+          id: pageId,
           form_id: savedForm.id,
+          page_order: page.page_order ?? index,
+          title: page.title || `Page ${index + 1}`,
         }
       })
 
       // Save pages, sections, and fields
       const savedPages = []
       for (const page of updatedPages) {
-        const savedPage = await this.savePage(page, savedForm.id)
-        savedPages.push(savedPage)
+        try {
+          const savedPage = await this.savePage(page, savedForm.id)
+          savedPages.push(savedPage)
+        } catch (error) {
+          console.error(`Error saving page ${page.id}:`, error)
+          // Continue with other pages even if one fails
+        }
+      }
+
+      // Save rules if any
+      if (rules && rules.length > 0) {
+        for (const rule of rules) {
+          try {
+            rule.form_id = savedForm.id
+            if (rule.id) {
+              await this.updateRule(rule.id, rule)
+            } else {
+              await this.createRule(rule)
+            }
+          } catch (error) {
+            console.error(`Error saving rule:`, error)
+            // Continue with other rules even if one fails
+          }
+        }
       }
 
       const savedStructure = {
         form: savedForm,
         pages: savedPages,
-        rules: formStructure.rules,
+        rules: rules || [],
       }
 
-      console.log("Form structure saved successfully:", savedStructure)
+      console.log("Form structure saved successfully:", savedForm.id)
       return savedStructure
     } catch (error) {
       console.error("Error in saveFormStructure:", error)
@@ -266,38 +347,49 @@ export class DatabaseService {
   }
 
   // Page operations
-  static async savePage(page: FormPage & { sections: (FormSection & { fields: FormField[] })[] }, formId: string) {
+  static async savePage(page: FormPage & { sections?: (FormSection & { fields?: FormField[] })[] }, formId: string) {
     try {
-      // Validate page ID
-      if (!page.id || page.id === "") {
-        page.id = crypto.randomUUID()
-        console.log("Generated new page ID:", page.id)
-      }
+      // Validate page ID and ensure it's a valid UUID
+      const pageId = ensureValidUUID(page.id)
 
+      // Create a clean page object with all required fields
       const pageData = {
-        id: page.id,
+        id: pageId,
         form_id: formId,
         title: page.title || "Untitled Page",
-        description: page.description,
-        page_order: page.page_order,
+        description: page.description || "",
+        page_order: page.page_order ?? 0,
         settings: page.settings || {},
       }
+
+      safeLog(`Saving page ${pageId} with data:`, {
+        id: pageData.id,
+        title: pageData.title,
+        sectionCount: page.sections?.length || 0,
+      })
 
       // Upsert page
       const { data: savedPage, error: pageError } = await supabase.from("form_pages").upsert(pageData).select().single()
 
-      if (pageError) throw pageError
+      if (pageError) {
+        console.error(`Error upserting page ${pageId}:`, pageError)
+        throw pageError
+      }
 
       // Save sections
       const savedSections = []
       for (const section of page.sections || []) {
-        // Ensure section has a valid ID
-        if (!section.id || section.id === "") {
-          section.id = crypto.randomUUID()
-        }
+        try {
+          // Ensure section has a valid ID
+          const sectionId = ensureValidUUID(section.id)
+          section.id = sectionId
 
-        const savedSection = await this.saveSection(section, savedPage.id)
-        savedSections.push(savedSection)
+          const savedSection = await this.saveSection(section, savedPage.id)
+          savedSections.push(savedSection)
+        } catch (error) {
+          console.error(`Error saving section in page ${pageId}:`, error)
+          // Continue with other sections even if one fails
+        }
       }
 
       return {
@@ -310,22 +402,26 @@ export class DatabaseService {
     }
   }
 
-  static async saveSection(section: FormSection & { fields: FormField[] }, pageId: string) {
+  static async saveSection(section: FormSection & { fields?: FormField[] }, pageId: string) {
     try {
-      // Validate section ID
-      if (!section.id || section.id === "") {
-        section.id = crypto.randomUUID()
-        console.log("Generated new section ID:", section.id)
-      }
+      // Validate section ID and ensure it's a valid UUID
+      const sectionId = ensureValidUUID(section.id)
 
+      // Create a clean section object with all required fields
       const sectionData = {
-        id: section.id,
+        id: sectionId,
         page_id: pageId,
-        title: section.title,
-        description: section.description,
-        section_order: section.section_order,
+        title: section.title || "Untitled Section",
+        description: section.description || "",
+        section_order: section.section_order ?? 0,
         settings: section.settings || {},
       }
+
+      safeLog(`Saving section ${sectionId} with data:`, {
+        id: sectionData.id,
+        title: sectionData.title,
+        fieldCount: section.fields?.length || 0,
+      })
 
       // Upsert section
       const { data: savedSection, error: sectionError } = await supabase
@@ -334,18 +430,25 @@ export class DatabaseService {
         .select()
         .single()
 
-      if (sectionError) throw sectionError
+      if (sectionError) {
+        console.error(`Error upserting section ${sectionId}:`, sectionError)
+        throw sectionError
+      }
 
       // Save fields
       const savedFields = []
       for (const field of section.fields || []) {
-        // Ensure field has a valid ID
-        if (!field.id || field.id === "") {
-          field.id = crypto.randomUUID()
-        }
+        try {
+          // Ensure field has a valid ID
+          const fieldId = ensureValidUUID(field.id)
+          field.id = fieldId
 
-        const savedField = await this.saveField(field, savedSection.id)
-        savedFields.push(savedField)
+          const savedField = await this.saveField(field, savedSection.id)
+          savedFields.push(savedField)
+        } catch (error) {
+          console.error(`Error saving field in section ${sectionId}:`, error)
+          // Continue with other fields even if one fails
+        }
       }
 
       return {
@@ -360,31 +463,45 @@ export class DatabaseService {
 
   static async saveField(field: FormField, sectionId: string) {
     try {
-      // Validate field ID
-      if (!field.id || field.id === "") {
-        field.id = crypto.randomUUID()
-        console.log("Generated new field ID:", field.id)
-      }
+      // Validate field ID and ensure it's a valid UUID
+      const fieldId = ensureValidUUID(field.id)
 
+      // Handle field_type vs type inconsistency
+      const fieldType = field.field_type || field.type || "text"
+
+      // Create a clean field object with all required fields
       const fieldData = {
-        id: field.id,
+        id: fieldId,
         section_id: sectionId,
-        field_type: field.field_type,
+        field_type: fieldType,
         label: field.label || "Untitled Field",
-        placeholder: field.placeholder,
-        help_text: field.help_text,
-        required: field.required,
-        width: field.width,
-        field_order: field.field_order,
+        placeholder: field.placeholder || "",
+        help_text: field.help_text || "",
+        required: !!field.required,
+        width: field.width || "FULL",
+        field_order: field.field_order ?? 0,
         options: field.options || [],
-        validation: field.validation || {}, // Ensure it's always an object
+        validation: field.validation || {},
         conditional_visibility: field.conditional_visibility || {},
         calculated_config: field.calculated_config || {},
         lookup_config: field.lookup_config || {},
         prefill_config: field.prefill_config || {},
         metadata: field.metadata || {},
-        gridConfig: field.gridConfig || undefined,
       }
+
+      // Handle special field types
+      if (fieldType === "sales_grid" && field.gridConfig) {
+        fieldData.metadata = {
+          ...fieldData.metadata,
+          gridConfig: field.gridConfig,
+        }
+      }
+
+      safeLog(`Saving field ${fieldId} with data:`, {
+        id: fieldData.id,
+        type: fieldData.field_type,
+        label: fieldData.label,
+      })
 
       // Upsert field
       const { data: savedField, error: fieldError } = await supabase
@@ -393,9 +510,18 @@ export class DatabaseService {
         .select()
         .single()
 
-      if (fieldError) throw fieldError
+      if (fieldError) {
+        console.error(`Error upserting field ${fieldId}:`, fieldError)
+        throw fieldError
+      }
 
-      return savedField as FormField
+      // Add back any special properties that aren't in the database schema
+      const enhancedField = {
+        ...savedField,
+        gridConfig: field.gridConfig,
+      }
+
+      return enhancedField as FormField
     } catch (error) {
       console.error("Error saving field:", error)
       throw error
