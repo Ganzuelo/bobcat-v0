@@ -277,13 +277,13 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
   const handleSaveForm = async () => {
     setSaving(true)
     try {
-      // Simulate save
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Pass the complete form structure to the onSave callback
+      onSave?.(formStructure?.form)
+
       toast({
         title: "Success",
         description: "Form saved successfully",
       })
-      onSave?.(formStructure?.form)
     } catch (error) {
       toast({
         title: "Error",
