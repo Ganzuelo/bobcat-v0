@@ -486,3 +486,9 @@ export function getComplianceLabel(compliance?: ComplianceConfig): string | null
 
   return labels.length > 0 ? labels.join(", ") : null
 }
+
+// Legacy support - keeping for backward compatibility but not used in new design
+export function getPresetById(id: string): any {
+  // This function is deprecated but kept for backward compatibility
+  return undefined
+}
