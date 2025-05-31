@@ -1,5 +1,12 @@
 import { FIELD_TYPES } from "@/lib/form-types"
 
+export interface ComplianceConfig {
+  urar?: boolean
+  // Future compliance types can be added here
+  // fnma?: boolean
+  // fha?: boolean
+}
+
 export interface PresetField {
   id: string
   name: string
@@ -11,6 +18,8 @@ export interface PresetField {
   width?: string
   validation?: any
   options?: { value: string; label: string }[]
+  compliance?: ComplianceConfig
+  metadata?: Record<string, any>
 }
 
 export interface PresetCategory {
@@ -20,8 +29,8 @@ export interface PresetCategory {
   fields: PresetField[]
 }
 
-// U.S. States and Territories
-const US_STATES_AND_TERRITORIES = [
+// U.S. States and Territories (Full Names)
+const US_STATES_AND_TERRITORIES_FULL = [
   "Alabama",
   "Alaska",
   "Arizona",
@@ -84,6 +93,61 @@ const US_STATES_AND_TERRITORIES = [
   "U.S. Virgin Islands",
 ]
 
+// U.S. States (2-letter abbreviations for URAR compliance)
+const US_STATES_ABBREVIATIONS = [
+  { value: "AL", label: "AL - Alabama" },
+  { value: "AK", label: "AK - Alaska" },
+  { value: "AZ", label: "AZ - Arizona" },
+  { value: "AR", label: "AR - Arkansas" },
+  { value: "CA", label: "CA - California" },
+  { value: "CO", label: "CO - Colorado" },
+  { value: "CT", label: "CT - Connecticut" },
+  { value: "DE", label: "DE - Delaware" },
+  { value: "FL", label: "FL - Florida" },
+  { value: "GA", label: "GA - Georgia" },
+  { value: "HI", label: "HI - Hawaii" },
+  { value: "ID", label: "ID - Idaho" },
+  { value: "IL", label: "IL - Illinois" },
+  { value: "IN", label: "IN - Indiana" },
+  { value: "IA", label: "IA - Iowa" },
+  { value: "KS", label: "KS - Kansas" },
+  { value: "KY", label: "KY - Kentucky" },
+  { value: "LA", label: "LA - Louisiana" },
+  { value: "ME", label: "ME - Maine" },
+  { value: "MD", label: "MD - Maryland" },
+  { value: "MA", label: "MA - Massachusetts" },
+  { value: "MI", label: "MI - Michigan" },
+  { value: "MN", label: "MN - Minnesota" },
+  { value: "MS", label: "MS - Mississippi" },
+  { value: "MO", label: "MO - Missouri" },
+  { value: "MT", label: "MT - Montana" },
+  { value: "NE", label: "NE - Nebraska" },
+  { value: "NV", label: "NV - Nevada" },
+  { value: "NH", label: "NH - New Hampshire" },
+  { value: "NJ", label: "NJ - New Jersey" },
+  { value: "NM", label: "NM - New Mexico" },
+  { value: "NY", label: "NY - New York" },
+  { value: "NC", label: "NC - North Carolina" },
+  { value: "ND", label: "ND - North Dakota" },
+  { value: "OH", label: "OH - Ohio" },
+  { value: "OK", label: "OK - Oklahoma" },
+  { value: "OR", label: "OR - Oregon" },
+  { value: "PA", label: "PA - Pennsylvania" },
+  { value: "RI", label: "RI - Rhode Island" },
+  { value: "SC", label: "SC - South Carolina" },
+  { value: "SD", label: "SD - South Dakota" },
+  { value: "TN", label: "TN - Tennessee" },
+  { value: "TX", label: "TX - Texas" },
+  { value: "UT", label: "UT - Utah" },
+  { value: "VT", label: "VT - Vermont" },
+  { value: "VA", label: "VA - Virginia" },
+  { value: "WA", label: "WA - Washington" },
+  { value: "WV", label: "WV - West Virginia" },
+  { value: "WI", label: "WI - Wisconsin" },
+  { value: "WY", label: "WY - Wyoming" },
+  { value: "DC", label: "DC - District of Columbia" },
+]
+
 export const PRESET_CATEGORIES: PresetCategory[] = [
   {
     id: "address_inputs",
@@ -119,7 +183,23 @@ export const PRESET_CATEGORIES: PresetCategory[] = [
         help_text: "Select your state or territory",
         required: true,
         width: "quarter",
-        options: US_STATES_AND_TERRITORIES.map((state) => ({ value: state, label: state })),
+        options: US_STATES_AND_TERRITORIES_FULL.map((state) => ({ value: state, label: state })),
+      },
+      {
+        id: "state_urar",
+        name: "State (URAR Compliant)",
+        field_type: FIELD_TYPES.SELECT,
+        label: "State",
+        placeholder: "Select State",
+        help_text: "Select state using URAR standard 2-letter abbreviation",
+        required: true,
+        width: "quarter",
+        options: US_STATES_ABBREVIATIONS,
+        compliance: { urar: true },
+        metadata: {
+          urar_field_code: "STATE",
+          urar_format: "2_letter_abbreviation",
+        },
       },
       {
         id: "zip_code",
@@ -133,6 +213,54 @@ export const PRESET_CATEGORIES: PresetCategory[] = [
         validation: {
           pattern: "^\\d{5}(-\\d{4})?$",
           message: "Please enter a valid zip code (12345 or 12345-6789)",
+        },
+      },
+      {
+        id: "zip_code_urar",
+        name: "Zip Code (URAR Compliant)",
+        field_type: FIELD_TYPES.TEXT,
+        label: "Zip Code",
+        placeholder: "12345",
+        help_text: "Enter 5-digit zip code (URAR format)",
+        required: true,
+        width: "quarter",
+        validation: {
+          pattern: "^\\d{5}$",
+          message: "URAR requires exactly 5 digits (no +4 extension)",
+        },
+        compliance: { urar: true },
+        metadata: {
+          urar_field_code: "ZIP_CODE",
+          urar_format: "5_digit_only",
+        },
+      },
+      {
+        id: "county",
+        name: "County",
+        field_type: FIELD_TYPES.TEXT,
+        label: "County",
+        placeholder: "County name",
+        help_text: "Enter the county name",
+        required: false,
+        width: "half",
+      },
+      {
+        id: "county_urar",
+        name: "County (URAR Compliant)",
+        field_type: FIELD_TYPES.TEXT,
+        label: "County",
+        placeholder: "County name",
+        help_text: "Enter county name (URAR format - no 'County' suffix)",
+        required: true,
+        width: "half",
+        validation: {
+          pattern: "^[A-Za-z\\s]+$",
+          message: "County name should contain only letters and spaces",
+        },
+        compliance: { urar: true },
+        metadata: {
+          urar_field_code: "COUNTY",
+          urar_format: "name_only_no_suffix",
         },
       },
       {
@@ -241,6 +369,31 @@ export const PRESET_CATEGORIES: PresetCategory[] = [
         width: "half",
       },
       {
+        id: "signature_date",
+        name: "Signature Date",
+        field_type: FIELD_TYPES.DATE,
+        label: "Signature Date",
+        placeholder: "MM/DD/YYYY",
+        help_text: "Date of signature",
+        required: true,
+        width: "half",
+      },
+      {
+        id: "signature_date_urar",
+        name: "Signature Date (URAR Compliant)",
+        field_type: FIELD_TYPES.DATE,
+        label: "Signature Date",
+        placeholder: "MM/DD/YYYY",
+        help_text: "Date of signature (URAR format)",
+        required: true,
+        width: "half",
+        compliance: { urar: true },
+        metadata: {
+          urar_field_code: "SIGNATURE_DATE",
+          urar_format: "mm_dd_yyyy",
+        },
+      },
+      {
         id: "social_security",
         name: "Social Security Number",
         field_type: FIELD_TYPES.TEXT,
@@ -321,4 +474,15 @@ export function getPresetFieldById(fieldId: string): PresetField | undefined {
 
 export function getCategoryById(categoryId: string): PresetCategory | undefined {
   return PRESET_CATEGORIES.find((category) => category.id === categoryId)
+}
+
+export function getComplianceLabel(compliance?: ComplianceConfig): string | null {
+  if (!compliance) return null
+
+  const labels = []
+  if (compliance.urar) labels.push("URAR Ready")
+  // Future compliance types can be added here
+  // if (compliance.fnma) labels.push("FNMA Ready")
+
+  return labels.length > 0 ? labels.join(", ") : null
 }
