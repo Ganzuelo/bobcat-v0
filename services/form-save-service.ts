@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase-client"
 import {
   validateFormData,
   type ValidatedForm,
@@ -21,7 +21,8 @@ export interface FormSaveData {
 }
 
 export class FormSaveService {
-  private supabase = createClient()
+  // Use the existing supabase client instead of creating a new one
+  private supabase = supabase
 
   async saveForm(formData: any): Promise<SaveResult> {
     console.log("🔧 FormSaveService.saveForm called with:", formData)
