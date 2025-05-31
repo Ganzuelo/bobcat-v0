@@ -672,20 +672,20 @@ export interface FormSection extends z.infer<typeof FormSectionSchema> {
 export interface FormPage extends z.infer<typeof FormPageSchema> {
   sections?: FormSection[]
 }
+import type {
+  CarryforwardConfigSchema as CarryforwardConfigSchemaType,
+  FormFieldMetadataSchema as FormFieldMetadataSchemaType,
+} from "./field-metadata"
 
-export interface FormFieldMetadata extends z.infer<typeof FormFieldMetadataSchema> {}
-
-export interface ValidationRule extends z.infer<typeof ValidationRuleSchema> {}
-
-export interface ConditionalVisibility extends z.infer<typeof ConditionalVisibilitySchema> {}
-
-export interface CalculatedConfig extends z.infer<typeof CalculatedConfigSchema> {}
-
-export interface LookupConfig extends z.infer<typeof LookupConfigSchema> {}
-
-export interface PrefillConfig extends z.infer<typeof PrefillConfigSchema> {}
-
+// Extended interfaces with populated relationships
 export interface FieldOption extends z.infer<typeof FieldOptionSchema> {}
+export interface ValidationRule extends z.infer<typeof ValidationRuleSchema> {}
+export interface ConditionalVisibility extends z.infer<typeof ConditionalVisibilitySchema> {}
+export interface CalculatedConfig extends z.infer<typeof CalculatedConfigSchema> {}
+export interface LookupConfig extends z.infer<typeof LookupConfigSchema> {}
+export interface PrefillConfig extends z.infer<typeof PrefillConfigSchema> {}
+export interface CarryforwardConfig extends z.infer<typeof CarryforwardConfigSchemaType> {}
+export interface FormFieldMetadata extends z.infer<typeof FormFieldMetadataSchemaType> {}
 
 // Form builder utility types
 export type FieldCategory = (typeof FIELD_TYPE_CONFIG)[FieldType]["category"]
@@ -878,6 +878,3 @@ export const URAR_FIELD_TEMPLATES: Record<string, Partial<FormField>> = {
     },
   },
 }
-
-// Re-export all types from the new modular structure
-export * from "./types/index"

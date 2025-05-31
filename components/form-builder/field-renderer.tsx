@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import type { FormField } from "@/lib/types"
+import type { FormField } from "@/lib/database-types"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Database } from "lucide-react"
 

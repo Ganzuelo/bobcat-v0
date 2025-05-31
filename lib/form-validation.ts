@@ -1,6 +1,7 @@
+import type { FormField } from "./database-types"
+import type { ValidationRule, FieldOption } from "./form-types"
+import { VALIDATION_PATTERNS, FIELD_TYPES } from "./form-types"
 import { z } from "zod"
-import type { FormField, ValidationRule, FieldOption } from "./types/form-field-types"
-import { VALIDATION_PATTERNS, FIELD_TYPES } from "./types/index"
 
 // Field value validation based on field type and rules
 export const createFieldValueSchema = (field: FormField): z.ZodSchema => {

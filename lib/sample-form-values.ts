@@ -1,5 +1,5 @@
 import { FIELD_TYPES } from "./field-types"
-import { URAR_CARDINALITY, URAR_CONDITIONALITY, URAR_OUTPUT_FORMAT } from "./compliance-types"
+import { URAR_CARDINALITY, URAR_CONDITIONALITY, URAR_OUTPUT_FORMAT } from "./field-metadata"
 
 export const SampleFormValues = {
   subject_property_address: {
@@ -23,7 +23,7 @@ export const SampleFormValues = {
     },
   },
   property_value: {
-    field_type: FIELD_TYPES.CURRENCY,
+    field_type: FIELD_TYPES.NUMBER,
     label: "Property Value",
     required: true,
     metadata: {
@@ -43,7 +43,7 @@ export const SampleFormValues = {
     },
   },
   loan_amount: {
-    field_type: FIELD_TYPES.CURRENCY,
+    field_type: FIELD_TYPES.NUMBER,
     label: "Loan Amount",
     required: true,
     metadata: {

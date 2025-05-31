@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { Plus, Trash2, GripVertical, ArrowUp, ArrowDown, Calculator, ArrowLeft, ArrowRight } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { Field } from "@/lib/types"
+import type { FormField as Field } from "@/lib/database-types"
 import type {
   SalesGridRow,
   SalesGridConfig,

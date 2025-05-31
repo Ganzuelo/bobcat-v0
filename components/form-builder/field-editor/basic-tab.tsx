@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Trash2 } from "lucide-react"
-import type { FormField } from "@/lib/types"
+import type { FormField } from "@/lib/database-types"
 import { FIELD_WIDTH_OPTIONS } from "@/lib/form-width-utils"
 
 interface BasicTabProps {

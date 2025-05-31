@@ -1,4 +1,5 @@
-import type { FormField, PrefillConfig } from "./types/form-field-types"
+import type { FormField } from "./database-types"
+import type { PrefillConfig } from "./form-types"
 
 // Cache for prefill results
 const prefillCache = new Map<string, { data: any; timestamp: number; ttl: number }>()
