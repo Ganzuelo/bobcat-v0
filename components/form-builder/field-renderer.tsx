@@ -3,6 +3,9 @@
 import type React from "react"
 import { SalesGrid } from "./sales-grid"
 
+// Add debugging to see when this module loads
+console.log("FieldRenderer module loading")
+
 interface FieldProps {
   field: any
   values: any
@@ -11,6 +14,9 @@ interface FieldProps {
 }
 
 const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, disabled }) => {
+  // Add debugging to see when component renders
+  console.log("FieldRenderer rendering with field type:", field?.type)
+
   const renderField = () => {
     switch (field.type) {
       case "text":
@@ -132,6 +138,8 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
           </div>
         )
       case "sales_grid": {
+        console.log("Rendering sales_grid with config:", field.gridConfig || field.config?.gridConfig)
+
         const gridConfig = field.gridConfig || field.config?.gridConfig
         if (!gridConfig) {
           return (
@@ -155,6 +163,7 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
         )
       }
       default:
+        console.log("Unsupported field type:", field.type)
         return <div>Unsupported field type: {field.type}</div>
     }
   }
@@ -162,4 +171,8 @@ const FieldRenderer: React.FC<FieldProps> = ({ field, values, onFieldChange, dis
   return <div className="mb-4">{renderField()}</div>
 }
 
+// Export both as default AND named export to support both import styles
 export default FieldRenderer
+export { FieldRenderer }
+
+console.log("FieldRenderer module loaded and exported both default and named")
