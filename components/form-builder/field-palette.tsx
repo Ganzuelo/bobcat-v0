@@ -1,18 +1,19 @@
 "use client"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { FIELD_CATEGORIES, CATEGORIZED_FIELDS } from "@/lib/form-types"
-import { FIELD_PRESETS, type FieldPreset } from "@/lib/field-presets"
-import { Search, MapPin, User, CalendarDays, Package } from "lucide-react"
+import { PRESET_CATEGORIES, type PresetField } from "@/lib/field-presets"
+import { Search } from "lucide-react"
 import { useState } from "react"
 
 interface FieldPaletteProps {
   onAddField: (fieldType: string) => void
-  onAddPreset?: (presetId: string) => void
+  onAddPresetField?: (presetFieldId: string) => void
 }
 
-export function FieldPalette({ onAddField, onAddPreset }: FieldPaletteProps) {
+export function FieldPalette({ onAddField, onAddPresetField }: FieldPaletteProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState<string>(FIELD_CATEGORIES.BASIC)
 
@@ -21,9 +22,9 @@ export function FieldPalette({ onAddField, onAddPreset }: FieldPaletteProps) {
     onAddField(fieldType)
   }
 
-  const handleAddPreset = (presetId: string) => {
-    console.log("Adding preset:", presetId)
-    onAddPreset?.(presetId)
+  const handleAddPresetField = (presetFieldId: string) => {
+    console.log("Adding preset field:", presetFieldId)
+    onAddPresetField?.(presetFieldId)
   }
 
   // Filter fields based on search term
@@ -32,27 +33,27 @@ export function FieldPalette({ onAddField, onAddPreset }: FieldPaletteProps) {
     return fields.filter((field) => field.replace(/_/g, " ").toLowerCase().includes(searchTerm.toLowerCase()))
   }
 
-  // Filter presets based on search term
-  const filterPresets = (presets: FieldPreset[]) => {
-    if (!searchTerm) return presets
-    return presets.filter(
-      (preset) =>
-        preset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        preset.description.toLowerCase().includes(searchTerm.toLowerCase()),
+  // Filter preset fields based on search term
+  const filterPresetFields = (fields: PresetField[]) => {
+    if (!searchTerm) return fields
+    return fields.filter(
+      (field) =>
+        field.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        field.label.toLowerCase().includes(searchTerm.toLowerCase()),
     )
   }
 
-  // Get icon for preset
-  const getPresetIcon = (iconName: string) => {
-    switch (iconName) {
-      case "map-pin":
-        return <MapPin className="h-4 w-4" />
-      case "user":
-        return <User className="h-4 w-4" />
-      case "calendar-days":
-        return <CalendarDays className="h-4 w-4" />
+  // Get field width badge color
+  const getWidthBadgeColor = (width?: string) => {
+    switch (width) {
+      case "quarter":
+        return "bg-blue-100 text-blue-800"
+      case "half":
+        return "bg-green-100 text-green-800"
+      case "full":
+        return "bg-purple-100 text-purple-800"
       default:
-        return <Package className="h-4 w-4" />
+        return "bg-gray-100 text-gray-800"
     }
   }
 
@@ -112,34 +113,58 @@ export function FieldPalette({ onAddField, onAddPreset }: FieldPaletteProps) {
           )
         })}
 
-        {/* New Presets tab */}
-        <TabsContent value="presets" className="space-y-2">
-          {filterPresets(FIELD_PRESETS).length === 0 && searchTerm && (
-            <p className="text-sm text-gray-500 text-center py-4">No matching presets found</p>
-          )}
+        {/* Redesigned Presets tab */}
+        <TabsContent value="presets" className="space-y-4">
+          {PRESET_CATEGORIES.map((category) => {
+            const filteredFields = filterPresetFields(category.fields)
 
-          {filterPresets(FIELD_PRESETS).map((preset) => (
-            <Card
-              key={preset.id}
-              className="cursor-pointer hover:bg-green-50 hover:border-green-200 transition-all duration-200"
-              onClick={() => handleAddPreset(preset.id)}
-            >
-              <CardHeader className="p-3">
-                <div className="flex items-start gap-2">
-                  <div className="text-green-600 mt-0.5">{getPresetIcon(preset.icon)}</div>
-                  <div className="flex-1">
-                    <CardTitle className="text-sm font-medium text-gray-900">{preset.name}</CardTitle>
-                    <p className="text-xs text-gray-500 mt-1">{preset.description}</p>
-                  </div>
+            // Hide category if no fields match search
+            if (searchTerm && filteredFields.length === 0) return null
+
+            return (
+              <div key={category.id} className="space-y-2">
+                <div className="border-b border-gray-200 pb-2">
+                  <h3 className="text-sm font-semibold text-gray-700">{category.name}</h3>
+                  <p className="text-xs text-gray-500">{category.description}</p>
                 </div>
-              </CardHeader>
-              <CardContent className="px-3 pb-3 pt-0">
-                <div className="text-xs text-gray-400">
-                  {preset.fields.length} field{preset.fields.length !== 1 ? "s" : ""}
+
+                <div className="space-y-1">
+                  {filteredFields.map((field) => (
+                    <Card
+                      key={field.id}
+                      className="cursor-pointer hover:bg-orange-50 hover:border-orange-200 transition-all duration-200"
+                      onClick={() => handleAddPresetField(field.id)}
+                    >
+                      <CardHeader className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-sm font-medium text-gray-900">{field.name}</CardTitle>
+                            <p className="text-xs text-gray-500 mt-1">{field.label}</p>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            {field.width && (
+                              <Badge variant="secondary" className={`text-xs ${getWidthBadgeColor(field.width)}`}>
+                                {field.width}
+                              </Badge>
+                            )}
+                            {field.validation && (
+                              <Badge variant="outline" className="text-xs">
+                                validated
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            )
+          })}
+
+          {searchTerm && PRESET_CATEGORIES.every((cat) => filterPresetFields(cat.fields).length === 0) && (
+            <p className="text-sm text-gray-500 text-center py-4">No matching preset fields found</p>
+          )}
         </TabsContent>
       </Tabs>
     </div>

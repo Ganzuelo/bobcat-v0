@@ -1,20 +1,23 @@
 import { FIELD_TYPES } from "@/lib/form-types"
 
-export interface FieldPreset {
+export interface PresetField {
+  id: string
+  name: string
+  field_type: string
+  label: string
+  placeholder?: string
+  help_text?: string
+  required?: boolean
+  width?: string
+  validation?: any
+  options?: { value: string; label: string }[]
+}
+
+export interface PresetCategory {
   id: string
   name: string
   description: string
-  icon: string
-  fields: Array<{
-    field_type: string
-    label: string
-    placeholder?: string
-    help_text?: string
-    required?: boolean
-    width?: string
-    validation?: any
-    options?: string[] | { value: string; label: string }[]
-  }>
+  fields: PresetField[]
 }
 
 // U.S. States and Territories
@@ -81,14 +84,15 @@ const US_STATES_AND_TERRITORIES = [
   "U.S. Virgin Islands",
 ]
 
-export const FIELD_PRESETS: FieldPreset[] = [
+export const PRESET_CATEGORIES: PresetCategory[] = [
   {
-    id: "full_address_block",
-    name: "Full Address Block",
-    description: "Complete address with street, city, state, and zip",
-    icon: "map-pin",
+    id: "address_inputs",
+    name: "Address Inputs",
+    description: "Common address-related fields",
     fields: [
       {
+        id: "street_address",
+        name: "Street Address",
         field_type: FIELD_TYPES.TEXT,
         label: "Street Address",
         placeholder: "123 Main Street",
@@ -97,6 +101,8 @@ export const FIELD_PRESETS: FieldPreset[] = [
         width: "full",
       },
       {
+        id: "city",
+        name: "City",
         field_type: FIELD_TYPES.TEXT,
         label: "City",
         placeholder: "City name",
@@ -105,6 +111,8 @@ export const FIELD_PRESETS: FieldPreset[] = [
         width: "half",
       },
       {
+        id: "state",
+        name: "State",
         field_type: FIELD_TYPES.SELECT,
         label: "State",
         placeholder: "Select state or territory",
@@ -114,6 +122,8 @@ export const FIELD_PRESETS: FieldPreset[] = [
         options: US_STATES_AND_TERRITORIES.map((state) => ({ value: state, label: state })),
       },
       {
+        id: "zip_code",
+        name: "Zip Code",
         field_type: FIELD_TYPES.TEXT,
         label: "Zip Code",
         placeholder: "12345",
@@ -125,15 +135,33 @@ export const FIELD_PRESETS: FieldPreset[] = [
           message: "Please enter a valid zip code (12345 or 12345-6789)",
         },
       },
+      {
+        id: "country",
+        name: "Country",
+        field_type: FIELD_TYPES.SELECT,
+        label: "Country",
+        placeholder: "Select country",
+        help_text: "Select your country",
+        required: true,
+        width: "half",
+        options: [
+          { value: "US", label: "United States" },
+          { value: "CA", label: "Canada" },
+          { value: "MX", label: "Mexico" },
+          { value: "GB", label: "United Kingdom" },
+          { value: "AU", label: "Australia" },
+        ],
+      },
     ],
   },
   {
     id: "contact_info",
     name: "Contact Info",
-    description: "Basic contact information fields",
-    icon: "user",
+    description: "Personal contact information fields",
     fields: [
       {
+        id: "first_name",
+        name: "First Name",
         field_type: FIELD_TYPES.TEXT,
         label: "First Name",
         placeholder: "John",
@@ -142,6 +170,8 @@ export const FIELD_PRESETS: FieldPreset[] = [
         width: "half",
       },
       {
+        id: "last_name",
+        name: "Last Name",
         field_type: FIELD_TYPES.TEXT,
         label: "Last Name",
         placeholder: "Doe",
@@ -150,6 +180,18 @@ export const FIELD_PRESETS: FieldPreset[] = [
         width: "half",
       },
       {
+        id: "middle_initial",
+        name: "Middle Initial",
+        field_type: FIELD_TYPES.TEXT,
+        label: "Middle Initial",
+        placeholder: "M",
+        help_text: "Enter your middle initial",
+        required: false,
+        width: "quarter",
+      },
+      {
+        id: "phone_number",
+        name: "Phone Number",
         field_type: FIELD_TYPES.PHONE,
         label: "Phone Number",
         placeholder: "(555) 123-4567",
@@ -162,6 +204,8 @@ export const FIELD_PRESETS: FieldPreset[] = [
         },
       },
       {
+        id: "email_address",
+        name: "Email Address",
         field_type: FIELD_TYPES.EMAIL,
         label: "Email Address",
         placeholder: "john.doe@example.com",
@@ -169,50 +213,112 @@ export const FIELD_PRESETS: FieldPreset[] = [
         required: true,
         width: "half",
       },
+      {
+        id: "website",
+        name: "Website",
+        field_type: FIELD_TYPES.URL,
+        label: "Website",
+        placeholder: "https://www.example.com",
+        help_text: "Enter your website URL",
+        required: false,
+        width: "half",
+      },
     ],
   },
   {
-    id: "name_and_dob",
-    name: "Name & DOB",
-    description: "Full name with date of birth",
-    icon: "calendar-days",
+    id: "personal_details",
+    name: "Personal Details",
+    description: "Personal identification and demographic fields",
     fields: [
       {
-        field_type: FIELD_TYPES.TEXT,
-        label: "First Name",
-        placeholder: "John",
-        help_text: "Enter your first name",
-        required: true,
-        width: "half",
-      },
-      {
-        field_type: FIELD_TYPES.TEXT,
-        label: "Middle Initial",
-        placeholder: "M",
-        help_text: "Enter your middle initial",
-        required: false,
-        width: "quarter",
-      },
-      {
-        field_type: FIELD_TYPES.TEXT,
-        label: "Last Name",
-        placeholder: "Doe",
-        help_text: "Enter your last name",
-        required: true,
-        width: "quarter",
-      },
-      {
+        id: "date_of_birth",
+        name: "Date of Birth",
         field_type: FIELD_TYPES.DATE,
         label: "Date of Birth",
         placeholder: "MM/DD/YYYY",
         help_text: "Enter your date of birth",
         required: true,
-        width: "full",
+        width: "half",
+      },
+      {
+        id: "social_security",
+        name: "Social Security Number",
+        field_type: FIELD_TYPES.TEXT,
+        label: "Social Security Number",
+        placeholder: "XXX-XX-XXXX",
+        help_text: "Enter your 9-digit SSN",
+        required: false,
+        width: "half",
+        validation: {
+          pattern: "^\\d{3}-?\\d{2}-?\\d{4}$",
+          message: "Please enter a valid SSN (XXX-XX-XXXX)",
+        },
+      },
+      {
+        id: "gender",
+        name: "Gender",
+        field_type: FIELD_TYPES.SELECT,
+        label: "Gender",
+        placeholder: "Select gender",
+        help_text: "Select your gender",
+        required: false,
+        width: "quarter",
+        options: [
+          { value: "male", label: "Male" },
+          { value: "female", label: "Female" },
+          { value: "non-binary", label: "Non-binary" },
+          { value: "prefer-not-to-say", label: "Prefer not to say" },
+        ],
+      },
+      {
+        id: "marital_status",
+        name: "Marital Status",
+        field_type: FIELD_TYPES.SELECT,
+        label: "Marital Status",
+        placeholder: "Select status",
+        help_text: "Select your marital status",
+        required: false,
+        width: "quarter",
+        options: [
+          { value: "single", label: "Single" },
+          { value: "married", label: "Married" },
+          { value: "divorced", label: "Divorced" },
+          { value: "widowed", label: "Widowed" },
+          { value: "separated", label: "Separated" },
+        ],
+      },
+      {
+        id: "occupation",
+        name: "Occupation",
+        field_type: FIELD_TYPES.TEXT,
+        label: "Occupation",
+        placeholder: "Software Engineer",
+        help_text: "Enter your current occupation",
+        required: false,
+        width: "half",
+      },
+      {
+        id: "emergency_contact",
+        name: "Emergency Contact",
+        field_type: FIELD_TYPES.TEXT,
+        label: "Emergency Contact Name",
+        placeholder: "Jane Doe",
+        help_text: "Enter emergency contact full name",
+        required: false,
+        width: "half",
       },
     ],
   },
 ]
 
-export function getPresetById(id: string): FieldPreset | undefined {
-  return FIELD_PRESETS.find((preset) => preset.id === id)
+export function getPresetFieldById(fieldId: string): PresetField | undefined {
+  for (const category of PRESET_CATEGORIES) {
+    const field = category.fields.find((f) => f.id === fieldId)
+    if (field) return field
+  }
+  return undefined
+}
+
+export function getCategoryById(categoryId: string): PresetCategory | undefined {
+  return PRESET_CATEGORIES.find((category) => category.id === categoryId)
 }
