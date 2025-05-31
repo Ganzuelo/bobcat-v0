@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { FIELD_CATEGORIES, CATEGORIZED_FIELDS } from "@/lib/form-types"
-import { FIELD_PRESETS, type FieldPreset } from "@/lib/field_presets"
+import { FIELD_PRESETS, type FieldPreset } from "@/lib/field-presets"
 import { Search, MapPin, User, CalendarDays, Package } from "lucide-react"
 import { useState } from "react"
 
