@@ -340,49 +340,47 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
     }
 
     const sectionId = formStructure.pages[currentPageIndex].sections[0].id
+    const currentSection = formStructure.pages[currentPageIndex].sections[0]
 
-    // Add each field from the preset
-    preset.fields.forEach((fieldConfig) => {
-      addField(sectionId, fieldConfig.field_type)
+    // Create all preset fields with proper configuration
+    const newFields = preset.fields.map((fieldConfig) => {
+      const fieldId = crypto.randomUUID()
+      return {
+        id: fieldId,
+        section_id: sectionId,
+        field_type: fieldConfig.field_type,
+        label: fieldConfig.label,
+        placeholder: fieldConfig.placeholder || "",
+        help_text: fieldConfig.help_text || "",
+        required: fieldConfig.required || false,
+        field_order: (currentSection.fields?.length || 0) + 1,
+        width: fieldConfig.width || "full",
+        validation: fieldConfig.validation || {},
+        options: fieldConfig.options || [],
+        settings: {},
+        metadata: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+    })
 
-      // Update the field with preset configuration
-      // We need to find the field that was just added and update it
-      setTimeout(() => {
-        if (formStructure) {
-          const updatedPages = formStructure.pages.map((page) => ({
-            ...page,
-            sections: page.sections?.map((section) => {
-              if (section.id === sectionId) {
-                const fields = section.fields || []
-                const lastField = fields[fields.length - 1]
-                if (lastField) {
-                  const updatedField = {
-                    ...lastField,
-                    label: fieldConfig.label,
-                    placeholder: fieldConfig.placeholder,
-                    help_text: fieldConfig.help_text,
-                    required: fieldConfig.required || false,
-                    width: fieldConfig.width || "full",
-                    validation: fieldConfig.validation || {},
-                    options: fieldConfig.options || [],
-                  }
-
-                  return {
-                    ...section,
-                    fields: [...fields.slice(0, -1), updatedField],
-                  }
-                }
-              }
-              return section
-            }),
-          }))
-
-          setFormStructure({
-            ...formStructure,
-            pages: updatedPages,
-          })
+    // Update the form structure with all new fields at once
+    const updatedPages = formStructure.pages.map((page) => ({
+      ...page,
+      sections: page.sections?.map((section) => {
+        if (section.id === sectionId) {
+          return {
+            ...section,
+            fields: [...(section.fields || []), ...newFields],
+          }
         }
-      }, 100)
+        return section
+      }),
+    }))
+
+    setFormStructure({
+      ...formStructure,
+      pages: updatedPages,
     })
 
     toast({
