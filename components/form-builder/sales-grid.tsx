@@ -193,4 +193,4 @@ const SalesGrid: React.FC<SalesGridProps> = ({ config, value, onChange, onConfig
   )
 }
 
-export default SalesGrid
+export { SalesGrid }
