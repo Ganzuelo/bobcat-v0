@@ -68,8 +68,11 @@ function deepCleanObject(obj: any): any {
 }
 
 export class DatabaseService {
-  // Get current user ID
-  static async getCurrentUserId(): Promise<string | null> {
+  // Get current user ID with development fallback
+  static async getCurrentUserId(): Promise<string> {
+    // Development fallback - replace with actual auth in production
+    const SYSTEM_USER_ID = "550e8400-e29b-41d4-a716-446655440000"
+
     try {
       const {
         data: { user },
@@ -78,13 +81,21 @@ export class DatabaseService {
 
       if (error) {
         console.error("Error getting user:", error)
-        return null
+        console.log("Using system user fallback due to auth error")
+        return SYSTEM_USER_ID
       }
 
-      return user?.id || null
+      if (!user?.id || user.id === "" || user.id === "undefined") {
+        console.log("No valid user ID found, using system user fallback")
+        return SYSTEM_USER_ID
+      }
+
+      console.log("Using authenticated user:", user.id)
+      return user.id
     } catch (error) {
       console.error("Error in getCurrentUserId:", error)
-      return null
+      console.log("Using system user fallback due to exception")
+      return SYSTEM_USER_ID
     }
   }
 
