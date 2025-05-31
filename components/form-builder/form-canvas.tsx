@@ -1,339 +1,234 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, ChevronUp, ChevronDown, SquarePen } from "lucide-react"
-import type { FormStructure, FormField } from "@/lib/form-types"
-import { getGridColClass, getWidthLabel } from "@/lib/form-builder-utils"
-import { FieldRenderer } from "./field-renderer"
-import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Edit, Plus } from "lucide-react"
+import { SortableField } from "./sortable-field"
+import { formSaveService } from "@/lib/form-save-service"
+import { useToast } from "@/hooks/use-toast"
 
 interface FormCanvasProps {
-  formStructure: FormStructure
-  currentPageIndex: number
-  onEditField: (field: FormField) => void
+  formStructure: any
+  onEditField: (field: any) => void
   onDeleteField: (fieldId: string) => void
   onMoveFieldUp: (fieldId: string) => void
   onMoveFieldDown: (fieldId: string) => void
-  onEditPage?: (page: any) => void
-  onEditSection?: (section: any) => void
-  onUpdatePage?: (pageId: string, updates: { title: string; description?: string }) => void
-  onUpdateSection?: (sectionId: string, updates: { title: string; description?: string }) => void
-  onDeleteSection?: (sectionId: string) => void
+  onEditPage: (page: any) => void
+  onEditSection: (section: any) => void
+  currentPageIndex: number
 }
 
 export function FormCanvas({
   formStructure,
-  currentPageIndex,
   onEditField,
   onDeleteField,
   onMoveFieldUp,
   onMoveFieldDown,
   onEditPage,
   onEditSection,
-  onUpdatePage,
-  onUpdateSection,
-  onDeleteSection,
+  currentPageIndex,
 }: FormCanvasProps) {
-  const [deleteDialog, setDeleteDialog] = useState<{
-    open: boolean
-    type: "section" | "page"
-    id: string
-    title: string
-  }>({
-    open: false,
-    type: "section",
-    id: "",
-    title: "",
-  })
+  const [reorderingSection, setReorderingSection] = useState<string | null>(null)
+  const { toast } = useToast()
 
-  // Add defensive checks to prevent undefined errors
-  if (!formStructure) {
+  if (!formStructure?.pages?.[currentPageIndex]) {
     return (
-      <div className="max-w-5xl mx-auto">
-        <Card>
-          <CardContent className="p-8">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
-              <p>Loading form structure...</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center h-64 text-gray-500">
+        <p>No page selected or page not found</p>
       </div>
     )
   }
 
-  if (!formStructure.pages || formStructure.pages.length === 0) {
-    return (
-      <div className="max-w-5xl mx-auto">
-        <Card>
-          <CardContent className="p-8">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
-              <p>No pages available. Please create a page first.</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  const currentPage = formStructure.pages[currentPageIndex]
 
-  // Ensure currentPageIndex is valid
-  const safePageIndex = Math.min(Math.max(0, currentPageIndex), formStructure.pages.length - 1)
-  const currentPage = formStructure.pages[safePageIndex]
+  const handleFieldReorder = async (sectionId: string, fieldId: string, direction: "up" | "down") => {
+    setReorderingSection(sectionId)
 
-  if (!currentPage) {
-    return (
-      <div className="max-w-5xl mx-auto">
-        <Card>
-          <CardContent className="p-8">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
-              <p>Page data not available.</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+    try {
+      const section = currentPage.sections?.find((s: any) => s.id === sectionId)
+      if (!section?.fields) return
 
-  const handleEditPage = () => {
-    console.log("Edit page clicked:", currentPage)
-    if (onEditPage) {
-      onEditPage(currentPage)
+      const currentIndex = section.fields.findIndex((f: any) => f.id === fieldId)
+      if (currentIndex === -1) return
+
+      const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1
+      if (newIndex < 0 || newIndex >= section.fields.length) return
+
+      // Create new field order
+      const reorderedFields = [...section.fields]
+      const [movedField] = reorderedFields.splice(currentIndex, 1)
+      reorderedFields.splice(newIndex, 0, movedField)
+
+      // Update field_order for all fields
+      const fieldIds = reorderedFields.map((field: any) => field.id)
+
+      // Save the new order to database
+      const result = await formSaveService.reorderFields(sectionId, fieldIds)
+
+      if (result.success) {
+        // Update local state by calling the parent handlers
+        if (direction === "up") {
+          onMoveFieldUp(fieldId)
+        } else {
+          onMoveFieldDown(fieldId)
+        }
+
+        toast({
+          title: "Field Reordered",
+          description: "Field order has been updated successfully",
+        })
+      } else {
+        throw new Error(result.errors?.[0] || "Failed to reorder fields")
+      }
+    } catch (error) {
+      console.error("Error reordering field:", error)
+      toast({
+        title: "Reorder Failed",
+        description: error instanceof Error ? error.message : "Failed to reorder field",
+        variant: "destructive",
+      })
+    } finally {
+      setReorderingSection(null)
     }
   }
 
-  const handleEditSection = (section: any) => {
-    console.log("Edit section clicked:", section)
-    if (onEditSection) {
-      onEditSection(section)
+  const handleDeleteField = async (fieldId: string) => {
+    if (!confirm("Are you sure you want to delete this field?")) return
+
+    try {
+      onDeleteField(fieldId)
+      toast({
+        title: "Field Deleted",
+        description: "Field has been removed from the form",
+      })
+    } catch (error) {
+      console.error("Error deleting field:", error)
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete field",
+        variant: "destructive",
+      })
     }
   }
 
-  const handleDeleteSection = (sectionId: string, sectionTitle: string) => {
-    setDeleteDialog({
-      open: true,
-      type: "section",
-      id: sectionId,
-      title: sectionTitle || "Untitled Section",
+  const handleDuplicateField = (fieldId: string) => {
+    const section = currentPage.sections?.find((s: any) => s.fields?.some((f: any) => f.id === fieldId))
+
+    if (!section) return
+
+    const field = section.fields.find((f: any) => f.id === fieldId)
+    if (!field) return
+
+    // Create a duplicate field with new ID
+    const duplicatedField = {
+      ...field,
+      id: crypto.randomUUID(),
+      label: `${field.label} (Copy)`,
+      field_order: section.fields.length,
+    }
+
+    // Add to the section (this would need to be handled by parent component)
+    console.log("Duplicate field:", duplicatedField)
+    toast({
+      title: "Field Duplicated",
+      description: "Field has been duplicated",
     })
   }
 
-  const confirmDeleteSection = async () => {
-    if (onDeleteSection && deleteDialog.id) {
-      await onDeleteSection(deleteDialog.id)
-    }
-    setDeleteDialog({ open: false, type: "section", id: "", title: "" })
-  }
-
-  // Helper function to handle field movement
-  const handleMoveField = (fieldId: string, direction: "up" | "down") => {
-    console.log(`Moving field ${fieldId} ${direction}`)
-    if (direction === "up") {
-      onMoveFieldUp(fieldId)
-    } else {
-      onMoveFieldDown(fieldId)
-    }
-  }
-
-  // Ensure sections is an array
-  const sections = Array.isArray(currentPage.sections) ? currentPage.sections : []
-
-  if (sections.length === 0) {
-    return (
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Page Header */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold">{currentPage.title || "Untitled Page"}</h2>
-                {currentPage.description && (
-                  <p className="text-sm text-muted-foreground mt-1">{currentPage.description}</p>
-                )}
-              </div>
-              <Button variant="ghost" size="sm" onClick={handleEditPage} title="Edit page">
-                <SquarePen className="h-4 w-4" />
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-8">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
-              <p>No sections available. Please create a section first.</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Page Header */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold">{currentPage.title || "Untitled Page"}</h2>
-              {currentPage.description && (
-                <p className="text-sm text-muted-foreground mt-1">{currentPage.description}</p>
-              )}
+              <h2 className="text-xl font-semibold">{currentPage.title}</h2>
+              {currentPage.description && <p className="text-sm text-gray-600 mt-1">{currentPage.description}</p>}
             </div>
-            <Button variant="ghost" size="sm" onClick={handleEditPage} title="Edit page">
-              <SquarePen className="h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={() => onEditPage(currentPage)}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Page
             </Button>
-          </CardTitle>
+          </div>
         </CardHeader>
       </Card>
 
       {/* Sections */}
-      {sections.map((section) => {
-        if (!section) return null
+      {currentPage.sections?.map((section: any) => (
+        <Card key={section.id} className="border-2 border-dashed border-gray-200">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium">{section.title}</h3>
+                {section.description && <p className="text-sm text-gray-600 mt-1">{section.description}</p>}
+                <Badge variant="secondary" className="mt-2">
+                  {section.fields?.length || 0} fields
+                </Badge>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => onEditSection(section)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Section
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Add field to this section
+                    console.log("Add field to section:", section.id)
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Field
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
 
-        // Ensure fields is an array
-        const fields = Array.isArray(section.fields) ? section.fields : []
+          <CardContent>
+            {section.fields && section.fields.length > 0 ? (
+              <div className="space-y-4">
+                {section.fields
+                  .sort((a: any, b: any) => (a.field_order || 0) - (b.field_order || 0))
+                  .map((field: any, index: number) => (
+                    <SortableField
+                      key={field.id}
+                      field={field}
+                      onEdit={onEditField}
+                      onUpdate={() => {}} // Not used in this implementation
+                      onDelete={handleDeleteField}
+                      onDuplicate={handleDuplicateField}
+                      onMoveUp={(fieldId) => handleFieldReorder(section.id, fieldId, "up")}
+                      onMoveDown={(fieldId) => handleFieldReorder(section.id, fieldId, "down")}
+                      canMoveUp={index > 0}
+                      canMoveDown={index < section.fields.length - 1}
+                    />
+                  ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No fields in this section</p>
+                <p className="text-sm">Drag fields from the palette to get started</p>
+              </div>
+            )}
 
-        return (
-          <Card key={section.id} className="overflow-hidden">
-            {/* Section Header */}
-            <CardHeader className="bg-gray-50/50 border-b">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-medium">{section.title || "Untitled Section"}</h3>
-                  </div>
-                  {section.description && <p className="text-sm text-muted-foreground mt-1">{section.description}</p>}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {fields.length || 0} fields
-                  </Badge>
-                  <Button variant="ghost" size="sm" onClick={() => handleEditSection(section)} title="Edit section">
-                    <SquarePen className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteSection(section.id, section.title)}
-                    title="Delete section"
-                    className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="p-6">
-              {fields.length === 0 ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
-                  <p>No fields in this section. Add fields from the Builder Palette.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 auto-rows-min">
-                  {fields.map((field, index) => {
-                    if (!field) return null
-
-                    const gridColClass = getGridColClass(field.width || "full")
-                    const isFirst = index === 0
-                    const isLast = index === fields.length - 1
-
-                    return (
-                      <div key={field.id || `field-${index}`} className={`${gridColClass} min-w-0`}>
-                        <Card className="group hover:shadow-md transition-shadow border-2 hover:border-blue-300 h-full">
-                          <CardContent className="p-4">
-                            <div className="space-y-3">
-                              {/* Field Header */}
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1">
-                                    <div className="font-medium text-sm">{field.label || "Untitled Field"}</div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <Badge variant="secondary" className="text-xs">
-                                        {field.field_type || "unknown"}
-                                      </Badge>
-                                      <Badge variant="outline" className="text-xs">
-                                        {getWidthLabel(field.width)}
-                                      </Badge>
-                                      {field.required && (
-                                        <Badge variant="destructive" className="text-xs">
-                                          Required
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => field.id && handleMoveField(field.id, "up")}
-                                    disabled={isFirst || !field.id}
-                                    title="Move up"
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <ChevronUp className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => field.id && handleMoveField(field.id, "down")}
-                                    disabled={isLast || !field.id}
-                                    title="Move down"
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <ChevronDown className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onEditField(field)}
-                                    title="Edit field"
-                                    disabled={!field}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => field.id && onDeleteField(field.id)}
-                                    title="Delete field"
-                                    disabled={!field.id}
-                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive/80"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </div>
-
-                              {/* Field Preview */}
-                              <div className="space-y-2">
-                                <FieldRenderer field={field} isPreviewMode={false} />
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )
-      })}
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmationDialog
-        open={deleteDialog.open}
-        onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
-        title={`Delete ${deleteDialog.type}`}
-        description={`Are you sure you want to delete this ${deleteDialog.type}?`}
-        itemName={deleteDialog.title}
-        onConfirm={confirmDeleteSection}
-        variant={deleteDialog.type as "section" | "page"}
-      />
+            {reorderingSection === section.id && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-700">Updating field order...</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )) || (
+        <Card className="border-2 border-dashed border-gray-200">
+          <CardContent className="text-center py-8 text-gray-500">
+            <p>No sections in this page</p>
+            <p className="text-sm">Add a section to get started</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

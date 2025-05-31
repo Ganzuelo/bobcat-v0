@@ -19,6 +19,7 @@ import { FieldPropertiesModal } from "./field-properties-modal"
 import { EditPageModal } from "./edit-page-modal"
 import { EditSectionModal } from "./edit-section-modal"
 import { useFieldOperations } from "@/hooks/use-field-operations"
+import { formSaveService } from "@/services/form-save-service"
 
 interface FormBuilderProps {
   formId?: string
@@ -277,17 +278,34 @@ export function FormBuilderV2({ formId, onSave }: FormBuilderProps) {
   const handleSaveForm = async () => {
     setSaving(true)
     try {
-      // Pass the complete form structure to the onSave callback
-      onSave?.(formStructure?.form)
+      if (!formStructure) {
+        throw new Error("No form structure to save")
+      }
 
-      toast({
-        title: "Success",
-        description: "Form saved successfully",
-      })
+      // Use the new robust save service
+      const result = await formSaveService.saveForm(formStructure)
+
+      if (result.success) {
+        // Update the form structure with saved data
+        if (result.data) {
+          setFormStructure(result.data)
+        }
+
+        // Call the onSave callback with the saved form
+        onSave?.(result.data?.form || formStructure.form)
+
+        toast({
+          title: "Success",
+          description: "Form saved successfully",
+        })
+      } else {
+        throw new Error(result.errors?.join(", ") || "Failed to save form")
+      }
     } catch (error) {
+      console.error("Save error:", error)
       toast({
-        title: "Error",
-        description: "Failed to save form",
+        title: "Save Failed",
+        description: error instanceof Error ? error.message : "Failed to save form",
         variant: "destructive",
       })
     } finally {
